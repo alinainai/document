@@ -2,7 +2,7 @@ package avltree;
 
 public class AVLTest {
 
-    private static int arr[]= {1,2,3,4,5,6};
+    private static int arr[]= {5,3,6,2,4,7,1};
     //3,2,1,4,5,6,7,16,15,14,13,12,11,10,8,9
 
     public static void main(String[] args) {
@@ -31,7 +31,7 @@ public class AVLTest {
         System.out.printf("== 树的详细信息: \n");
         tree.print();
 
-        i = 8;
+        i = 4;
         System.out.printf("\n== 删除根节点: %d", i);
         tree.remove(i);
 

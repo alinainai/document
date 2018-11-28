@@ -180,39 +180,39 @@ public class AVLTree<T extends Comparable<T>> {
     }
 
     /*
-     * LL：左左对应的情况(左单旋转)。
+     * LL：左左对应的情况(右单旋转)。
      *
      * 返回值：旋转后的根节点
      */
-    private AVLTreeNode<T> leftLeftRotation(AVLTreeNode<T> k2) {
-        AVLTreeNode<T> k1;
+    private AVLTreeNode<T> rightRotation(AVLTreeNode<T> z) {
+        AVLTreeNode<T> y;
 
-        k1 = k2.left;
-        k2.left = k1.right;
-        k1.right = k2;
+        y = z.left;
+        z.left = y.right;
+        y.right = z;
 
-        k2.height = max( height(k2.left), height(k2.right)) + 1;
-        k1.height = max( height(k1.left), k2.height) + 1;
+        z.height = max( height(z.left), height(z.right)) + 1;
+        y.height = max( height(y.left), z.height) + 1;
 
-        return k1;
+        return y;
     }
 
     /*
-     * RR：右右对应的情况(右单旋转)。
+     * RR：右右对应的情况(左单旋转)。
      *
      * 返回值：旋转后的根节点
      */
-    private AVLTreeNode<T> rightRightRotation(AVLTreeNode<T> k1) {
-        AVLTreeNode<T> k2;
+    private AVLTreeNode<T> leftRotation(AVLTreeNode<T> z) {
+        AVLTreeNode<T> y;
 
-        k2 = k1.right;
-        k1.right = k2.left;
-        k2.left = k1;
+        y = z.right;
+        z.right = y.left;
+        y.left = z;
 
-        k1.height = max( height(k1.left), height(k1.right)) + 1;
-        k2.height = max( height(k2.right), k1.height) + 1;
+        z.height = max( height(z.left), height(z.right)) + 1;
+        y.height = max( height(y.right), z.height) + 1;
 
-        return k2;
+        return y;
     }
 
     /*
@@ -221,9 +221,9 @@ public class AVLTree<T extends Comparable<T>> {
      * 返回值：旋转后的根节点
      */
     private AVLTreeNode<T> leftRightRotation(AVLTreeNode<T> k3) {
-        k3.left = rightRightRotation(k3.left);
+        k3.left = leftRotation(k3.left);
 
-        return leftLeftRotation(k3);
+        return rightRotation(k3);
     }
 
     /*
@@ -232,9 +232,9 @@ public class AVLTree<T extends Comparable<T>> {
      * 返回值：旋转后的根节点
      */
     private AVLTreeNode<T> rightLeftRotation(AVLTreeNode<T> k1) {
-        k1.right = leftLeftRotation(k1.right);
+        k1.right = rightRotation(k1.right);
 
-        return rightRightRotation(k1);
+        return leftRotation(k1);
     }
 
     /*
@@ -250,10 +250,6 @@ public class AVLTree<T extends Comparable<T>> {
         if (tree == null) {
             // 新建节点
             tree = new AVLTreeNode<T>(key, null, null);
-            if (tree==null) {
-                System.out.println("ERROR: create avltree node failed!");
-                return null;
-            }
         } else {
             int cmp = key.compareTo(tree.key);
 
@@ -262,7 +258,7 @@ public class AVLTree<T extends Comparable<T>> {
                 // 插入节点后，若AVL树失去平衡，则进行相应的调节。
                 if (height(tree.left) - height(tree.right) == 2) {
                     if (key.compareTo(tree.left.key) < 0)
-                        tree = leftLeftRotation(tree);
+                        tree = rightRotation(tree);
                     else
                         tree = leftRightRotation(tree);
                 }
@@ -271,7 +267,7 @@ public class AVLTree<T extends Comparable<T>> {
                 // 插入节点后，若AVL树失去平衡，则进行相应的调节。
                 if (height(tree.right) - height(tree.left) == 2) {
                     if (key.compareTo(tree.right.key) > 0)
-                        tree = rightRightRotation(tree);
+                        tree = leftRotation(tree);
                     else
                         tree = rightLeftRotation(tree);
                 }
@@ -312,7 +308,7 @@ public class AVLTree<T extends Comparable<T>> {
                 if (height(r.left) > height(r.right))
                     tree = rightLeftRotation(tree);
                 else
-                    tree = rightRightRotation(tree);
+                    tree = leftRotation(tree);
             }
         } else if (cmp > 0) {    // 待删除的节点在"tree的右子树"中
             tree.right = remove(tree.right, z);
@@ -322,7 +318,7 @@ public class AVLTree<T extends Comparable<T>> {
                 if (height(l.right) > height(l.left))
                     tree = leftRightRotation(tree);
                 else
-                    tree = leftLeftRotation(tree);
+                    tree = rightRotation(tree);
             }
         } else {    // tree是对应要删除的节点。
             // tree的左右孩子都非空
@@ -355,6 +351,8 @@ public class AVLTree<T extends Comparable<T>> {
             }
         }
 
+        if(tree != null)
+            tree.height = max(height(tree.left), height(tree.right)) + 1;
         return tree;
     }
 
