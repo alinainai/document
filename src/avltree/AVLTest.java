@@ -2,7 +2,7 @@ package avltree;
 
 public class AVLTest {
 
-    private static int arr[]= {5,3,6,2,4,7,1};
+    private static int arr[]= {3,2,1,4,5,6,7,16,15,14,13,12,11,10,8,9};
     //3,2,1,4,5,6,7,16,15,14,13,12,11,10,8,9
 
     public static void main(String[] args) {

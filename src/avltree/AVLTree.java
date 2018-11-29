@@ -220,10 +220,10 @@ public class AVLTree<T extends Comparable<T>> {
      *
      * 返回值：旋转后的根节点
      */
-    private AVLTreeNode<T> leftRightRotation(AVLTreeNode<T> k3) {
-        k3.left = leftRotation(k3.left);
+    private AVLTreeNode<T> leftRightRotation(AVLTreeNode<T> z) {
+        z.left = leftRotation(z.left);
 
-        return rightRotation(k3);
+        return rightRotation(z);
     }
 
     /*
@@ -231,10 +231,10 @@ public class AVLTree<T extends Comparable<T>> {
      *
      * 返回值：旋转后的根节点
      */
-    private AVLTreeNode<T> rightLeftRotation(AVLTreeNode<T> k1) {
-        k1.right = rightRotation(k1.right);
+    private AVLTreeNode<T> rightLeftRotation(AVLTreeNode<T> z) {
+        z.right = rightRotation(z.right);
 
-        return leftRotation(k1);
+        return leftRotation(z);
     }
 
     /*
