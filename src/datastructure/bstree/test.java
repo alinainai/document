@@ -1,6 +1,4 @@
-package bstree;
-
-import bstree.BinarySearchTree;
+package datastructure.bstree;
 
 import java.util.*;
 

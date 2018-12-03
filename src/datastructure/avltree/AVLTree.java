@@ -1,4 +1,4 @@
-package avltree;
+package datastructure.avltree;
 
 /**
  * Java 语言: AVL树

@@ -1,19 +1,18 @@
 package sort;
 
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * 经典排序算法
- *
- *
+ * 八种经典排序算法
+ * blog ：https://blog.csdn.net/u013728021/article/details/84635955
  */
 public class Sort {
 
 
-
-
+    /**
+     * 冒泡排序法
+     *
+     * @param arr
+     */
     void bubbleSort(int arr[]) {
         int len = arr.length;
         for (int i = 0; i < len; i++) {
@@ -29,7 +28,11 @@ public class Sort {
 
     }
 
-
+    /**
+     * 选择法排序
+     *
+     * @param arr
+     */
     void selectionSort(int arr[]) {
         int len = arr.length;
         int minIndex, temp;
@@ -46,6 +49,11 @@ public class Sort {
         }
     }
 
+    /**
+     * 插入法排序
+     *
+     * @param arr
+     */
     void insertionSort(int[] arr) {
         int len = arr.length;
         int preIndex, current;
@@ -60,7 +68,11 @@ public class Sort {
         }
     }
 
-
+    /**
+     * 希尔排序
+     *
+     * @param array
+     */
     void shellSort(int[] array) {
         int number = array.length / 2;
         int preIndex;
@@ -79,20 +91,22 @@ public class Sort {
         }
     }
 
-
-
-
-   //将有二个有序数列a[first...mid]和a[mid...last]合并。
-   void merge(int a[], int low, int mid, int high)
-    {
+    /**
+     * 将有二个有序数列a[first...mid]和a[mid...last]合并
+     *
+     * @param a
+     * @param low
+     * @param mid
+     * @param high
+     */
+    void merge(int a[], int low, int mid, int high) {
         int i = low, j = mid + 1;
         int m = mid, n = high;
         int k = 0;
 
-        int[] temp=new int[high-low+1];
+        int[] temp = new int[high - low + 1];
 
-        while (i <= m && j <= n)
-        {
+        while (i <= m && j <= n) {
             if (a[i] <= a[j])
                 temp[k++] = a[i++];
             else
@@ -110,8 +124,15 @@ public class Sort {
 
 
     }
-   void mergeSort(int a[], int low, int high)
-    {
+
+    /**
+     * 归并法排序
+     *
+     * @param a    数组
+     * @param low
+     * @param high
+     */
+    void mergeSort(int a[], int low, int high) {
 
         int mid = (low + high) / 2;
         if (low < high) {
@@ -125,8 +146,14 @@ public class Sort {
 
     }
 
-
-     void quickSort(int[] arr, int head, int tail) {
+    /**
+     * 快速排序
+     *
+     * @param arr
+     * @param head
+     * @param tail
+     */
+    void quickSort(int[] arr, int head, int tail) {
         if (head >= tail || arr == null || arr.length <= 1) {
             return;
         }
@@ -157,27 +184,40 @@ public class Sort {
      * 调整索引为 index 处的数据，使其符合堆的特性。
      *
      * @param index 需要堆化处理的数据的索引
-     * @param len 未排序的堆（数组）的长度
+     * @param len   未排序的堆（数组）的长度
      */
-    void maxHeapify(int[] arr, int index,int len){
+    void maxHeapify(int[] arr, int index, int len) {
         int li = (index << 1) + 1; // 左子节点索引
         int ri = li + 1;           // 右子节点索引
         int cMax = li;             // 子节点值最大索引，默认左子节点。
 
-        if(li > len) return;       // 左子节点索引超出计算范围，直接返回。
-        if(ri <= len && arr[ri] > arr[li]) // 先判断左右子节点，哪个较大。
+        if (li > len) return;       // 左子节点索引超出计算范围，直接返回。
+        if (ri <= len && arr[ri] > arr[li]) // 先判断左右子节点，哪个较大。
             cMax = ri;
-        if(arr[cMax] > arr[index]){
-            swap(arr,cMax, index);      // 如果父节点被子节点调换，
-            maxHeapify(arr,cMax, len);  // 则需要继续判断换下后的父节点是否符合堆的特性。
+        if (arr[cMax] > arr[index]) {
+            swap(arr, cMax, index);      // 如果父节点被子节点调换，
+            maxHeapify(arr, cMax, len);  // 则需要继续判断换下后的父节点是否符合堆的特性。
         }
     }
 
-    void swap(int[] arr,int i,int j) {
+    /**
+     * 交换位置
+     *
+     * @param arr
+     * @param i
+     * @param j
+     */
+    void swap(int[] arr, int i, int j) {
         int temp = arr[i];
         arr[i] = arr[j];
         arr[j] = temp;
     }
+
+    /**
+     * 堆排序
+     *
+     * @param arr
+     */
     void heapSort(int[] arr) {
 
         /*
@@ -188,8 +228,8 @@ public class Sort {
          */
         int len = arr.length - 1;
         int beginIndex = (len - 1) >> 1;
-        for(int i = beginIndex; i >= 0; i--){
-            maxHeapify(arr, i,len);
+        for (int i = beginIndex; i >= 0; i--) {
+            maxHeapify(arr, i, len);
         }
 
         /*
@@ -198,38 +238,41 @@ public class Sort {
          * 然后从新整理被换到根节点的末尾元素，使其符合堆的特性。
          * 直至未排序的堆长度为 0。
          */
-        for(int i = len; i > 0; i--){
+        for (int i = len; i > 0; i--) {
             swap(arr, 0, i);
             len--;
-            maxHeapify(arr, 0,len);
+            maxHeapify(arr, 0, len);
         }
 
     }
 
-
-
-    void bucketSort(int[] arr){
-        if (arr==null||arr.length<2){
+    /**
+     * 桶排序
+     *
+     * @param arr
+     */
+    void bucketSort(int[] arr) {
+        if (arr == null || arr.length < 2) {
             return;
         }
         //常用写法
         int max = Integer.MIN_VALUE;
-        for (int i =0;i<arr.length;i++){
-            max = Math.max(max,arr[i]);
+        for (int i = 0; i < arr.length; i++) {
+            max = Math.max(max, arr[i]);
         }
 
-        int[] bucket = new int[max+1];
+        int[] bucket = new int[max + 1];
 
-        for (int i =0;i<arr.length;i++){
+        for (int i = 0; i < arr.length; i++) {
             //桶数组此下标有数据，数值就加一
             bucket[arr[i]]++;
         }
 
         int i = 0;
 
-        for (int j = 0;j<bucket.length;j++){
-            while (bucket[j]-->0){
-                arr[i++]=j;
+        for (int j = 0; j < bucket.length; j++) {
+            while (bucket[j]-- > 0) {
+                arr[i++] = j;
             }
         }
     }
@@ -237,23 +280,21 @@ public class Sort {
 
     /**
      * 求数据的最大位数
+     *
      * @param data
      * @param n
      * @return
      */
-    int maxbit(int data[], int n)
-    {
+    int maxbit(int data[], int n) {
         int maxData = data[0];
         /// 先求出最大数
-        for (int i = 1; i < n; ++i)
-        {
+        for (int i = 1; i < n; ++i) {
             if (maxData < data[i])
                 maxData = data[i];
         }
         int d = 1;
         //求最大值位数
-        while (maxData >= 10)
-        {
+        while (maxData >= 10) {
             maxData /= 10;
             ++d;
         }
@@ -261,27 +302,29 @@ public class Sort {
 
     }
 
-
-
+    /**
+     * 基数排序
+     *
+     * @param arr
+     * @param d
+     */
     void radixSort(int[] arr, int d) //d表示最大的数有多少位
     {
         int k = 0;
         int n = 1;
         int m = 1; //控制键值排序依据在哪一位
-        int[][]temp = new int[10][arr.length]; //数组的第一维表示可能的余数0-9
-        int[]order = new int[10]; //数组order[i]用来表示该位是i的数的个数
-        while(m <= d)
-        {
-            for(int i = 0; i < arr.length; i++) {
+        int[][] temp = new int[10][arr.length]; //数组的第一维表示可能的余数0-9
+        int[] order = new int[10]; //数组order[i]用来表示该位是i的数的个数
+        while (m <= d) {
+            for (int i = 0; i < arr.length; i++) {
                 int lsd = ((arr[i] / n) % 10);
                 temp[lsd][order[lsd]] = arr[i];
                 order[lsd]++;
             }
 
-            for(int i = 0; i < 10; i++) {
-                if(order[i] != 0)
-                    for(int j = 0; j < order[i]; j++)
-                    {
+            for (int i = 0; i < 10; i++) {
+                if (order[i] != 0)
+                    for (int j = 0; j < order[i]; j++) {
                         arr[k] = temp[i][j];
                         k++;
                     }
@@ -294,28 +337,26 @@ public class Sort {
     }
 
 
-
-
-
-
-
-
     public static void main(String[] args) {
 
-        int[] arr={5,7,3,11,8,42,23,11,60};
+        int[] arr = {5, 7, 3, 11, 8, 42, 23, 11, 60};
+        Sort sort = new Sort();
 
-        Sort sort=new Sort();
-//        sort.quickSort(arr,0,arr.length-1);
-        sort.radixSort(arr,2);
-        for (int i: arr) {
-            System.out.print(String.valueOf(i)+" ");
+//        sort.bubbleSort(arr);
+//        sort.selectionSort(arr);
+//        sort.insertionSort(arr);
+//        sort.shellSort(arr);
+//        sort.mergeSort(arr, 0, arr.length - 1);
+//        sort.quickSort(arr, 0, arr.length - 1);
+//        sort.heapSort(arr);
+//        sort.bucketSort(arr);
+        sort.radixSort(arr, sort.maxbit(arr, arr.length));
+        for (int i : arr) {
+            System.out.print(String.valueOf(i) + " ");
         }
 
 
-
-
     }
-
 
 
 }

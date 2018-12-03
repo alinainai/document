@@ -1,4 +1,4 @@
-package avltree;
+package datastructure.avltree;
 
 public class AVLTest {
 

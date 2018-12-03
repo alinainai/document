@@ -1,4 +1,4 @@
-package bstree;
+package datastructure.bstree;
 
 public class BinarySearchTree {
 
