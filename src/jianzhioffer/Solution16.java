@@ -122,7 +122,7 @@ public class Solution16 {
 //        ListNode node6=new ListNode(23);
 //        ListNode node7=new ListNode(28);
 
-        ListNode node1=ListNodeUtil.createListNode(new int[]{3,13,21,33,19,23,28});
+        ListNode node1= BeanUtil.createListNode(new int[]{3,13,21,33,19,23,28});
 
 
         ListNode node8=new ListNode(42);

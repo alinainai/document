@@ -7,7 +7,7 @@ public class AVLTest {
 
     public static void main(String[] args) {
         int i;
-        AVLTree<Integer> tree = new AVLTree<Integer>();
+        AVLTree<Integer> tree = new AVLTree<>();
 
         System.out.printf("== 依次添加: ");
         for (i = 0; i < arr.length; i++) {
