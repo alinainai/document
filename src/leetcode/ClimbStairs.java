@@ -1,4 +1,4 @@
-package counter;
+package leetcode;
 
 /**
  * 已知一个楼梯有n个台阶，每次可以选择迈上一个或者两个台阶，求走完一共有多少种不同的走法

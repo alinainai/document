@@ -1,4 +1,4 @@
-package counter;
+package leetcode;
 
 /**
  * 汉诺塔问题

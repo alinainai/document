@@ -37,21 +37,11 @@ public class Solution04 {
         int[] pre={1,2,4,7,3,5,6,8};
         int[] in={4,7,2,1,5,3,8,6};
         TreeNode tree=new Solution04().reConstructBinaryTree(pre,in);
-        new Solution04().print(tree,tree.val,0);
+        BeanUtil.print(tree,tree.val,0);
 
     }
 
-    private void print(TreeNode tree, int key, int direction) {
-        if(tree != null) {
-            if(direction==0)    // tree是根节点
-                System.out.printf("%2d is root\n", tree.val, key);
-            else                // tree是分支节点
-                System.out.printf("%2d is %2d's %6s child\n", tree.val, key, direction==1?"right" : "left");
 
-            print(tree.left, tree.val, -1);
-            print(tree.right,tree.val,  1);
-        }
-    }
 
 
 }

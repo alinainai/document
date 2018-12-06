@@ -1,5 +1,8 @@
 package jianzhioffer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BeanUtil {
 
 
@@ -24,41 +27,59 @@ public class BeanUtil {
 
     }
 
-    static  TreeNode createTree(int[] arr){
+    /**
+     * 按数组顺序升成完全二叉树
+     * @param arr
+     * @return
+     */
+    static  TreeNode createCompleteBinaryTree(int[] arr){
 
-        if(arr.length<=0)
-            return null;
+        if(arr.length==1)
+            return new TreeNode(arr[0]);
+        List<TreeNode> nodeList = new ArrayList<>();
+        for(int i=0;i<arr.length;i++)
+            nodeList.add(new TreeNode(arr[i]));
 
-        TreeNode root=null,node=null;
+        for(int i=1;i<=arr.length/2;i++) {
+            if(2*i-1<=arr.length-1)
+                nodeList.get(i-1).left = nodeList.get(2*i-1);
+            if(2*i<=arr.length-1)
+                nodeList.get(i-1).right = nodeList.get(2*i);
+        }
+        return nodeList.get(0);
 
-        if(arr.length==1){
-            root=new TreeNode(arr[0]);
-            return root;
+    }
+
+    /**
+     * 按数组顺序升成二叉排序树
+     * @param arr
+     * @return
+     */
+    static  TreeNode createBinarySearchTree(int[] arr){
+
+
+        return null;
+
+    }
+
+    static void print(TreeNode tree, int key, int direction) {
+        if(tree != null) {
+            if(direction==0)    // tree是根节点
+                System.out.printf("%2d is root\n", tree.val, key);
+            else                // tree是分支节点
+                System.out.printf("%2d is %2d's %6s child\n", tree.val, key, direction==1?"right" : "left");
+
+            print(tree.left, tree.val, -1);
+            print(tree.right,tree.val,  1);
+        }
+    }
+
+    static void printArr(ArrayList<Integer> arr) {
+
+        if(arr!=null&&arr.size()>0){
+            for (Integer anArr : arr) System.out.printf("%d ", anArr);
         }
 
-
-
-        int len=0;
-        while (len<=(arr.length-1)/2){
-
-            if(root==null){
-                root=new TreeNode(arr[len]);
-                if(2*len+1<arr.length){
-                    root.left=new TreeNode(arr[2*len+1]);
-                }
-                if(2*len+2<arr.length){
-                    root.right=new TreeNode(arr[2*len+1]);
-                }
-
-            }else{
-
-            }
-
-
-            len++;
-        }
-
-        return root;
     }
 
 

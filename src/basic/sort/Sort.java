@@ -1,4 +1,4 @@
-package sort;
+package basic.sort;
 
 
 /**
@@ -342,14 +342,14 @@ public class Sort {
         int[] arr = {5, 7, 3, 11, 8, 42, 23, 11, 60};
         Sort sort = new Sort();
 
-//        sort.bubbleSort(arr);
-//        sort.selectionSort(arr);
-//        sort.insertionSort(arr);
-//        sort.shellSort(arr);
-//        sort.mergeSort(arr, 0, arr.length - 1);
-//        sort.quickSort(arr, 0, arr.length - 1);
-//        sort.heapSort(arr);
-//        sort.bucketSort(arr);
+//        basic.sort.bubbleSort(arr);
+//        basic.sort.selectionSort(arr);
+//        basic.sort.insertionSort(arr);
+//        basic.sort.shellSort(arr);
+//        basic.sort.mergeSort(arr, 0, arr.length - 1);
+//        basic.sort.quickSort(arr, 0, arr.length - 1);
+//        basic.sort.heapSort(arr);
+//        basic.sort.bucketSort(arr);
         sort.radixSort(arr, sort.maxbit(arr, arr.length));
         for (int i : arr) {
             System.out.print(String.valueOf(i) + " ");
