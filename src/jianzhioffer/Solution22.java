@@ -52,8 +52,8 @@ public class Solution22 {
 
         int[] a={1,5,7,11,43,12,45,32,23,9,21};
         TreeNode tree= BeanUtil.createCompleteBinaryTree(a);
-        BeanUtil.print(tree,tree.val,0);
-        BeanUtil.printArr(new Solution22().PrintFromTopToBottom(tree));
+        BeanUtil.printTreeStructure(tree,tree.val,0);
+        BeanUtil.print(new Solution22().PrintFromTopToBottom(tree));
 
     }
 

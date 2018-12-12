@@ -37,7 +37,7 @@ public class Solution04 {
         int[] pre={1,2,4,7,3,5,6,8};
         int[] in={4,7,2,1,5,3,8,6};
         TreeNode tree=new Solution04().reConstructBinaryTree(pre,in);
-        BeanUtil.print(tree,tree.val,0);
+        BeanUtil.printTreeStructure(tree,tree.val,0);
 
     }
 
