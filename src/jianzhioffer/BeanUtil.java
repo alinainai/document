@@ -127,6 +127,16 @@ public class BeanUtil {
 
     }
 
+    /**
+     * 打印 boolean
+     * @param a
+     */
+    static void print(boolean a) {
+
+        System.out.println("结果："+a);
+
+    }
+
 
 
 }

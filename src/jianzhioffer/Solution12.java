@@ -7,6 +7,31 @@ package jianzhioffer;
 
 public class Solution12 {
 
+    /**
+     * 二分幂
+     * @param a
+     * @param n
+     * @return
+     */
+    long pow(int a,int n)//求a的n次幂
+    {
+        if (n==0)
+            return 1;
+        if (n==1)
+            return a;
+        long  ans=pow(a,n/2);//从函数的功能区理解递归
+        ans*=ans;
+        if (n%2==1)
+            ans*=a;
+        return ans;
+    }
+
+    /**
+     * 快速幂
+     * @param base
+     * @param exponent
+     * @return
+     */
 
     public double Power(double base, int exponent) {
         double res = 1, curr = base;
@@ -49,7 +74,7 @@ public class Solution12 {
     public static void main(String[] args) {
 
         Solution12 solu = new Solution12();
-        System.out.println(String.valueOf(solu.Power(3, 4)));
+        System.out.println(String.valueOf(solu.pow(3, 4)));
 
     }
 
