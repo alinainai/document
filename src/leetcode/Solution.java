@@ -13,7 +13,7 @@ class Solution {
      * return: The sum of a and b
      */
     public static int aplusb(int a, int b) {
-        // 主要利用异或运算来完成 
+        // 主要利用异或运算来完成
         // 异或运算有一个别名叫做：不进位加法
         // 那么a ^ b就是a和b相加之后，该进位的地方不进位的结果
         // 然后下面考虑哪些地方要进位，自然是a和b里都是1的地方

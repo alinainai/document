@@ -18,17 +18,17 @@ public class Solution01 {
         //共有多少列
         int colCount = array[0].length;
         int row = 0;
-        int line = colCount - 1;
+        int col = colCount - 1;
         //先从第一行最大值比较，
         // 如果比目标值小就增行，
         // 如果比目标值大就减列；
-        while (row < rowCount && line >= 0) {
-            if (array[row][line] == target)
+        while (row < rowCount && col >= 0) {
+            if (array[row][col] == target)
                 return true;
-            else if (array[row][line] < target)
+            else if (array[row][col] < target)
                 row++;
             else
-                line--;
+                col--;
         }
         return false;
 
@@ -36,9 +36,9 @@ public class Solution01 {
 
     public static void main(String[] args) {
 
-        int[][] arr={{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}};
+        int[][] arr={{1,2,8,9},{2,4,9,12},{4,7,10,13},{6,8,11,15}};
 
-        System.out.print( new Solution01().find(5,arr));
+        System.out.print( new Solution01().find(4,arr));
 
     }
 

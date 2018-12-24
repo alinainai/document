@@ -101,22 +101,22 @@ public class Sort {
      */
     void merge(int a[], int low, int mid, int high) {
         int i = low, j = mid + 1;
-        int m = mid, n = high;
         int k = 0;
 
         int[] temp = new int[high - low + 1];
 
-        while (i <= m && j <= n) {
+        //noinspection Duplicates
+        while (i <= mid && j <= high) {
             if (a[i] <= a[j])
                 temp[k++] = a[i++];
             else
                 temp[k++] = a[j++];
         }
 
-        while (i <= m)
+        while (i <= mid)
             temp[k++] = a[i++];
 
-        while (j <= n)
+        while (j <= high)
             temp[k++] = a[j++];
 
         for (i = 0; i < k; i++)
@@ -145,6 +145,52 @@ public class Sort {
         }
 
     }
+
+    /**
+     *  另一种mergSort排序
+     *
+     * @param arr //
+     */
+    public  void mergeSort(int []arr){
+        int []temp = new int[arr.length];//在排序前，先建好一个长度等于原数组长度的临时数组，避免递归中频繁开辟空间
+        mergeSort(arr,0,arr.length-1,temp);
+    }
+    private  void mergeSort(int[] arr,int left,int right,int []temp){
+        if(left<right){
+            int mid = (left+right)/2;
+            mergeSort(arr,left,mid,temp);//左边归并排序，使得左子序列有序
+            mergeSort(arr,mid+1,right,temp);//右边归并排序，使得右子序列有序
+            merge(arr,left,mid,right,temp);//将两个有序子数组合并操作
+        }
+    }
+    private  void merge(int[] arr,int left,int mid,int right,int[] temp){
+
+        int i = left,j = mid+1,t = 0;
+
+        //noinspection Duplicates
+        while (i<=mid && j<=right){
+            if(arr[i]<=arr[j]){
+                temp[t++] = arr[i++];
+            }else {
+                temp[t++] = arr[j++];
+            }
+        }
+        while(i<=mid){
+            temp[t++] = arr[i++];
+        }
+        while(j<=right){
+            temp[t++] = arr[j++];
+        }
+        t = 0;
+        while(left <= right){
+            arr[left++] = temp[t++];
+        }
+    }
+
+
+
+
+
 
     /**
      * 快速排序
@@ -347,10 +393,11 @@ public class Sort {
 //        basic.sort.insertionSort(arr);
 //        basic.sort.shellSort(arr);
 //        basic.sort.mergeSort(arr, 0, arr.length - 1);
+        sort.mergeSort(arr);
 //        basic.sort.quickSort(arr, 0, arr.length - 1);
 //        basic.sort.heapSort(arr);
 //        basic.sort.bucketSort(arr);
-        sort.radixSort(arr, sort.maxbit(arr, arr.length));
+//        sort.radixSort(arr, sort.maxbit(arr, arr.length));
         for (int i : arr) {
             System.out.print(String.valueOf(i) + " ");
         }

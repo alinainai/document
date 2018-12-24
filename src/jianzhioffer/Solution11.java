@@ -9,12 +9,12 @@ public class Solution11 {
 //    public int NumberOf1(int n) {
 //
 //        int count = 0;
-//        int flag = 1;
-//        while (flag != 0) {
-//            if ((n & flag) != 0) {
+//        int inValid = 1;
+//        while (inValid != 0) {
+//            if ((n & inValid) != 0) {
 //                count++;
 //            }
-//            flag = flag << 1;
+//            inValid = inValid << 1;
 //        }
 //        return count;
 //

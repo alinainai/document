@@ -98,6 +98,16 @@ public class BeanUtil {
     }
 
     /**
+     * 打印换行
+     *
+     */
+    static void printReturn() {
+
+        System.out.println();
+
+    }
+
+    /**
      * 打印int
      * @param a
      */
