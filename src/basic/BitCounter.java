@@ -5,29 +5,38 @@ public class BitCounter {
 
     public static void main(String[] args) {
 
-        int a = -1, b = -2;
 
-        //交换a、b的值
-        a = a ^ b;
-        b = a ^ b;
-        a = a ^ b;
+        int a=-5;
+        System.out.println(a/2);
+        System.out.println(Integer.toBinaryString(-1));
+        System.out.println(Integer.toBinaryString(a));
+        System.out.println(Integer.toBinaryString(a>>1));
 
-        System.out.println(a);
-        System.out.println(b);
-        //获取1的个数
-        System.out.println(new BitCounter().getNum1BinaryBit(-1));
 
-        //获取相反数
-        System.out.println(~a + 1);
 
-        //判断是否是奇数
-        System.out.println(new BitCounter().isOdd(4));
-
-        //判断是否是2的幂
-        System.out.println(new BitCounter().powerOf2(128));
-
-        //判断是否是4的幂
-        System.out.println(new BitCounter().powerOf4(16));
+//        int a = -1, b = -2;
+//
+//        //交换a、b的值
+//        a = a ^ b;
+//        b = a ^ b;
+//        a = a ^ b;
+//
+//        System.out.println(a);
+//        System.out.println(b);
+//        //获取1的个数
+//        System.out.println(new BitCounter().getNum1BinaryBit(-1));
+//
+//        //获取相反数
+//        System.out.println(~a + 1);
+//
+//        //判断是否是奇数
+//        System.out.println(new BitCounter().isOdd(4));
+//
+//        //判断是否是2的幂
+//        System.out.println(new BitCounter().powerOf2(128));
+//
+//        //判断是否是4的幂
+//        System.out.println(new BitCounter().powerOf4(16));
     }
 
     /**

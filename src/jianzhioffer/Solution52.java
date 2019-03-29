@@ -12,7 +12,6 @@ public class Solution52 {
 
     public boolean match(char[] str, char[] pattern) {
 
-
         if (null == str || null == pattern)
             return false;
         return matchCore(str, 0, pattern, 0);
@@ -28,7 +27,8 @@ public class Solution52 {
         if (indexOfPattern < pattern.length - 1 && pattern[indexOfPattern + 1] == '*') {//下一个是*
             if (str.length != indexOfStr && (str[indexOfStr] == pattern[indexOfPattern] || pattern[indexOfPattern] == '.')) //匹配
                 return matchCore(str, indexOfStr, pattern, indexOfPattern + 2)
-                        || matchCore(str, indexOfStr + 1, pattern, indexOfPattern);
+                        || matchCore(str, indexOfStr + 1, pattern, indexOfPattern)
+                        || matchCore(str, indexOfStr + 1, pattern, indexOfPattern+2);
             else//当前不匹配
                 return matchCore(str, indexOfStr, pattern, indexOfPattern + 2);
         }

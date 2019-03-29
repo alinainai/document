@@ -11,42 +11,24 @@ import java.util.List;
  */
 public class Solution46 {
 
-
-
-
     public int LastRemaining_Solution(int n, int m) {
 
-        List<Integer> res= new LinkedList<>();
-
-
-        for (int i=0;i<n;n++){
-            res.add(i);
+        if (n < 1 || m < 1) {
+            return -1;
         }
-        int num=0;
-        int size=res.size();
-        while (res.size()>1){
-
-            for (int i=0;i<m;i++){
-                num++;
-            }
-
-            if(num>size){
-               num=(num-size+1)%m;
-               res.remove(num);
-               size=res.size();
-            }else{
-                res.remove(num);
-            }
-
+        int last = 0;
+        for (int i = 2; i <= n; ++i) {
+            last = (last + m) % i;
         }
-        return res.get(0);
+        // 因为实际编号为(1~n)
+        return last;
 
     }
 
 
     public static void main(String[] args) {
 
-        BeanUtil.print(new Solution46().LastRemaining_Solution(98,6));
+        BeanUtil.print(new Solution46().LastRemaining_Solution(98, 6));
 
     }
 
