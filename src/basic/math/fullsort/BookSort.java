@@ -1,4 +1,4 @@
-package basic.fullsort;
+package basic.math.fullsort;
 
 public class BookSort {
 

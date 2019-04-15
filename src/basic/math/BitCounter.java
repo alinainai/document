@@ -1,4 +1,4 @@
-package basic;
+package basic.math;
 
 public class BitCounter {
 
@@ -6,12 +6,11 @@ public class BitCounter {
     public static void main(String[] args) {
 
 
-        int a=-5;
-        System.out.println(a/2);
+        int a = -5;
+        System.out.println(a / 2);
         System.out.println(Integer.toBinaryString(-1));
         System.out.println(Integer.toBinaryString(a));
-        System.out.println(Integer.toBinaryString(a>>1));
-
+        System.out.println(Integer.toBinaryString(a >> 1));
 
 
 //        int a = -1, b = -2;
@@ -78,12 +77,13 @@ public class BitCounter {
 
     /**
      * 是不是4的幂
+     *
      * @param n
      * @return
      */
     boolean powerOf4(int n) {
         if ((n & (n - 1)) == 0) {
-            return (n & 0x55555555)!=0;
+            return (n & 0x55555555) != 0;
         }
         return false;
     }

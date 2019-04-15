@@ -1,12 +1,8 @@
-package basic;
+package basic.feature4java8;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -41,9 +37,6 @@ public class StreamLearn {
 
 
         System.out.println(list.toString());
-
-
-
 
 
     }

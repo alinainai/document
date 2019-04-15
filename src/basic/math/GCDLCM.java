@@ -1,4 +1,4 @@
-package basic.gcdandlcn;
+package basic.math;
 
 import java.util.Scanner;
 

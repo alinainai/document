@@ -1,4 +1,4 @@
-package basic.fullsort;
+package basic.math.fullsort;
 
 /**
  * java全排列 问题
