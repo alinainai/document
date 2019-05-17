@@ -50,15 +50,7 @@ public class NumberTest {
         System.out.println("formatNumber2 输出Double.MIN_VALUE" + "：" + formatNumber2(Double.MIN_VALUE)); //2的-1074次方
         System.out.println("formatNumber2 输出 12345.67890" + "：" + formatNumber2(num1));
 
-        System.out.println(str);
 
-        System.out.println("四则运算");
-        double a=179.807d;
-        double b=2.283d;
-        double c=a+b;
-        double d=add(a,b);
-        System.out.println("double 输出 179.807d + 2.283dd=" + "：" + c);
-        System.out.println("double 输出 add(a,b)" + "：" + d);
 
     }
 
@@ -86,34 +78,5 @@ public class NumberTest {
         return df.format(number);
     }
 
-    public static double add(double d1, double d2) {        // 进行加法计算
-        BigDecimal b1 = new BigDecimal(d1);
-        BigDecimal b2 = new BigDecimal(d2);
-        return b1.add(b2).doubleValue();
-    }
-
-    public static double sub(double d1, double d2) {        // 进行减法计算
-        BigDecimal b1 = new BigDecimal(d1);
-        BigDecimal b2 = new BigDecimal(d2);
-        return b1.subtract(b2).doubleValue();
-    }
-
-    public static double mul(double d1, double d2) {        // 进行乘法计算
-        BigDecimal b1 = new BigDecimal(d1);
-        BigDecimal b2 = new BigDecimal(d2);
-        return b1.multiply(b2).doubleValue();
-    }
-
-    public static double div(double d1, double d2, int len) {        // 进行乘法计算
-        BigDecimal b1 = new BigDecimal(d1);
-        BigDecimal b2 = new BigDecimal(d2);
-        return b1.divide(b2, len, BigDecimal.ROUND_HALF_UP).doubleValue();
-    }
-
-    public static double round(double d, int len) {    // 进行四舍五入
-        BigDecimal b1 = new BigDecimal(d);
-        BigDecimal b2 = new BigDecimal(1);
-        return b1.divide(b2, len, BigDecimal.ROUND_HALF_UP).doubleValue();
-    }
 
 }
