@@ -1,0 +1,332 @@
+## 1. Flutter 异常概述
+
+Flutter 异常具体可分为以下几类：
+
+#### 1.1 Dart 异常
+
+同步异常和异步异常：
+
+- 同步异常可以通过 try-catch 机制捕获。
+- 异步异常则需要采用 Future 提供的 catchError 语句捕获。
+
+```Dart
+//使用try-catch捕获同步异常
+try {
+  throw StateError('This is a Dart exception');
+}catch(e) {
+  print(e);
+}
+```
+
+```Dart
+//使用catchError捕获异步异常
+Future.delayed(Duration(seconds: 1))
+    .then((e) => throw StateError('This is a Dart exception in Future.'))
+    .catchError((e)=>print(e));
+```
+
+**注意以下代码无法捕获异步异常**
+
+```Dart
+//以下代码无法捕获异步异常
+try {
+  Future.delayed(Duration(seconds: 1))
+      .then((e) => throw StateError('This is a Dart exception in Future'))
+}catch(e) {
+  print("This line will never be executed");
+}
+```
+
+#### 1.2 runZoned 捕获异常
+
+Zone表示一个代码执行的环境范围，其概念类似沙盒，不同沙盒之间是互相隔离的，通过 runZoned 函数会基于当前 Zone Fork 一个新的沙盒环境。
+
+如果想要处理沙盒中代码执行出现的异常，可以使用沙盒提供的onError回调函数来拦截那些在代码执行过程中未捕获的异常。
+
+```Dart
+//同步抛出异常
+runZoned(() {
+  throw StateError('This is a Dart exception.');
+}, onError: (dynamic e, StackTrace stack) {
+  print('Sync error caught by zone');
+});
+```
+
+```Dart
+//异步抛出异常
+runZoned(() {
+  Future.delayed(Duration(seconds: 1))
+      .then((e) => throw StateError('This is a Dart exception in Future.'));
+}, onError: (dynamic e, StackTrace stack) {
+  print('Async error aught by zone');
+});
+```
+
+我们可以把 main 函数中的 runApp 语句也放置在 Zone 中，当代码运行异常时对异常信息进行统一处理。
+
+```Dart
+runZoned<Future<Null>>(() async {
+  runApp(MyApp());
+}, onError: (error, stackTrace) async {
+  //异常处理
+});
+```
+#### 1.3 Framework 异常
+
+一般是 Widget 在 build 时抛出的 https://github.com/flutter/flutter/blob/master/packages/flutter/lib/src/widgets/framework.dart#L4579 。
+
+其中默认的 ErrorWidget 就是开发时报错的红屏页面，它也支持被重写。
+
+下面看下 Framework 异常时系统处理的源码。
+
+**framework.dart / ComponentElement 的 performRebuild() 方法**
+
+```Dart
+void performRebuild() {
+    ...
+    Widget built;
+    try {
+      built = build();
+      ...
+    } catch (e, stack) {
+      built = ErrorWidget.builder(
+        _debugReportException(
+          ErrorDescription('building $this'),
+          e, stack,
+          ...
+        ),
+      );
+    } finally {
+      ...
+    }
+    try {
+      _child = updateChild(_child, built, slot);
+    } catch (e, stack) {
+      built = ErrorWidget.builder(
+        _debugReportException(
+          ErrorDescription('building $this'),
+          e, stack,
+          ...
+          },
+        ),
+      );
+      _child = updateChild(null, built, slot);
+    }
+}
+```
+performRebuild 在 widget 重绘时调用，是 UI 渲染流程的必经之路，包括 State 生命周期，可以看到其内部对 build 方法和 updateChild 更新方法都做了 try-catch 处理。
+
+ErrorWidget.builder 返回的 widget 将作为错误信息，展示在前台，默认也就是我们看到的红底黄字的错误页。
+
+\_debugReportException 方法内部会将错误封装成一个 \_debugReportException 对象返回，并调用 FlutterError 对象的静态函数 onError ，默认是将错误信息、堆栈等信息打印在控制台。
+
+**framework.dart 的 \_debugReportException() 方法**
+
+```Dart
+FlutterErrorDetails _debugReportException(
+  DiagnosticsNode context,
+  dynamic exception,
+  StackTrace stack, {
+  InformationCollector informationCollector,
+}) {
+  final FlutterErrorDetails details = FlutterErrorDetails(
+    exception: exception,
+    stack: stack,
+    library: 'widgets library',
+    context: context,
+    informationCollector: informationCollector,
+  );
+  FlutterError.reportError(details);
+  return details;
+}
+
+# FlutterError
+static FlutterExceptionHandler onError = dumpErrorToConsole;
+
+static void reportError(FlutterErrorDetails details) {
+...
+if (onError != null)
+  onError(details);
+}
+```
+
+#### 1.4 Engine 异常
+
+- Android：libflutter.so 发生错误。
+- iOS：Flutter.framework 发生错误。
+
+这部分的错误我们直接交给平台侧崩溃收集的 SDK 来处理，比如 firebase crashlytics、bugly 等。
+
+
+## 2.测试源码
+
+我们运行时要采用 release 包，整体代码如下：
+
+```Dart
+
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_learn_app/src/advanced/error_catch_widget.dart';
+
+import 'common/global.dart';
+
+Future<Null> main() async {
+  //要在 release 模式下运行，debug 版本下不能回调。Flutter 的一个bug https://github.com/flutter/flutter/issues/47447
+  FlutterError.onError = (FlutterErrorDetails details) {
+    print('ui exception');
+    if (isInDebugMode) {
+      FlutterError.dumpErrorToConsole(details);
+    } else {
+      //这里把异常抛给 runZoned() 统一处理
+      Zone.current.handleUncaughtError(details.exception, details.stack);
+    }
+  };
+  
+  runZoned<Future<Null>>(() async {
+    runApp(MyApp());
+  }, onError: (error, stackTrace) async {
+    //异常处理
+    await _reportError(error, stackTrace);
+  });
+}
+
+Future<Null> _reportError(Object error, StackTrace stackTrace) async {
+  if (isInDebugMode) {
+    print("_reportError debug :error = ${error.toString()} stackTrace = ${stackTrace.toString()}");
+    return;
+  }
+  //异常集中在这个地方处理
+  print('_reportError release : error = ${error.toString()}');
+}
+
+bool get isInDebugMode {
+  bool inDebugMode = false;
+  assert(inDebugMode = true);
+  return inDebugMode;
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      routes: {
+        Global.ROUTER_ERROR_CATCH: (context) => ErrorCatchScreen(),
+      },
+      home: MyHomePage(title: 'Error Catch'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key key, this.title}) : super(key: key);
+  final String title;
+
+  @override
+  _MyHomePageState createState() {
+    return _MyHomePageState();
+  }
+}
+
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+  @override
+  Widget build(BuildContext context) {
+    print('main build');
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _generateFlatButtonClick("同步异常 try-catch 捕获", () {
+            try {
+              throw StateError('This is a Dart exception');
+            } catch (e) {
+              print("同步异常 try - catch = ${e.toString()}");
+            }
+          }),
+          _generateFlatButtonClick("异步异常 catchError 捕获", () {
+            Future.delayed(Duration(seconds: 1))
+                .then((e) =>
+                    throw StateError('This is a Dart exception in Future.'))
+                .catchError((e) => print("异步异常 catchError = ${e.toString()}"));
+          }),
+          _generateFlatButtonClick("异步异常 try-catch 捕获", () {
+            try {
+              Future.delayed(Duration(seconds: 1)).then((e) =>
+                  throw StateError('This is a Dart exception in Future'));
+            } catch (e) {
+              print("异步异常 try-catch 捕获 ${e.toString()}");
+            }
+          }),
+          _generateFlatButtonClick("同步异常全局捕获", () {
+            throw StateError('This is a Dart exception in Future.');
+          }),
+          _generateFlatButtonClick("异步异常全局捕获", () {
+            Future.delayed(Duration(seconds: 1)).then(
+                (e) => throw StateError('This is a Dart exception in Future.'));
+          }),
+          _generateFlatButtonClick("build异常全局捕获",
+              () => Navigator.pushNamed(context, Global.ROUTER_ERROR_CATCH))
+        ],
+      ),
+    );
+  }
+
+  FlatButton _generateFlatButtonClick(String title, Function click) {
+    return FlatButton(
+        color: Colors.green,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+        colorBrightness: Brightness.light,
+        onPressed: click,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[Icon(Icons.add), Text(title)],
+        ));
+  }
+}
+```
+
+界面如图：
+
+<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/127728393-d5919ae9-96a3-4033-b6d2-ca7c13358059.png">
+
+从上向下点击时，各个按钮日志：
+
+```Dart
+I/flutter ( 5186): 1.同步异常 try-catch 捕获------------------------------
+I/flutter ( 5186): 同步异常 try - catch = Bad state: This is a Dart exception
+I/flutter ( 5186): 2.异步异常 catchError 捕获------------------------------
+I/flutter ( 5186): 异步异常 catchError = Bad state: This is a Dart exception in Future.
+I/flutter ( 5186): 3.异步异常 try-catch 捕获------------------------------
+I/flutter ( 5186): _reportError release : error = Bad state: This is a Dart exception in Future
+I/flutter ( 5186): 4.同步异常全局捕获------------------------------
+I/flutter ( 5186): ui exception
+I/flutter ( 5186): _reportError release : error = Bad state: This is a Dart exception in Future.
+I/flutter ( 5186): 5.异步异常全局捕获------------------------------
+I/flutter ( 5186): _reportError release : error = Bad state: This is a Dart exception in Future.
+I/flutter ( 5186): 6.build异常全局捕获------------------------------
+I/flutter ( 5186): ui exception
+I/flutter ( 5186): _reportError release : error = RangeError (length): Invalid value: Not in inclusive range 0..1: 5
+```
+
+**从日志中可以看到：**
+
+1. 同步异常可以采用 try-catch 捕获，当用 try-catch 捕获后不会抛给顶层去处理。
+2. 异步异常可以用 catchError 捕获。try-catch 不能捕获异步异常，会直接抛给顶层 runZone 的异常处理。
+3. 事件点击中的同步异常会触发 FlutterError.onError 方法。
+4. 异步异常触发 runZone 的方法异常。
+5. build异常，异常会触发 FlutterError.onError 方法。
+
+参考：
+- https://cloud.tencent.com/developer/article/1609711
+- https://book.flutterchina.club/chapter2/thread_model_and_error_report.html
