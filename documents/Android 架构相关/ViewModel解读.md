@@ -10,9 +10,8 @@ class LoginViewModel(private val loginRepository: LoginRepository) : ViewModel()
 }
 ```
 ```kotlin
-//创建工厂类实现带参数的 ViewModel
+//通过工厂类实现带参数的 ViewModel
 class LoginViewModelFactory : ViewModelProvider.Factory {
-
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
