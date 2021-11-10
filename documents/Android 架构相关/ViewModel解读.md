@@ -1,8 +1,12 @@
 #### 1.简单使用
 
-ViewModel 是对 View 使用数据的一个容器类，为什么使用官方的 ViewModel 而不是使用自定义（就想 MVP 中的 Presenter）的类去管理数据呢。
+ViewModel 是管理 View 使用数据的并可以监听生命周期容器类。
+
+为什么使用官方的 ViewModel 而不是使用自定义（就想 MVP 中的 Presenter）的类去管理数据呢？
+
 因为 ViewModel 可以很好的和 Activity/Fragment 的生命周期相绑定，在 ViewModel # OnClear() 方法中处理一些解绑的操作。
-ViewModel 在 Activity 横竖屏切换时也会保持同一个。
+
+ViewModel 在 Activity 横竖屏切换时也会保持同一个对象。
 
 官方的生命周期图：
 
