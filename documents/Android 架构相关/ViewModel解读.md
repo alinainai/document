@@ -1,6 +1,15 @@
 #### 1.简单使用
 
-带参数的 ViewModel 类
+ViewModel 是对 View 使用数据的一个容器类，为什么使用官方的 ViewModel 而不是使用自定义（就想 MVP 中的 Presenter）的类去管理数据呢。
+因为 ViewModel 可以很好的和 Activity/Fragment 的生命周期相绑定，在 ViewModel # OnClear() 方法中处理一些解绑的操作。
+ViewModel 在 Activity 横竖屏切换时也会保持同一个。
+
+官方的生命周期图：
+
+<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/141035994-bc844b3e-b496-4872-8443-4b6a79f9b8ee.png">
+
+简单的介绍一下带参数的 ViewModel 类基本使用：
+
 ```kotlin
 //带参数的 ViewModel 类
 class LoginViewModel(private val loginRepository: LoginRepository) : ViewModel() {
@@ -9,8 +18,10 @@ class LoginViewModel(private val loginRepository: LoginRepository) : ViewModel()
     //... ...
 }
 ```
+
+通过工厂类实现带参数的 ViewModel
+
 ```kotlin
-//通过工厂类实现带参数的 ViewModel
 class LoginViewModelFactory : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -25,8 +36,10 @@ class LoginViewModelFactory : ViewModelProvider.Factory {
     }
 }
 ```
+
+在 Activity 中使用
+
 ```kotlin
-//在 Activity 中使用
 class LoginActivity : AppCompatActivity() {
     private lateinit var loginViewModel: LoginViewModel
     //... ...
@@ -38,3 +51,14 @@ class LoginActivity : AppCompatActivity() {
     //... ...
 }
 ```
+#### 2.源码解读
+
+从 LoginActivity 入手
+
+
+
+
+
+
+
+
