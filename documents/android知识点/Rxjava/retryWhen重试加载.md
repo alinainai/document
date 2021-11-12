@@ -1,4 +1,4 @@
-    ```Kotlin
+```Kotlin
     private int currentRetryCount = 0;
     private static final int maxConnectCount = 6;
     private int waitRetryTime = 0;
@@ -37,4 +37,4 @@
                     CLog.e("getRegionConfig", "error=" + throwable);
                 }));
     }
-    ```
+```
