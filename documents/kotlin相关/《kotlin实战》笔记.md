@@ -19,7 +19,7 @@ class Button: Click, Focus {
 ```
 #### Sealed 类的作用
 
-先看一段代码
+先看一段代码不适用 Sealed 类的代码
 
 ```kotlin
 interface Expr
