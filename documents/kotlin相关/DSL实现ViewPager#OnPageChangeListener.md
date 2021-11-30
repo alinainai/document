@@ -41,3 +41,13 @@ inline fun ViewPager.addOnPageChangeListener(func:_OnPageChangeListener.()-> Uni
     addOnPageChangeListener(listener)
 }
 ```
+
+使用
+
+```kotlin
+vp.addOnPageChangeListener {
+    onPageSelected { pos -> }
+    onPageScrolled { position, positionOffset, positionOffsetPixels -> }
+    onPageScrollStateChanged { state -> }
+}
+```
