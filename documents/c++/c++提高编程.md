@@ -123,5 +123,47 @@ Person<string,int>p("孙悟空"，1000);
 printPerson(p);
 ```
 #### 类模板与集成
+```c++
+template<class T>
+class Base{
+    T m;   
+};
+
+//指定父类模板类型
+class Son:public Base<Int>{
+};
+
+//灵活配置
+template<class T1, class T2>
+class Son2:public Base<T2>{
+public:
+    T1 obj;    
+};
+```
+#### 类模板成员函数类外实现
+```c++
+template<class T1, class T2>
+class Person{
+public:
+    Person(T1 name,T2 age)
+    void showPerson();
+    T1 m_Name;
+    T2 m_Age;
+};
+
+template<class T1,class T2>
+Person<T1,T2>::Person(T1 name,T2 age){
+    this->m_Name = name;
+    this->m_Age = age;
+}
+
+template<class T1,class T2>
+Person<T1,T2>::showPerson(){
+    cout<<"姓名："<<this->m_Name <<"年龄："<<this->m_Age<<endl;
+}
+```
+#### 类模板的分文件编写
+
+将声明 .h 和 .cpp 的内容写到一起，后缀名改为 .hpp
 
 
