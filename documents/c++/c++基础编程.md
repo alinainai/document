@@ -137,11 +137,42 @@ swap1(a, b); //值传递不会改变实参
 swap2(&a, &b); //地址传递会改变实参
 
 ```
-结构体
-	
-	
-	
+### 4.结构体
 
+结构体：用户自定义的数据类型
+
+结构体定义
+```c++
+struct student{
+     //成员列表
+     string name;  //姓名
+     int age;      //年龄
+     nt score;    //分数
+}
+```
+结构体数组
+```c++
+struct student arr[3]={
+    {"张三",18,80 },
+    {"李四",19,60 },
+    {"王五",20,70 }
+};
+```
+结构体指针
+```c++
+struct student stu = { "张三",18,100, };	
+struct student * p = &stu;
+p->score = 80; //指针通过 -> 操作符可以访问成员
+```	
+结构体中 const使用场景
+
+```c++
+//加const防止函数体中的误操作
+void printStudent(const student *stu) {
+    //stu->age = 100; //操作失败，因为加了const修饰
+    cout << "姓名：" << stu->name << " 年龄：" << stu->age << " 分数：" << stu->score << endl;
+}
+```
 
 
 
