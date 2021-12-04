@@ -159,7 +159,7 @@ struct 是 c++ 为了兼容 c 保留的。
 使用习惯：一般涉及单独的类采用 struct，如果涉及到继承使用 class。
 
 #### class 关键字的使用
-```C++
+```c++
 class Person {
 public:
     Person() {
@@ -198,12 +198,34 @@ int main() {
 #### 拷贝构造函数调用时机
 
 1.使用一个已经创建完毕的对象来初始化一个新对象
+```c++
+Person man(100); //p对象已经创建完毕
+Person newman(man); //调用拷贝构造函数
+Person newman2 = man; //拷贝构造
+```
 2.值传递的方式给函数参数传值
-3.以值方式返回局部对象
+```c++
+//相当于Person p1 = p;
+void doWork(Person p1) {}
 
+Person p; //无参构造函数
+doWork(p);
+```
+3.以值方式返回局部对象
+```c++
+Person doWork2(){
+    Person p1;
+    cout << (int *)&p1 << endl; //和下面的地址不一致
+    return p1;
+}
+
+Person p = doWork2();//以拷贝构造的形式赋值
+cout << (int *)&p << endl;
+
+```
 深拷贝解决重复释放堆区问题
 
-```C++
+```c++
 class Person {
 public:
     Person() {
@@ -231,7 +253,31 @@ public:
     int* m_height;
 };
 ```
-
+#### 初始化列表，一种初始化属性的语法糖
+```c++
+class Person {
+public:
+    //传统方式初始化
+    //Person(int a, int b, int c) {
+    //	m_A = a;
+    //	m_B = b;
+    //	m_C = c;
+    //}
+    //初始化列表方式初始化
+    Person(int a, int b, int c) :m_A(a), m_B(b), m_C(c) {}
+private:
+    int m_A;
+    int m_B;
+    int m_C;
+};
+```
+#### 类对象作为类成员
+```c++
+class A {}
+class B{
+    A a；
+}
+```
 #### 5.static 关键字
 static 关键字，定义在 class 中表示变量或者方法是类级别的。
 定义在全局变量中表示变量是当前编译单元（该 cpp 文件）私有的，别的文件 link 不到。
