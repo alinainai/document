@@ -1,6 +1,6 @@
 ### 1.模板：c++ 中的泛型编程
 
-#### 函数模板：提高复用性
+#### 1.1 函数模板：提高复用性
 
 例子：交换两个数据类型
 ```c++
@@ -20,7 +20,7 @@ swap<int>(a,b);//显示指定类型
 ```
 typename 可用 class 代替。
 
-#### 普通函数和函数模板的调用规则
+#### 1.2 普通函数和函数模板的调用规则
 1.如果普通函数和函数模板都可以实现，优先调用普通函数
 2.可以通过空模板参数列表来强制调用函数模板
 3.函数模板也可以发生重载
@@ -54,7 +54,7 @@ cahr c2 = 'b';
 //如果函数模板可以产生更好的匹配，优先调用函数模板
 print(c1,c2); //函数模板 
 ```
-#### 函数模板的具体化：解决自定义数据类型的通用化
+#### 1.3 函数模板的具体化：解决自定义数据类型的通用化
 ```c++
 template<class T>
 bool compare(T &a,T &b){
@@ -66,9 +66,8 @@ bool compare(T &a,T &b){
 //如果类不能比较就是没有实现 == 操作符的重载，当然也可以让 Person 类重载运算符 ==
 template<> bool compare(Person &p1,Person &p2)
 ```
-#### 类模板
+#### 1.4 类模板
 
-#### 简单使用
 ```c++
 template<class NameType,class AgeType = int>
 class Person{
@@ -92,7 +91,7 @@ Person <string> p("猪八戒", 999); //类模板中的模板参数列表 可以�
 ```
 类模板的成员函数创建时机：函数调用时才会创建成员函数
 
-#### 类模板做函数参数
+#### 1.5 类模板做函数参数
 1.制定传入类型（整个最常用）
 ```c++
 void printPerson(Person<string,int>&p){
@@ -122,7 +121,7 @@ void printPerson(T &p){
 Person<string,int>p("孙悟空"，1000);
 printPerson(p);
 ```
-#### 类模板与集成
+#### 1.6 类模板与继承
 ```c++
 template<class T>
 class Base{
@@ -140,7 +139,7 @@ public:
     T1 obj;    
 };
 ```
-#### 类模板成员函数类外实现
+#### 1.7 类模板成员函数类外实现
 ```c++
 template<class T1, class T2>
 class Person{
@@ -162,7 +161,7 @@ Person<T1,T2>::showPerson(){
     cout<<"姓名："<<this->m_Name <<"年龄："<<this->m_Age<<endl;
 }
 ```
-#### 类模板的分文件编写
+#### 1.8 类模板的分文件编写
 
 将声明 .h 和 .cpp 的内容写到一起，后缀名改为 .hpp
 
@@ -319,7 +318,7 @@ string username = email.substr(0, pos);
 
 vector数据结构和**数组非常相似**，也称为**单端数组**，不同之处在于数组是静态空间，而vector可以**动态扩展**
 
-#### 动态扩展
+#### 3.1 动态扩展
 
 并不是在原空间之后续接新空间，而是找更大的内存空间，然后将原数据拷贝新空间，释放原空间
 
@@ -348,7 +347,7 @@ v3.assign(v1.begin(), v1.end()); //将[beg, end)区间中的数据拷贝赋值�
 vector<int>v4;
 v4.assign(10, 100);//将n个elem拷贝赋值给本身
 ```
-#### 一些方法
+#### 3.2 一些方法
 ```c++
 v1.empty()//v1是否为空
 v1.capacity()//v1的容量
@@ -357,7 +356,7 @@ v1.capacity()//v1的容量
 v1.resize(5);
 v1.resize(15,10);
 ```
-#### 插入删除
+#### 3.3 插入删除
 ```c++
 vector<int> v1;
 //尾插
