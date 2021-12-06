@@ -166,4 +166,152 @@ Person<T1,T2>::showPerson(){
 
 将声明 .h 和 .cpp 的内容写到一起，后缀名改为 .hpp
 
+### 2.string 类
 
+#### 2.1 string构造函数
+```c++
+string s1; //创建空字符串，调用无参构造函数
+string s2(str); //把c_string转换成了string
+string s3(s2); //调用拷贝构造函数，使用一个string对象初始化另一个string对象
+string s4(10, 'a'); //使用n个字符c初始化 "aaaaaaaaaa"
+```
+#### 2.2 赋值操作
+```c++
+//char* 类型字符串 赋值给当前的字符串：string& operator=(const char* s)
+string str1;
+str1 = "hello world";
+
+//把字符串s赋给当前的字符串：string& operator=(const string &s);
+string str2;
+str2 = str1;
+
+//字符赋值给当前的字符串：string& operator=(char c);
+string str3;
+str3 = 'a';
+
+//把字符串s赋给当前的字符串：string& assign(const char *s);
+string str4;
+str4.assign("hello c++");
+
+//把字符串s的前n个字符赋给当前的字符串：string& assign(const char *s, int n);
+string str5;
+str5.assign("hello c++",5);
+
+//把字符串s赋给当前字符串：string& assign(const string &s);
+string str6;
+str6.assign(str5);
+	
+//用n个字符c赋给当前字符串：string& assign(int n, char c);
+string str7;
+str7.assign(5, 'x');
+```
+#### 2.3 拼接字符
+```c++
+string str1 = "我";
+
+//string& operator+=(const char* str);
+str1 += "爱玩游戏";
+
+//string& operator+=(const char c);
+str1 += ':';
+
+//string& operator+=(const string& str);
+string str2 = "LOL DNF";
+str1 += str2;
+
+string str3 = "I";
+
+//把字符串s连接到当前字符串结尾
+str3.append(" love ");
+
+//把字符串s的前n个字符连接到当前字符串结尾
+str3.append("game abcde", 4);
+
+//同operator+=(const string& str)
+//str3.append(str2);
+
+// 从下标4位置开始 ，截取3个字符，拼接到字符串末尾
+str3.append(str2, 4, 3); 
+```
+#### 2.4 查找和替换
+
+**查找**
+
+find查找是从左往后，rfind从右往左，find找到字符串后返回查找的第一个字符位置，找不到返回-1
+
+查找str第一次出现位置,从pos开始查找:`int find(const string& str, int pos = 0) const;`
+
+查找s第一次出现位置,从pos开始查找:`int find(const char* s, int pos = 0) const;`
+
+从pos位置查找s的前n个字符第一次位置:`int find(const char* s, int pos, int n) const;`
+
+查找字符c第一次出现位置:`int find(const char c, int pos = 0) const;`
+
+```c++
+string str1 = "abcdefgde";
+int pos = str1.find("de");//如果没有找到返回-1
+```
+
+**反向查找**
+
+查找str最后一次位置,从pos开始查找:`int rfind(const string& str, int pos = npos) const;`
+
+查找s最后一次出现位置,从pos开始查找:`int rfind(const char* s, int pos = npos) const;` 
+
+从pos查找s的前n个字符最后一次位置:`int rfind(const char* s, int pos, int n) const;`
+
+查找字符c最后一次出现位置:`int rfind(const char c, int pos = 0) const;`
+
+**替换**
+
+replace在替换时，要指定从哪个位置起，多少个字符，替换成什么样的字符串
+
+替换从pos开始n个字符为字符串str:`string& replace(int pos, int n, const string& str);`
+
+替换从pos开始的n个字符为字符串s:`string& replace(int pos, int n,const char* s);`  
+
+```c++
+//替换
+string str1 = "abcdefgde";
+str1.replace(1, 3, "1111");
+```
+#### 2.5 字符串比较
+按字符的ASCII码进行对比
+```c++
+int compare(const string &s) const;
+int compare(const char *s) const;
+
+string s1 = "hello";
+string s2 = "aello";
+int ret = s1.compare(s2);
+//ret == 0 s1 等于 s2
+//ret > 0 s1 大于 s2
+```
+#### 2.6 字符存取
+```c++
+char& operator[](int n);//通过[]方式取字符
+char& at(int n);//通过at方法获取字符
+string str = "hello world";
+str[0] = 'x';
+cout << str[0] << endl;
+```
+#### 2.7 string插入和删除
+```c++
+string& insert(int pos, const char* s);//插入字符串
+string& insert(int pos, const string& str);//插入字符串
+string& insert(int pos, int n, char c);//在指定位置插入n个字符c
+string& erase(int pos, int n = npos);//删除从Pos开始的n个字符 
+
+string str = "hello";
+str.insert(1, "111");
+str.erase(1, 3);  //从1号位置开始3个字符
+```
+#### 2.8 子串
+```c++
+string str = "abcdefg";
+string subStr = str.substr(1, 3);
+
+string email = "hello@sina.com";
+int pos = email.find("@");
+string username = email.substr(0, pos);
+```
