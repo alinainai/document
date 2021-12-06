@@ -315,3 +315,16 @@ string email = "hello@sina.com";
 int pos = email.find("@");
 string username = email.substr(0, pos);
 ```
+### 3.vector容器
+
+vector数据结构和**数组非常相似**，也称为**单端数组**，不同之处在于数组是静态空间，而vector可以**动态扩展**
+
+#### 动态扩展
+
+并不是在原空间之后续接新空间，而是找更大的内存空间，然后将原数据拷贝新空间，释放原空间
+
+<img width="400" alt="vector" src="https://user-images.githubusercontent.com/17560388/144810574-2c70596a-046e-401f-8fbd-c473fa4065f3.jpg">
+
+vector容器的迭代器是支持随机访问的迭代器
+
+#### vector初始化
