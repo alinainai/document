@@ -122,17 +122,20 @@ Person<string,int>p("孙悟空"，1000);
 printPerson(p);
 ```
 #### 1.6 类模板与继承
+
 ```c++
 template<class T>
 class Base{
     T m;   
 };
-
-//指定父类模板类型
+```
+1.当子类继承的父类是一个类模板时，子类在声明的时候，要指定出父类中T的类型。如果不指定，编译器无法给子类分配内存。
+```c++
 class Son:public Base<Int>{
 };
-
-//灵活配置
+```
+2.如果想灵活指定出父类中T的类型，子类也需变为类模板
+```c++
 template<class T1, class T2>
 class Son2:public Base<T2>{
 public:
@@ -374,5 +377,42 @@ v1.erase(v1.begin()); //1000,100,10,20
 v1.erase(v1.begin(), v1.end());
 v1.clear();
 ```
+#### 3.4 数据存取
+```c++
+ v1[0]//返回索引idx所指的数据
+ v1.at(0)//返回索引idx所指的数据
+ v1.front()//返回容器中第一个数据元素
+ v1.back()//返回容器中最后一个数据元素
+```
+#### 3.5 互换容器
+swap(vec)：将vec与本身的元素互换
+```c++
+vector<int>v1;
+for (int i = 0; i < 10; i++){
+    v1.push_back(i);
+}
+vector<int>v2;
+for (int i = 10; i > 0; i--){
+    v2.push_back(i);
+}
+//互换容器
+v1.swap(v2);
+```
+作用：收缩内存
+```c++
+vector<int> v;
+for (int i = 0; i < 100000; i++) {
+    v.push_back(i);
+}
+cout << "v的容量为：" << v.capacity() << endl;
+cout << "v的大小为：" << v.size() << endl;
 
+v.resize(3);
+cout << "v的容量为：" << v.capacity() << endl;
+cout << "v的大小为：" << v.size() << endl;
 
+//收缩内存
+vector<int>(v).swap(v); //匿名对象
+cout << "v的容量为：" << v.capacity() << endl;
+cout << "v的大小为：" << v.size() << endl;
+```
