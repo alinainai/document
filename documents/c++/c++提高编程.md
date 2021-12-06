@@ -327,4 +327,53 @@ vector数据结构和**数组非常相似**，也称为**单端数组**，不同
 
 vector容器的迭代器是支持随机访问的迭代器
 
-#### vector初始化
+#### vector初始化和赋值操作
+```c++
+vector<int> v1; //无参构造
+for (int i = 0; i < 10; i++){//添加数据
+    v1.push_back(i);
+}
+vector<int> v2(v1.begin(), v1.end());//将v[begin(), end())区间中的元素拷贝给本身
+vector<int> v3(10, 100);//构造函数将n个elem拷贝给本身
+vector<int> v4(v3);//拷贝构造函数
+```
+
+赋值
+
+```c++
+vector<int>v2;
+v2 = v1;
+vector<int>v3;
+v3.assign(v1.begin(), v1.end()); //将[beg, end)区间中的数据拷贝赋值给本身
+vector<int>v4;
+v4.assign(10, 100);//将n个elem拷贝赋值给本身
+```
+#### 一些方法
+```c++
+v1.empty()//v1是否为空
+v1.capacity()//v1的容量
+
+//resize 重新指定大小 ，若指定的更大，默认用0填充新位置，可以利用重载版本替换默认填充
+v1.resize(5);
+v1.resize(15,10);
+```
+#### 插入删除
+```c++
+vector<int> v1;
+//尾插
+v1.push_back(10);
+v1.push_back(20);
+v1.push_back(30); // 10,20,30
+//尾删
+v1.pop_back(); // 10,20
+//插入
+v1.insert(v1.begin(), 100);//迭代器指向位置pos插入元素100 : 100,10,20
+v1.insert(v1.begin(), 2, 1000);//迭代器指向位置pos插入2个元素1000 : 1000,1000,100,10,20
+//删除
+v1.erase(v1.begin()); //1000,100,10,20
+//清空
+v1.erase(v1.begin(), v1.end());
+v1.clear();
+```
+
+
