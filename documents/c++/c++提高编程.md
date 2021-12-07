@@ -385,7 +385,9 @@ v1.clear();
  v1.back()//返回容器中最后一个数据元素
 ```
 #### 3.5 互换容器
+
 swap(vec)：将vec与本身的元素互换
+
 ```c++
 vector<int>v1;
 for (int i = 0; i < 10; i++){
@@ -398,7 +400,9 @@ for (int i = 10; i > 0; i--){
 //互换容器
 v1.swap(v2);
 ```
-作用：收缩内存
+
+实际作用：收缩内存
+
 ```c++
 vector<int> v;
 for (int i = 0; i < 100000; i++) {
@@ -407,7 +411,7 @@ for (int i = 0; i < 100000; i++) {
 cout << "v的容量为：" << v.capacity() << endl;
 cout << "v的大小为：" << v.size() << endl;
 
-v.resize(3);
+v.resize(3); //size改变，容量不会变
 cout << "v的容量为：" << v.capacity() << endl;
 cout << "v的大小为：" << v.size() << endl;
 
@@ -416,3 +420,30 @@ vector<int>(v).swap(v); //匿名对象
 cout << "v的容量为：" << v.capacity() << endl;
 cout << "v的大小为：" << v.size() << endl;
 ```
+#### 3.6 预留空间
+
+reserve(int len) : 容器预留len个元素长度，预留位置不初始化，元素不可访问。
+
+作用：减少vector在动态扩展容量时的扩展次数
+
+```c++
+vector<int> v;
+
+//预留空间
+v.reserve(100000);
+
+int num = 0;//num 表示 v 扩容的次数
+int* p = NULL;
+for (int i = 0; i < 100000; i++) {
+    v.push_back(i);
+    if (p != &v[0]) {
+        p = &v[0];
+        num++;
+    }
+}
+
+cout << "num:" << num << endl;
+```
+### 4.deque容器
+#### 4.1 基本概念
+双端数组，可以对头端进行插入删除操作
