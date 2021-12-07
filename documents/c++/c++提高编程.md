@@ -447,3 +447,21 @@ cout << "num:" << num << endl;
 ### 4.deque容器
 #### 4.1 基本概念
 双端数组，可以对头端进行插入删除操作
+
+特点
+
+
+- deque对头部的插入删除速度回比vector快
+- vector访问元素时的速度会比deque快
+- deque的迭代器也是支持随机访问的
+
+<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/145016358-698404ca-9561-4a75-b2b3-6460a00746c7.jpg">
+
+内部工作原理
+
+<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/145016466-bff8900f-3657-4cc7-baa4-6002ee5dc57a.jpg">
+
+#### 4.2构造函数
+
+
+
