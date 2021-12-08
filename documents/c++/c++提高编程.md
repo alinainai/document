@@ -537,19 +537,116 @@ d.pop_back();//200,100,10
 d.pop_front();//100,10
 ```
 
-指定位置操作：
+插入
+```c++
+deque<int> d;
+d.push_back(10);
+d.push_back(20);
+d.push_front(100);
+d.push_front(200); //200,100,10,20
 
-* `insert(pos,elem);`         //在pos位置插入一个elem元素的拷贝，返回新数据的位置。
+//在pos位置插入一个elem元素的拷贝，返回新数据的位置。
+d.insert(d.begin(), 1000);//1000,200,100,10,20
+	
+//在pos位置插入n个elem数据，无返回值
+d.insert(d.begin(), 2,10000);//10000,10000,1000,200,100,10,20
+	
+deque<int>d2;
+d2.push_back(1);
+d2.push_back(2);
+d2.push_back(3);
 
-* `insert(pos,n,elem);`     //在pos位置插入n个elem数据，无返回值。
+//在pos位置插入[beg,end)区间的数据，无返回值。
+d.insert(d.begin(), d2.begin(), d2.end());
+```
+删除
+```c++
+deque<int> d;
+d.push_back(10);
+d.push_back(20);
+d.push_front(100);
+d.push_front(200);
 
-* `insert(pos,beg,end);`    //在pos位置插入[beg,end)区间的数据，无返回值。
+//删除pos位置的数据，返回下一个数据的位置。
+d.erase(d.begin());
+//删除[beg,end)区间的数据，返回下一个数据的位置。
+d.erase(d.begin(), d.end());
+//清空容器的所有数据
+d.clear();
+```
+#### 4.5 数据存取
+- `at(int idx); ` //返回索引idx所指的数据
+- `operator[]; `  //返回索引idx所指的数据
+- `front(); `     //返回容器中第一个数据元素
+- `back();`       //返回容器中最后一个数据元素
 
-* `clear();`                           //清空容器的所有数据
 
-* `erase(beg,end);`             //删除[beg,end)区间的数据，返回下一个数据的位置。
+```c++
+deque<int> d;
+d.push_back(10);
+d.push_back(20);
+d.push_front(100);
+d.push_front(200);
+d[0]//200
+d.at(1)//100
+d.front()//200
+d.back()//20
+```
+#### 4.6 排序
+```c++
+#include <deque>
+#include <algorithm>
 
-* `erase(pos);`                    //删除pos位置的数据，返回下一个数据的位置。
+deque<int> d;
+d.push_back(10);
+d.push_back(20);
+d.push_front(100);
+d.push_front(200); //200,100,10,20
 
+sort(d.begin(), d.end());//
+```
+#### 5.stack容器
+
+特点：先进后出
+
+<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/145154254-e6b4bee9-f6b8-42e5-8ab5-079ca79c1fb5.jpg">
+
+构造函数：
+
+* `stack<T> stk;`             //stack采用模板类实现， stack对象的默认构造形式
+* `stack(const stack &stk);`  //拷贝构造函数
+
+赋值操作：
+
+* `stack& operator=(const stack &stk);` //重载等号操作符
+
+数据存取：
+
+* `push(elem);`  //向栈顶添加元素
+* `pop();`       //从栈顶移除第一个元素
+* `top(); `      //返回栈顶元素
+
+大小操作：
+
+* `empty();`    //判断堆栈是否为空
+* `size(); `    //返回栈的大小
+
+```c++
+//创建栈容器 栈容器必须符合先进后出
+stack<int> s;
+
+//向栈中添加元素，叫做 压栈 入栈
+s.push(10);
+s.push(20);
+s.push(30);
+
+while (!s.empty()) {
+    //输出栈顶元素
+    cout << "栈顶元素为： " << s.top() << endl;
+    //弹出栈顶元素
+    s.pop();
+}
+cout << "栈的大小为：" << s.size() << endl;
+```
 
 
