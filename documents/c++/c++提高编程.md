@@ -459,9 +459,97 @@ cout << "num:" << num << endl;
 
 内部工作原理
 
+eque内部有个**中控器**，维护每段缓冲区中的内容，缓冲区中存放真实数据
+
+中控器维护的是每个缓冲区的地址，使得使用deque时像一片连续的内存空间
+
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/145016466-bff8900f-3657-4cc7-baa4-6002ee5dc57a.jpg">
 
-#### 4.2构造函数
+#### 4.2构造函数和赋值
+
+```c++
+//1.无参构造函数
+deque<int> d1; 
+
+//2.构造函数将[beg, end)区间中的元素拷贝给本身
+deque<int> d2(d1.begin(),d1.end());
+
+//3.构造函数将n个elem拷贝给本身。
+deque<int>d3(10,100);
+
+//4.拷贝构造函数
+deque<int>d4 = d3;
+```
+
+赋值操作
+
+```c++
+deque<int> d1;
+for (int i = 0; i < 10; i++){
+    d1.push_back(i);
+}
+
+//1.重载等号操作符 deque& operator=(const deque &deq)		       
+deque<int>d2;
+d2 = d1;  
+
+//2.将[beg, end)区间中的数据拷贝赋值给本身	
+deque<int>d3;
+d3.assign(d1.begin(), d1.end()); 
+
+//3.将n个elem拷贝赋值给本身。
+deque<int>d4;
+d4.assign(10, 100);
+```
+#### 4.3大小操作
+```c++
+deque<int> d1;
+for (int i = 0; i < 10; i++){
+    d1.push_back(i);
+}
+
+//判断容器是否为空
+d1.empty()
+
+//d1的大小为
+d1.size()
+
+//重新指定大小
+d1.resize(15, 1);
+d1.resize(5);
+```
+#### 4.4 插入和删除
+```c++
+deque<int> d;
+	
+//尾插:容器尾部添加一个数据
+d.push_back(10);//10
+d.push_back(20);//10,20
+
+//头插:容器头部插入一个数据
+d.push_front(100);//100,10,20
+d.push_front(200);//200,100,10,20
+
+//尾删:删除容器最后一个数据
+d.pop_back();//200,100,10
+
+//头删:删除容器第一个数据
+d.pop_front();//100,10
+```
+
+指定位置操作：
+
+* `insert(pos,elem);`         //在pos位置插入一个elem元素的拷贝，返回新数据的位置。
+
+* `insert(pos,n,elem);`     //在pos位置插入n个elem数据，无返回值。
+
+* `insert(pos,beg,end);`    //在pos位置插入[beg,end)区间的数据，无返回值。
+
+* `clear();`                           //清空容器的所有数据
+
+* `erase(beg,end);`             //删除[beg,end)区间的数据，返回下一个数据的位置。
+
+* `erase(pos);`                    //删除pos位置的数据，返回下一个数据的位置。
 
 
 
