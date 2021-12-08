@@ -652,7 +652,7 @@ cout << "栈的大小为：" << s.size() << endl;
 
 特点：先进先出
 
-![clip_image002-1547606475892](https://user-images.githubusercontent.com/17560388/145155422-0ba4b4ce-154d-4e34-9be9-216a7dd9ddb6.jpg)
+<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/145155422-0ba4b4ce-154d-4e34-9be9-216a7dd9ddb6.jpg">
 
 构造函数：
 
