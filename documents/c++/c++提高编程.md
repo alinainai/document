@@ -676,7 +676,7 @@ cout << "栈的大小为：" << s.size() << endl;
 - `size(); `    //返回栈的大小
 
 
-```C++
+```c++
 #include <queue>
 //创建队列
 queue<Person> q;
@@ -725,8 +725,9 @@ cout << "队列大小为：" << q.size() << endl;
 
 注意：和vector相比，插入操作和删除操作都不会造成原有list迭代器的失效
 
-构造函数
+#### 7.2 构造函数和赋值
 
+```c++
 //1.默认构造形式
 list<int>L1;
 	
@@ -738,5 +739,41 @@ list<int>L3(L2);
 	
 //4.将n个elem拷贝给本身
 list<int>L4(10, 1000);
+```
+赋值和交换
+```c++
+//list& operator=(const list &lst) 重载等号操作符
+list<int>L2;
+L2 = L1;
 
+//assign(beg, end) 将[beg, end)区间中的数据拷贝
+list<int>L3;
+L3.assign(L2.begin(), L2.end());
 
+list<int>L4;
+L4.assign(10, 100);
+```
+
+交换 swap(lst); 将lst与本身的元素互换
+
+```c++
+L1.swap(L2);
+```
+
+#### 7.3 list 大小操作
+
+size();//返回容器中元素的个数 
+
+empty(); //判断容器是否为空
+
+resize(num);//重新指定容器的长度为num，若容器变长，则以默认值填充新位置。如果容器变短，则末尾超出容器长度的元素被删除。
+
+resize(num, elem);//重新指定容器的长度为num，若容器变长，则以elem值填充新位置。如果容器变短，则末尾超出容器长度的元素被删除。
+```c++
+list<int>L1;
+L1.size();
+L1.empty();
+L1.resize(10);
+L1.resize(2);
+```
+#### 7.4 插入和删除
