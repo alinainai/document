@@ -777,3 +777,76 @@ L1.resize(10);
 L1.resize(2);
 ```
 #### 7.4 插入和删除
+
+- push_back(elem);//在容器尾部加入一个元素
+- pop_back();//删除容器中最后一个元素
+- push_front(elem);//在容器开头插入一个元素
+- pop_front();//从容器开头移除第一个元素
+
+- insert(pos,elem);//在pos位置插elem元素的拷贝，返回新数据的位置。
+- insert(pos,n,elem);//在pos位置插入n个elem数据，无返回值。
+- insert(pos,beg,end);//在pos位置插入[beg,end)区间的数据，无返回值。
+```c++
+list<int>::iterator it = L.begin();
+L.insert(++it, 1000);
+```
+- clear();//移除容器的所有数据
+- erase(beg,end);//删除[beg,end)区间的数据，返回下一个数据的位置。
+- erase(pos);//删除pos位置的数据，返回下一个数据的位置。
+```c++
+it = L.begin();
+L.erase(++it);
+```	
+- remove(elem);//删除容器中所有与elem值匹配的元素。
+#### 7.5 数据存取
+
+front();//返回第一个元素
+back();//返回最后一个元素
+
+```c++
+list<int>::iterator it = L1.begin();
+//it = it + 1;//错误，不可以跳跃访问，即使是+1
+//cout << L1.at(0) << endl;//错误 不支持at访问数据
+//cout << L1[0] << endl; //错误  不支持[]方式访问数据
+```
+
+#### 7.6 反转和排序
+```c++
+L.reverse();   //反转链表
+L.sort(); //默认的排序规则 从小到大
+//成员函数
+bool myCompare(int val1 , int val2){
+	return val1 > val2;
+}
+L.sort(myCompare); //指定规则，从大到小 # sort(成员函数)
+```
+### 8. set/ multiset 容器
+
+所有元素都会在插入时自动被排序
+**set和multiset区别**：
+* set不允许容器中有重复的元素
+* multiset允许容器中有重复的元素
+
+#### 8.1 set构造和赋值
+```c++
+set<int> s1;//默认构造
+set<int>s2(s1);//拷贝构造
+//重载等号操作符
+set<int>s3;
+s3 = s2;
+```
+#### 8.2 set大小和交换
+```c++
+size();//返回容器中元素的数目
+empty();//判断容器是否为空      
+swap(st);//交换两个集合容器
+```
+
+#### 8.3 set容器进行插入数据和删除数据
+insert(elem);//在容器中插入元素。
+clear();//清除所有元素
+erase(pos);//删除pos迭代器所指的元素，返回下一个元素的迭代器。
+erase(beg, end);//删除区间[beg,end)的所有元素 ，返回下一个元素的迭代器。
+erase(elem);//删除容器中值为elem的元素。
+#### 8.4 set查找和统计
+
