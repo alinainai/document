@@ -843,10 +843,15 @@ swap(st);//交换两个集合容器
 ```
 
 #### 8.3 set容器进行插入数据和删除数据
-insert(elem);//在容器中插入元素。
-clear();//清除所有元素
-erase(pos);//删除pos迭代器所指的元素，返回下一个元素的迭代器。
-erase(beg, end);//删除区间[beg,end)的所有元素 ，返回下一个元素的迭代器。
-erase(elem);//删除容器中值为elem的元素。
-#### 8.4 set查找和统计
+- insert(elem);//在容器中插入元素。
+- clear();//清除所有元素
+- erase(pos);//删除pos迭代器所指的元素，返回下一个元素的迭代器。
+- erase(beg, end);//删除区间[beg,end)的所有元素 ，返回下一个元素的迭代器。
+- erase(elem);//删除容器中值为elem的元素。
 
+#### 8.4 set查找和统计
+- find(key);//查找key是否存在,若存在，返回该键的元素的迭代器；若不存在，返回set.end(); 注意：返回的是迭代器
+- count(key);//统计key的元素个。对于set，结果为0或者1
+#### 8.5 set和multiset区别
+- set不可以插入重复数据，而multiset可以
+- set插入数据的同时会返回插入结果，表示插入是否成功，multiset不会检测数据，因此可以插入重复数据
