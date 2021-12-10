@@ -907,6 +907,7 @@ for (set<int, MyCompare>::iterator it = s2.begin(); it != s2.end(); it++) {
 #### 8.7 set存放自定义数据类型
 
 插入自定义数据时，数据类型要么实现 operator< 操作符()，要么在 set 中传入可以排序的仿函数。
+
 ```c++
 class Person{
 public:
@@ -938,3 +939,47 @@ s.insert(p2);
 s.insert(p3);
 s.insert(p4);
 ```
+### 9. map/ multimap容器
+#### 9.1 map基本概念
+
+* map中所有元素都是pair
+* pair中第一个元素为key（键值），起到索引作用，第二个元素为value（实值）
+* 所有元素都会根据元素的键值自动排序
+
+map/multimap属于**关联式容器**，底层结构是用二叉树实现。
+
+map和multimap**区别**：
+
+- map不允许容器中有重复key值元素
+- multimap允许容器中有重复key值元素
+
+#### 9.2 map方法
+- `map<T1, T2> mp;`     //map默认构造函数: 
+- `map(const map &mp);` //拷贝构造函数
+- `map& operator=(const map &mp);`    //重载等号操作符
+- `size();`        //返回容器中元素的数目
+- `empty();`       //判断容器是否为空
+- `swap(st);`      //交换两个集合容器
+- `insert(elem);`  //在容器中插入元素。
+- `clear();`       //清除所有元素
+- `erase(pos);`    //删除pos迭代器所指的元素，返回下一个元素的迭代器。
+- `erase(beg, end);`    //删除区间[beg,end)的所有元素 ，返回下一个元素的迭代器。
+- `erase(key);`    //删除容器中值为key的元素。
+
+```c++
+//第一种插入方式
+m.insert(pair<int, int>(1, 10));
+//第二种插入方式
+m.insert(make_pair(2, 20));
+//第三种插入方式
+m.insert(map<int, int>::value_type(3, 30));
+//第四种插入方式
+m[4] = 40; 
+```
+
+- `find(key);`     //查找key是否存在,若存在，返回该键的元素的迭代器；若不存在，返回set.end();
+- `count(key);`    //统计key的元素个数
+
+map<int, int>::iterator pos = m.find(3);
+if (pos != m.end()){}
+int num = m.count(3);
