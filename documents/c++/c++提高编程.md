@@ -822,10 +822,14 @@ L.sort(myCompare); //指定规则，从大到小 # sort(成员函数)
 ```
 ### 8. set/ multiset 容器
 
-所有元素都会在插入时自动被排序
+**所有元素都会在插入时自动被排序**
+
+set/multiset属于**关联式容器**，底层结构是用**二叉树**实现。
+
 **set和multiset区别**：
-* set不允许容器中有重复的元素
-* multiset允许容器中有重复的元素
+
+- set不允许容器中有重复的元素
+- multiset允许容器中有重复的元素
 
 #### 8.1 set构造和赋值
 ```c++
@@ -855,3 +859,48 @@ swap(st);//交换两个集合容器
 #### 8.5 set和multiset区别
 - set不可以插入重复数据，而multiset可以
 - set插入数据的同时会返回插入结果，表示插入是否成功，multiset不会检测数据，因此可以插入重复数据
+
+set#insert 方法会返回对组类型的数据，如下：
+
+`pair<type, type> p ( value1, value2 );`
+
+`pair<type, type> p = make_pair( value1, value2 );`
+
+**作用：**成对出现的数据，利用对组可以返回两个数据
+```c++
+set<int> s;
+pair<set<int>::iterator, bool>  ret = s.insert(10);
+iret.second; //判断是否插入成功
+ret = s.insert(10);
+ret.second;
+```
+ #### 8.6 set容器排序
+ 
+ set容器会默认对插入的数据进行排序，排序规则为从小到大
+ ```c++
+set<int> s1;
+s1.insert(10);
+s1.insert(40);
+s1.insert(20);
+//默认从小到大
+for (set<int>::iterator it = s1.begin(); it != s1.end(); it++) {
+    cout << *it << " ";
+}
+```	
+可以通过仿函数指定排序规则
+```c++
+class MyCompare {
+public:
+    bool operator()(int v1, int v2) {
+        return v1 > v2;
+    }
+};
+set<int,MyCompare> s2;
+s2.insert(10);
+s2.insert(40);
+s2.insert(20);
+
+for (set<int, MyCompare>::iterator it = s2.begin(); it != s2.end(); it++) {
+    cout << *it << " ";
+}
+```
