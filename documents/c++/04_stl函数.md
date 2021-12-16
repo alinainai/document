@@ -161,21 +161,21 @@ reverse(v.begin(), v.end());
 ```
 #### 2.4 常用拷贝和替换算法
 
-**copy：**容器内指定范围的元素拷贝到另一容器中，目标容器记得提前开辟空间
+**copy：** 容器内指定范围的元素拷贝到另一容器中，目标容器记得提前开辟空间
 ```c++
 copy(iterator beg, iterator end, iterator dest);
 ```
-**replace：**将容器内指定范围的旧元素修改为新元素
+**replace：** 将容器内指定范围的旧元素修改为新元素
 ```c++
 // 将区间内旧元素 替换成 新元素
 replace(iterator beg, iterator end, oldvalue, newvalue); 
 ```
 
-**replace_if：**容器内指定范围满足条件的元素替换为新元素
+**replace_if：** 容器内指定范围满足条件的元素替换为新元素
 ```c++
 replace_if(iterator beg, iterator end, _pred, newvalue);
 ```
-**swap：**互换两个容器的元素 
+**swap：** 互换两个容器的元素 
 
 ```c++
 swap(container c1, container c2);
@@ -195,7 +195,7 @@ for (int i = 0; i <= 100; i++) {
 int total = accumulate(v.begin(), v.end(), 0);
 ```
 
-**fill：**向容器中添加元素
+**fill：** 向容器中添加元素
 
 ```c++
 vector<int> v;
@@ -207,7 +207,7 @@ fill(v.begin(), v.end(), 100);
 
 **两个集合必须是有序序列**
 
-**set_intersection：**求两个容器的交集
+**set_intersection：** 求两个容器的交集
 
 ```c++
 vector<int> v1;
@@ -223,7 +223,7 @@ auto itEnd = set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), vTarge
 for_each(vTarget.begin(), itEnd, print_int);
 ```
 
-**set_union：**求两个容器的并集
+**set_union：** 求两个容器的并集
 ```c++
 vector<int> v1;
 vector<int> v2;
@@ -239,7 +239,7 @@ auto itEnd = set_union(v1.begin(), v1.end(), v2.begin(), v2.end(), vTarget.begin
 for_each(vTarget.begin(), itEnd, print_int);
 cout << endl;
 ```
-**set_difference：**求两个容器的差集
+**set_difference：** 求两个容器的差集
 ```c++
 vector<int> v1;
 vector<int> v2;
@@ -260,7 +260,13 @@ itEnd = set_difference(v2.begin(), v2.end(), v1.begin(), v1.end(), vTarget.begin
 for_each(vTarget.begin(), itEnd, print_int);
 cout << endl;
 ```
-
+日志
+```c++
+v1与v2的差集为： 
+0 1 2 3 4 
+v2与v1的差集为： 
+10 11 12 13 14
+```
 
 
 
