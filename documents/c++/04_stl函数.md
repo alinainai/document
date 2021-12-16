@@ -56,6 +56,7 @@ sort(v.begin(), v.end(), greater<int>());
 #### 2.1 for_each 和 transform
 
 `for_each(iterator beg, iterator end, _func);`
+
 `transform(iterator beg1, iterator end1, iterator beg2, _func);` //搬运容器到另一个容器中
 
 ```c++
