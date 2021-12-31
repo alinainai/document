@@ -1,18 +1,22 @@
-对RxJava的使用还一直停留在与Retrofit一起使用做网络请求，其他的还都不了解，所以花了不少时间整理把RxJava的操作符基本都敲了一遍，熟悉了一遍。参考了一些博客，现在把我整理的分享出来给大家。
+
 官方文档
 [http://reactivex.io/documentation/observable.html](http://reactivex.io/documentation/observable.html)
 
 #### RxJava2 gradle集成：
 
 >implementation "io.reactivex.rxjava2:rxjava:2.2.8"
+>
 >implementation 'io.reactivex.rxjava2:rxkotlin:2.0.0'
 
 注意这里为了方便使用到了[RxKotlin](https://github.com/ReactiveX/RxKotlin)，一个非常不错的RxJava Kotlin扩展库，也是reactivex出品。
 
 
-#### 生产者
-###### Flowable
+### 1.生产者
+
+#### 1.1 Flowable 操作符
+
 Flowable: 响应式流和背压
+
 ```kotlin
 Flowable.create(FlowableOnSubscribe<String> { emitter ->
     emitter.onNext("test1");
@@ -21,30 +25,36 @@ Flowable.create(FlowableOnSubscribe<String> { emitter ->
 }, BackpressureStrategy.BUFFER)
 .subscribe { t -> debug(t) }
 ```
-###### Observable
+#### 1.2 Observable 操作符
+
 Observable: 无背压 (被观察者)，最常用的一个
 
 官方的建议：
 - 使用Observable - 不超过1000个元素、随着时间流逝基本不会出现OOM - GUI事件或者1000Hz频率以下的元素 - 平台不支持Java Steam(Java8新特性) - Observable开销比Flowable低
-
 - 使用Flowable - 超过10k+的元素(可以知道上限) - 读取硬盘操作（可以指定读取多少行） - 通过JDBC读取数据库 - 网络（流）IO操作
-###### Single 
+#### 1.3 Single 操作符
+
 Single: 只有一个元素或者错误的流
 
 Single只包含两个事件，一个是正常处理成功的onSuccess，另一个是处理失败的onError，它只发送一次消息
+
 ```kotlin
  Single.create(SingleOnSubscribe<Int> { emitter -> emitter.onSuccess(1) })
        .subscribe({ t -> debug("onSuccess+$t") }, { e -> debug("onError+$e") })
 ```
-###### Completable                 
+#### 1.4 Completable 操作符 
+
 Completable: 没有任何元素，只有一个完成和错误信号的流
 
 Completable只有onComplete和onError两个事件
+
 ```kotlin
  Completable.create { e -> e.onComplete() }
             .subscribe( { debug("onComplete") },{ e -> debug("onError+$e") })
 ```
-###### Maybe
+
+#### 1.5 Maybe 操作符 
+
 Maybe: 没有任何元素或者只有一个元素或者只有一个错误的流
 
 如果你有一个需求是可能发送一个数据或者不会发送任何数据，这时候你就需要Maybe，它类似于Single和Completable的混合体。
@@ -52,6 +62,7 @@ Maybe: 没有任何元素或者只有一个元素或者只有一个错误的流
 Maybe可能会调用以下其中一种情况（也就是所谓的Maybe）：
 - onSuccess或者onError
 - onComplete或者onError
+
 ```kotlin
 Maybe.create(MaybeOnSubscribe<Int> {e->
 //    e.onSuccess(1)
@@ -66,26 +77,22 @@ Maybe.create(MaybeOnSubscribe<Int> {e->
 举一个简单点的例子，如果被观察者快速发送消息，但是观察者处理消息的很缓慢，如果没有特定的流（Flow）控制，就会导致大量消息积压占用系统资源，最终导致十分缓慢。
 
 
-#### 调度器
+#### 2.调度器
+
  * Schedulers.computation() 用于计算任务，如事件循环或和回调处理，默认线程数等于处理器的数量
+ * Schedulers.from(executor)使用指定的Executor作为调度器
+ * Schedulers.single()      该调度器的线程池只能同时执行一个线程
+ * Schedulers.io()          用于IO密集型任务，如异步阻塞IO操作，这个调度器的线程池会根据需要增长；默认是一个CachedThreadScheduler，很像一个有线程缓存的新线程调度器
+ * Schedulers.newThread()   为每个任务创建一个新线程
+ * Schedulers.trampoline()  当其它排队的任务完成后，在当前线程排队开始执行。
+ * AndroidSchedulers.mainThread() 主线程，UI线程，可以用于更新界面
 
- * Schedulers.from(executor)            使用指定的Executor作为调度器
+### 3.创建事件序列
 
- * Schedulers.single()                  该调度器的线程池只能同时执行一个线程
+#### 3.1 create() 操作符
 
- * Schedulers.io()
-  用于IO密集型任务，如异步阻塞IO操作，这个调度器的线程池会根据需要增长；
-  默认是一个CachedThreadScheduler，很像一个有线程缓存的新线程调度器
-
- * Schedulers.newThread()              为每个任务创建一个新线程
-
- * Schedulers.trampoline()              当其它排队的任务完成后，在当前线程排队开始执行。
- 
- * AndroidSchedulers.mainThread()          主线程，UI线程，可以用于更新界面
-
-#### 创建事件序列
-###### create() 
 `create() `方法创建
+
 ```kotlin
 Observable.create<String> { emitter ->
         with(emitter) {
@@ -96,8 +103,10 @@ Observable.create<String> { emitter ->
     }
 }
 ```
-###### interval()
+#### 3.2 interval() 操作符
+
 使用`interval()`方法创建事件序列间隔发射
+
 ```kotlin
  // 每隔1秒发送一个整数 从0开始 (默认执行无数次 使用`take(int)`方法限制执行次数)
 Observable.interval(0, 1, TimeUnit.SECONDS)
@@ -115,11 +124,14 @@ Observable.interval(0, 1, TimeUnit.SECONDS)
         `scheduler`参数指定数据发射和等待时所在的线程。
      */
 ```
-###### defer()
+#### 3.3 defer() 操作符
+
 使用`defer()`方法创建事件序列
 
   `defer`直到有观察者订阅时才创建Observable，并且为每个观察者创建一个刷新的Observable
+  
   `defer`操作符会一直等待直到有观察者订阅它，然后它使用Observable工厂方法生成一个Observable
+  
 ```kotlin
  val observable =
         Observable.defer { Observable.just(System.currentTimeMillis()) }
@@ -127,8 +139,11 @@ Observable.interval(0, 1, TimeUnit.SECONDS)
     print("   ")
     observable.subscribe { print("$it ") }   // 459  订阅时才产生了Observable
 ```
-使用`empty()` `never()` `error()`方法创建事件序列
+
+#### 3.4 使用`empty()` `never()` `error()`方法创建事件序列
+
 `empty()`：创建一个不发射任何数据但是正常终止的Observable
+
 ```kotlin
 // empty()只会调用onComplete方法
 Observable.empty<String>().subscribeBy(
@@ -137,8 +152,9 @@ Observable.empty<String>().subscribeBy(
     onError = { print(" error ") }
 )
 ```
-###### never()
+
  `never()`：创建一个不发射数据也不终止的Observable
+ 
 ```kotlin
 // 什么也不会做
 Observable.never<String>().subscribeBy(
@@ -147,8 +163,9 @@ Observable.never<String>().subscribeBy(
     onError = { print(" error ") }
 )
 ```
-###### error(Throwable exception)
+
 `error(Throwable exception)`：创建一个不发射数据以一个错误终止的
+
 ```kotlin
 // `error()`只会调用onError方法
 Observable.error<Exception>(Exception()).subscribeBy(
@@ -157,8 +174,10 @@ Observable.error<Exception>(Exception()).subscribeBy(
     onError = { print(" error ") }
 )
 ```
-###### repeat()
+#### 3.5 repeat() 操作符
+
 使用`repeat()`方法创建事件序列，表示指定的序列要发射多少次
+
 ```kotlin
     // 重载方法
     // public final Observable<T> repeat(long times)
@@ -175,20 +194,25 @@ Observable.error<Exception>(Exception()).subscribeBy(
     }.subscribe { print("$it  ") }
     
 ```
-###### timer()
+
+#### 3.6 timer() 操作符
+
 使用`timer()`方法创建事件序列
 
 创建一个在给定的时间段之后返回一个特殊值的Observable，它在延迟一段给定的时间后发射一个简单的数字0
+
 ```kotlin
 // 在500毫秒之后输出一个数字0
 val disposable = Observable.timer(500, TimeUnit.MILLISECONDS).subscribe { print("$it  ") }
 if (!disposable.isDisposed) disposable.dispose()
 ```
-###### from() 
-使用`from()`方法快捷创建事件队列
-  `fromArray`
-  `fromCallable`
-  `fromIterable`  (和上面的fromArray类似 只不过这里是集合罢了)
+#### 3.7 from 操作符系列
+
+- `from()`
+- `fromArray`
+- `fromCallable`
+- `fromIterable` 
+
 ```kotlin
 val names = arrayOf("ha", "hello", "yummy", "kt", "world", "green", "delicious")
 // 注意：使用`*`展开数组
@@ -197,20 +221,18 @@ val disposable = Observable.fromArray(*names).subscribe { print("$it  ") }
 // 可以在Callable内执行一段代码 并返回一个值给观察者
 Observable.fromCallable { 1 }.subscribe { print("$it  ") }
 ```
-###### just()
-使用`just()`方法快捷创建事件队列
+#### 3.8 just() 操作符
 
-将传入的参数依次发送出来(最少1个 最多10个)
+使用`just()`方法快捷创建事件队列，将传入的参数依次发送出来(最少1个 最多10个)
+
 ```kotlin
     val disposable = Observable.just("Just1", "Just2", "Just3")
-        // 将会依次调用：
-        // onNext("Just1");
-        // onNext("Just2");
-        // onNext("Just3");
-        // onCompleted();
         .subscribe { print("$it  ") }
+// 将会依次调用：onNext("Just1"); onNext("Just2"); onNext("Just3");  onCompleted();
 ```
-###### range()
+
+###### 3.9 range() 操作符
+
 使用`range()`方法快捷创建事件队列，创建一个序列
 
 ```kotlin
@@ -225,8 +247,9 @@ Observable.fromCallable { 1 }.subscribe { print("$it  ") }
         onComplete = { print("range complete !!! ") }
 )
 ```
-#### 变换操作
-###### mapCast()
+### 4. 变换操作
+
+#### 4.1 mapCast() 操作符
  `map`操作符对原始Observable发射的每一项数据应用一个你选择的函数，然后返回一个发射这些结果的Observable。默认不在任何特定的调度器上执行
  `cast`操作符将原始Observable发射的每一项数据都强制转换为一个指定的类型`（多态）`，然后再发射数据，它是map的一个特殊版本
 ```kotlin
@@ -234,18 +257,19 @@ Observable.range(1, 5).map { item -> "to String $item" }.subscribe { print("$it 
 // 将`Date`转换为`Any` (如果前面的Class无法转换成第二个Class就会出现ClassCastException)
 Observable.just(Date()).cast(Any::class.java).subscribe { print("$it  ") }
 ```
-###### flatMap()和contactMap()
+#### 4.2 flatMap()、contactMap() 操作符
+
 `map`与`flatMap`的区别(出自朱凯):
-`map`是在一个 item 被发射之后，到达 map 处经过转换变成另一个 item ，然后继续往下走；
-`flapMap`是 item 被发射之后，到达 flatMap 处经过转换变成一个 Observable
-而这个 Observable 并不会直接被发射出去，而是会立即被激活，然后把它发射出的每个 item 都传入流中，再继续走下去。
+- `map`是在一个 item 被发射之后，到达 map 处经过转换变成另一个 item ，然后继续往下走；
+- `flapMap`是 item 被发射之后，到达 flatMap 处经过转换变成一个 Observable，而这个 Observable 并不会直接被发射出去，而是会立即被激活，然后把它发射出的每个 item 都传入流中，再继续走下去。
 
 使用`flatMap()` `contactMap()` 做变换操作
 
 `flatMap`将一个发送事件的上游Observable变换为多个发送事件的Observables，然后将它们发射的事件合并后放进一个单独的Observable里
 `flatMap`不保证顺序  `contactMap()`保证顺序
 
-###### flatMap() 的原理是这样的：
+#### flatMap() 的原理是这样的：
+
 1. 使用传入的事件对象创建一个 Observable 对象；
 2. 并不发送这个 Observable, 而是将它激活，于是它开始发送事件；
 3. 每一个创建出来的 Observable 发送的事件，都被汇入同一个 Observable ，
@@ -270,20 +294,22 @@ arrayListOf(
     onNext = { print("$it  ") }
 )
 ```
-###### flatMapIterable()
+#### flatMapIterable()
 使用`flatMapIterable()`做变换操作，将上流的任意一个元素转换成一个Iterable对象
 ```kotlin
 Observable.range(1, 5)
     .flatMapIterable { integer -> Collections.singletonList("$integer") }
     .subscribe { print("$it  ") }
 ```
-###### buffer()
-使用`buffer()`做变换操作， 用于将整个流进行分组
+#### buffer()
+
+使用`buffer()`做变换操作，用于将整个流进行分组
+
 ```kotlin
 // 生成一个7个整数构成的流，然后使用`buffer`之后，这些整数会被3个作为一组进行输出
 // count 是一个buffer的最大值
 // skip 是指针后移的距离(不定义时就为count)
-// 例如 1 2 3 4 5 buffer(3) 的结果为：[1,2,3] [4,5]      (buffer(3)也就是buffer(3,3))
+// 例如 1 2 3 4 5 buffer(3) 的结果为：[1,2,3] [4,5] (buffer(3)也就是buffer(3,3))
 // 例如 1 2 3 4 5 buffer(3,2) 的结果为：[1,2,3] [3,4,5] [5]
 Observable.range(1, 5).buffer(3)
     .subscribe {
@@ -659,8 +685,9 @@ Observable.range(1, 5).delay(1, TimeUnit.SECONDS).subscribe { print("$it  ") }
 observeOn 指定观察者的线程，每指定一次就会生效一次。
 
 #### RxKotlin扩展库
+
 RxKotlin扩展库的一个简单使用
-也是RxKotlin官方给出的一个例子
+
 更多查看：https://github.com/ReactiveX/RxKotlin/blob/2.x/README.md
 ```kotlin
     val list = listOf("Alpha", "Beta", "Gamma", "Delta", "Epsilon")
@@ -677,15 +704,18 @@ RxKotlin扩展库的一个简单使用
     // Result:
     // [rkExExample]: Epsilon   Done!
 ```
-#### 额外 其他
-##### compose()
+### 额外其他
+
+#### compose() 操作符
+
 `compose`操作符和Transformer结合使用，一方面让代码看起来更加简洁化，另一方面能够提高代码的复用性。
 
 RxJava提倡链式调用，`compose`能够防止链式被打破。
 
-compose操作于整个数据流中，能够从数据流中得到原始的Observable<T>/Flowable<T>...
+compose操作于整个数据流中，能够从数据流中得到原始的 Observable<T>/Flowable<T>...
 
-当创建Observable/Flowable...时，compose操作符会立即执行，而不像其他的操作符需要在onNext()调用后才执行
+当创建 Observable/Flowable... 时，compose操作符会立即执行，而不像其他的操作符需要在 onNext() 调用后才执行
+	
 ```kotlin
     Observable.just(1, 2)
         .compose(transformerInt2String())
@@ -702,16 +732,16 @@ fun transformerInt2String() = ObservableTransformer<Int, String> { upstream -> u
 fun <T> applySchedulers() =
     ObservableTransformer<T, T> { upstream -> upstream.observeOn(Schedulers.io()).subscribeOn(Schedulers.io()) }
 ```
-#### 参考
+### 参考
 
- 给Android开发者的RxJava详解
+给Android开发者的RxJava详解
 https://gank.io/post/560e15be2dca930e00da1083
  
-  RxKotlin
-  https://github.com/ReactiveX/RxKotlin/blob/2.x/README.md
+RxKotlin
+https://github.com/ReactiveX/RxKotlin/blob/2.x/README.md
  
- RxJava系列
-  https://www.jianshu.com/p/823252f110b0
+RxJava系列
+https://www.jianshu.com/p/823252f110b0
  
- RxJava2看这一篇文章就够了
- https://juejin.im/post/5b17560e6fb9a01e2862246f
+RxJava2看这一篇文章就够了
+https://juejin.im/post/5b17560e6fb9a01e2862246f
