@@ -1,35 +1,35 @@
-#### 要点
+### 1. 要点
 
-1.GET 请求不能使用 @Body 注解
+1.1 GET 请求不能使用 @Body 注解
 
-2.baseUrl 网址末尾一定加 "/" 斜杠
+1.2 baseUrl 网址末尾一定加 "/" 斜杠
 
-3.@Body 注解一定要加 .addConverterFactory(GsonConverterFactory.create())
+1.3 @Body 注解一定要加 .addConverterFactory(GsonConverterFactory.create())
 
-#### GET 请求
+### 2. GET 请求
 
-1.请求样式：baseUrl + getUserInfo?id=1234
+2.1 请求样式：baseUrl + getUserInfo?id=1234
 
 ```java
 @GET("api/getUserInfo")
 Call<UserInfo> getUserInfo(@Query("id") String userId);
 ```
 
-2.请求样式是通过 "?" 形式拼接多个参数时就使用 @QueryMap
+2.2 请求样式是通过 "?" 形式拼接多个参数时就使用 @QueryMap
 
 ```java
 @GET("api/getArticalInfo")
 Call<ArticalInfo> getArticalInfo(@QueryMap Map<String, String> params);
 ```
 
-3.要访问的地址由某个参数动态拼接而成时，使用 @Path 注解
+2.3 要访问的地址由某个参数动态拼接而成时，使用 @Path 注解
 
 ```java
 @GET("api/getDynamicInfo/{param}/data")
 Call<ResponseBody> getDynamicInfo(@Path("param")int param);
 ```
 
-4.当要访问的地址不只是动态的变几个参数，而是整个地址都要变化，甚至是基类地址也要变化时，这种动态地址就要用到 @Url 注解
+2.4 当要访问的地址不只是动态的变几个参数，而是整个地址都要变化，甚至是基类地址也要变化时，这种动态地址就要用到 @Url 注解
 
 ```java
 @GET
@@ -39,9 +39,9 @@ String url = "http://mock-api.com/2vKVbXK8.mock/api/getDynamicUrlData"
 getApi.getDynamicUrl(url).enqueue(callback)
 ```
 
-#### 添加 Header 
+### 3. 添加 Header 
 
-1. Headers 注解
+3.1 Headers 注解
 
 ```java
 @Headers("version:1.1")
@@ -49,23 +49,23 @@ getApi.getDynamicUrl(url).enqueue(callback)
 Call<GetBean> getStaticHeadersInfo();
 ```
 
-2. Header 注解
+3.2 Header 注解
 
 ```java
 @GET("api/dynamicHeadersInfo")
 Call<ResponseBody> getDynamicHeaderInfo(@Header("version") String version);
 ```
 
-3. HeaderMap 注解
+3.3 HeaderMap 注解
 
 ```java
 @GET("api/dynamicHeadersInfo")
 Call<ResponseBody> getDynamicHeadersInfo(@HeaderMap Map<String, String> headers);
 ```
 
-#### POST 请求
+### 4. POST 请求
 
-1.参数较少时使用 @Field
+4.1 参数较少时使用 @Field
 
 ```java
 @FormUrlEncoded
@@ -73,7 +73,7 @@ Call<ResponseBody> getDynamicHeadersInfo(@HeaderMap Map<String, String> headers)
 Call<ResponseBody> postFieldFun(@Field("key") String key);
 ```
 
-2.用 @FieldMap 传递多个参数
+4.2 用 @FieldMap 传递多个参数
 
 ```java
 @FormUrlEncoded
@@ -81,15 +81,15 @@ Call<ResponseBody> postFieldFun(@Field("key") String key);
 Call<ResponseBody> postFildMapFun(@FieldMap Map<String, String> params);
 ```
 
-3.用 @Body 注解，直接传入一个对象过去
+4.3 用 @Body 注解，直接传入一个对象过去
 
 ```java
 @POST("api/bodyParam")
 Call<ResponseBody> postBodyFun(@Body PostBodyBean postBodyBean);
 ```
-#### 4.@Part/@PartMap 文件上传
+### 5. @Part/@PartMap 文件上传
 
-单个文件上传
+5.1 单个文件上传
 
 ```java
 @Multipart
@@ -103,7 +103,7 @@ MultipartBody.Part part MultipartBody.Part.createFormData("picture", file.getNam
 Call<ResponseBody> uploadCall = uploadService.uploadOneFile(part);
 ```
 
-使用@PartMap实现多文件上传
+5.2 使用@PartMap实现多文件上传
 
 ```java
 @Multipart
