@@ -535,7 +535,7 @@ Observable.create<Int> { emitter ->
 
 #### 5.13 amb() 操作符
 
-amb() 要传入一个 Observable 集合，但是只会发送最先发送事件的 Observable 中的事件，其余 Observable 将会被丢弃。
+amb()， 它会订阅上游其所操控的所有 Observable 并等待第一个事件的发布。其中有一个 Observable 发布第一个事件之后， amb() 会丢弃所有其他的流，接下来只跟踪第一个发布事件的 Observable。
 
 ```kotlin
 val list = ArrayList<Observable<Long>>()
