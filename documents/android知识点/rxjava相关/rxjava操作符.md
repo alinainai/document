@@ -313,7 +313,7 @@ Observable.range(1, 5)
 ```
 #### 4.5 buffer() 操作符
 
-使用`buffer(count,skip)`做变换操作，用于将整个流进行分组
+使用`buffer(count,skip)`，将事件缓冲至列表中
 
 ```kotlin
 // 生成一个7个整数构成的流，然后使用`buffer`之后，这些整数会被3个作为一组进行输出
