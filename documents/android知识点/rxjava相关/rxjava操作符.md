@@ -352,20 +352,25 @@ Observable.fromIterable(lst)
 
 #### 4.7 scan() 操作符
 
-使用`scan()`做变换操作将数据以一定的逻辑聚合起来
-
-scan操作符对原始Observable发射的第一项数据应用一个函数，然后将那个函数的结果作为自己的第一项数据发射。
-
-它将函数的结果同第二项数据一起填充给这个函数来产生它自己的第二项数据。
-
-它持续进行这个过程来产生剩余的数据序列。这个操作符在某些情况下被叫做`accumulator`
+使用`scan()`做变换操作将数据以一定的逻辑聚合起来，scan() 会接收两个参数:上一次生成的值(也被称为累加器)以及上游 Observable 的当前值。
 
 ```kotlin 
-     val disposable = Observable.just(1, 2, 3, 4, 5)
-        .scan { t1: Int, t2: Int -> t1 + t2 }
-        .subscribe { print("$it  ") }
-    if (!disposable.isDisposed) disposable.dispose()
+Observable.just(10, 14, 12, 13, 14, 16) //progress
+    .scan {total, chunk -> total + chunk }
+    .subscribe { print("$it  ") }
+//10, 24, 36, 49, 63, 79
 ```
+在第一轮迭代中，total 就是来自 progress 的第一个条目;而在第二次迭代中，它变成了上一次 scan() 操作的结果值。
+
+重载方法：可以在 scan 中添加 初始值。如下，我们将初始值设置为1，结果会先把初始值 1 发送。
+
+```kotlin
+Observable.just(10, 14, 12, 13, 14, 16) //progress
+    .scan(1) { total, chunk -> total + chunk }
+    .subscribe { print("$it  ") }
+//1 11 25 37 50 64 80  会先把1（初始值）发送，然后再和 progress 数据项累加。
+```
+
 #### 4.8 window() 操作符
 
 使用`window()`做变换操作将事件分组 参数`count`就是分的组数
@@ -373,11 +378,11 @@ scan操作符对原始Observable发射的第一项数据应用一个函数，然
  `window`和`buffer`类似，但不是发射来自原始Observable的数据包，它发射的是Observable， 这些Observables中的每一个都发射原始Observable数据的一个子集，最后发射一个onCompleted通知。
 
 ```kotlin
-     Observable.range(1, 10).window(3)
-        .subscribeBy(
-            onNext = { it.subscribe { int -> print("{${it.hashCode()} : $int} ") } },
-            onComplete = { print("onComplete ") }
-        )
+Observable.range(1, 10).window(3)
+   .subscribeBy(
+       onNext = { it.subscribe { int -> print("{${it.hashCode()} : $int} ") } },
+       onComplete = { print("onComplete ") }
+   )
 ```
 
 ### 5. 过滤操作/条件操作符
