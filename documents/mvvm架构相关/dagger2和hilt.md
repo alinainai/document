@@ -17,18 +17,59 @@
 在 Module 中注入数据的标注
 
 #### 2.4 @Component 
-生成 DaggerXXXComponent 的注解
+生成 DaggerXXXComponent 的注解，标注接口
 
 #### 2.5 @Qulifier 
 
-区分同一种 class 生成的不同的实例
+区分同一种 type 生成的不同的实例
 
 #### 2.6 @Scope 和 @Singleten 
 
-Scope 限定变量的使用范围，形成局部单例
+@Scope 限定变量的使用范围，形成局部单例
 
-Singleten 是 Scope 一个特例，App的单例
+@Singleten 是 Scope 一个特例，App的单例
 
 ### 3. Dagger使用的实例
 
-#### 3.1 inject 生成数据实例
+#### 3.1 inject 修饰构造方法实现注入
+
+@Inject 修饰数据的构造方法
+
+```kotlin
+data class Data constructor(var str:String){
+   @Inject constructor():this("花花草草")
+}
+```
+
+@Component 修饰 DataComponent 生成实现依赖注入的组件
+
+```kotlin
+@Component
+interface DataComponent {
+    fun inject(activity: DaggerActivity)
+}
+```
+
+@Inject 修饰需要注入的实例
+
+```kotlin
+class DaggerActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var data: Data
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // 由 DataComponent 生成的 DaggerDataComponent，实现注入
+        DaggerDataComponent.builder().build().inject(this);
+        setContentView(R.layout.activity_dagger2_ex1)
+        Log.e("dagger2", "${data.str}") // E/dagger2: 花花草草
+    }
+}
+```
+
+最后打印
+
+```shell
+// E/dagger2: 花花草草
+```
