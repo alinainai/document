@@ -616,15 +616,35 @@ Observable.zip(Observable.range(1, 6), Observable.range(6, 5), BiFunction<Int, I
 ```
 #### 6.5 combineLast() 做组合操作
 
-用第一个数据源的最后一项和第二个数据源的每一项做合并
+任意一个上游流产生事件时，就使用另外一个流最新的已知值。
 
 ```kotlin
-Observable.combineLatest(Observable.range(1, 6), Observable.range(6, 5), BiFunction<Int, Int, Int> { t1, t2 -> t1 * t2 })
-    .subscribe { print("$it  ") }
-// 1 2 3 4  5 6
-// 6 7 8 9 10
-// 看上面两行再看结果很明显了吧
-// [combineLast]: 36  42  48  54  60
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static rx.Observable.interval;
+Observable.combineLatest(
+    interval(17, MILLISECONDS).map(x -> "S" + x),
+    interval(10, MILLISECONDS).map(x -> "F" + x),
+    (s, f) -> f + ":" + s
+).forEach(System.out::println);
+```
+打印日志
+```shell
+F0:S0
+F1:S0
+F2:S0
+F2:S1
+F3:S1
+F4:S1
+F4:S2
+F5:S2
+F5:S3
+...             
+F998:S586
+F998:S587
+F999:S587
+F1000:S587
+F1000:S588
+F1001:S588
 ```
 #### 6.6 reduce() 做组合操作
 
