@@ -10,18 +10,19 @@
 - 2.标记注入对象使用的构造函数。
 #### 2.2 @Module （模块）
 
-@Module用于标注提供依赖的类，第三方的类中的构造方法没有添加 @Inject 注解可以通过 Module 添加，结合 @Provides 和 @Binder 使用。
+@Module标注提供依赖的类，结合 @Provides 和 @Binder 使用，解决没有提供 @Inject 构造方法的类的注入。
 
 #### 2.3 @Provides 和 @Binder 
 
 在 Module 中注入数据的标注
 
 #### 2.4 @Component 
-生成 DaggerXXXComponent 的注解，标注接口
+
+生成 DaggerXXXComponent 的注解，标注接口，可以把 Component 类当做一个链接器。
 
 #### 2.5 @Qulifier 
 
-区分同一种 type 生成的不同的实例
+用来区分同种类型的不同的实例。
 
 #### 2.6 @Scope 和 @Singleten 
 
