@@ -255,7 +255,7 @@ annotation class QualifierA
 @Retention(value = AnnotationRetention.RUNTIME)
 annotation class QualifierB
 ``` 
-然后再 module 和 Activity 使用
+然后在 module 和 Activity 使用
 ``` kotlin
 @Module
 object DataModule2 {
