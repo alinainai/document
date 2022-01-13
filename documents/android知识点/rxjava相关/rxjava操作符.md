@@ -2,7 +2,7 @@
 官方文档
 [http://reactivex.io/documentation/observable.html](http://reactivex.io/documentation/observable.html)
 
-#### RxJava2 gradle集成：
+## RxJava2 gradle集成：
 
 >implementation "io.reactivex.rxjava2:rxjava:2.2.8"
 >
@@ -11,9 +11,9 @@
 注意这里为了方便使用到了[RxKotlin](https://github.com/ReactiveX/RxKotlin)，一个非常不错的RxJava Kotlin扩展库，也是reactivex出品。
 
 
-### 1.生产者
+## 1.生产者
 
-#### 1.1 Flowable 操作符
+### 1.1 Flowable 操作符
 
 Flowable: 响应式流和背压
 
@@ -25,7 +25,7 @@ Flowable.create(FlowableOnSubscribe<String> { emitter ->
 }, BackpressureStrategy.BUFFER)
 .subscribe { t -> debug(t) }
 ```
-#### 1.2 Observable 操作符
+### 1.2 Observable 操作符
 
 Observable: 无背压 (被观察者)，最常用的一个
 
@@ -44,7 +44,7 @@ Observable: 无背压 (被观察者)，最常用的一个
 - 读取硬盘操作（可以指定读取多少行） 
 - 通过JDBC读取数据库 - 网络（流）IO操作
 
-#### 1.3 Single 操作符
+### 1.3 Single 操作符
 
 Single: 只有一个元素或者错误的流
 
@@ -54,7 +54,7 @@ Single只包含两个事件，一个是正常处理成功的onSuccess，另一�
 Single.create(SingleOnSubscribe<Int> { emitter -> emitter.onSuccess(1) })
     .subscribe({ t -> debug("onSuccess+$t") }, { e -> debug("onError+$e") })
 ```
-#### 1.4 Completable 操作符 
+### 1.4 Completable 操作符 
 
 Completable: 没有任何元素，只有一个完成或者错误信号的流，onComplete 和 onError 两个事件
 
@@ -63,7 +63,7 @@ Completable.create { e -> e.onComplete() }
     .subscribe( { debug("onComplete") },{ e -> debug("onError+$e") })
 ```
 
-#### 1.5 Maybe 操作符 
+### 1.5 Maybe 操作符 
 
 Maybe: 没有任何元素或者只有一个元素或者只有一个错误的流
 
@@ -80,13 +80,13 @@ Maybe.create(MaybeOnSubscribe<Int> {e->
 }).subscribe({ t -> debug("onSuccess+$t")},{ e -> debug("onError+$e") },{debug("onComplete")})
 ```
 
-#### 什么是背压
+### 什么是背压
 背压就是生产者（被观察者）的生产速度大于消费者（观察者）消费速度从而导致的问题。
 
 举一个简单点的例子，如果被观察者快速发送消息，但是观察者处理消息的很缓慢，如果没有特定的流（Flow）控制，就会导致大量消息积压占用系统资源，最终导致十分缓慢。
 
 
-### 2.调度器
+## 2.调度器
 
  * Schedulers.computation() 用于计算任务，如事件循环或和回调处理，默认线程数等于处理器的数量
  * Schedulers.from(executor)使用指定的Executor作为调度器
@@ -96,9 +96,9 @@ Maybe.create(MaybeOnSubscribe<Int> {e->
  * Schedulers.trampoline()  当其它排队的任务完成后，在当前线程排队开始执行。
  * AndroidSchedulers.mainThread() 主线程，UI线程，可以用于更新界面
 
-### 3.创建事件序列
+## 3.创建事件序列
 
-#### 3.1 create() 操作符
+### 3.1 create() 操作符
 
 `create() `方法创建
 
@@ -112,7 +112,7 @@ Observable.create<String> { emitter ->
     }
 }
 ```
-#### 3.2 interval() 操作符
+### 3.2 interval() 操作符
 
 使用`interval()`方法创建事件序列间隔发射
 
@@ -132,7 +132,7 @@ public static Observable<Long> interval(long initialDelay, long period, TimeUnit
 public static Observable<Long> interval(long period, TimeUnit unit, Scheduler scheduler)
 public static Observable<Long> intervalRange(long start, long count, long initialDelay, long period, TimeUnit unit, Scheduler scheduler)
 ```
-#### 3.3 defer() 创建事件序列
+### 3.3 defer() 创建事件序列
 
 `defer`直到有观察者订阅时才创建Observable，并且为每个观察者创建一个刷新的Observable
 
@@ -145,7 +145,7 @@ print("   ")
 observable.subscribe { print("$it ") }   // 459  订阅时才产生了Observable
 ```
 
-#### 3.4 使用`empty()` `never()` `error()`方法创建事件序列
+### 3.4 使用`empty()` `never()` `error()`方法创建事件序列
 
 `empty()`：创建一个不发射任何数据但是正常终止的Observable
 
@@ -179,7 +179,7 @@ Observable.error<Exception>(Exception()).subscribeBy(
     onError = { print(" error ") }
 )
 ```
-#### 3.5 repeat() 操作符
+### 3.5 repeat() 操作符
 
 使用`repeat()`方法创建事件序列，表示指定的序列要发射多少次
 
@@ -201,7 +201,7 @@ numbers.toObservable().repeatUntil {
 }.subscribe { print("$it  ") }    
 ```
 
-#### 3.6 timer() 创建事件序列
+### 3.6 timer() 创建事件序列
 
 创建一个在给定的时间段之后返回一个特殊值的 Observable ，它在延迟一段给定的时间后发射一个简单的数字 0
 
@@ -210,7 +210,7 @@ numbers.toObservable().repeatUntil {
 val disposable = Observable.timer(500, TimeUnit.MILLISECONDS).subscribe { print("$it  ") }
 if (!disposable.isDisposed) disposable.dispose()
 ```
-#### 3.7 from 操作符系列
+### 3.7 from 操作符系列
 
 - `from()`
 - `fromArray`
@@ -225,7 +225,7 @@ val disposable = Observable.fromArray(*names).subscribe { print("$it  ") }
 // 可以在Callable内执行一段代码 并返回一个值给观察者
 Observable.fromCallable { 1 }.subscribe { print("$it  ") }
 ```
-#### 3.8 just() 操作符
+### 3.8 just() 操作符
 
 使用`just()`方法快捷创建事件队列，将传入的参数依次发送出来(最少1个 最多10个)
 
@@ -235,7 +235,7 @@ val disposable = Observable.just("Just1", "Just2", "Just3")
 // 将会依次调用：onNext("Just1"); onNext("Just2"); onNext("Just3");  onCompleted();
 ```
 
-#### 3.9 range() 操作符
+### 3.9 range() 操作符
 
 使用`range()`方法快捷创建事件队列，创建一个序列
 
@@ -253,7 +253,7 @@ Observable.range(0, 10)
 ```
 ### 4. 变换操作
 
-#### 4.1 mapCast() 操作符
+### 4.1 mapCast() 操作符
 
 - `map`操作符对原始Observable发射的每一项数据应用一个函数，然后返回一个发射这些结果的Observable。默认不在任何特定的调度器上执行
 - `cast`操作符将原始Observable发射的每一项数据都强制转换为一个指定的类型`（多态）`，然后再发射数据，它是map的一个特殊版本
@@ -263,7 +263,7 @@ Observable.range(1, 5).map { item -> "to String $item" }.subscribe { print("$it 
 // 将`Date`转换为`Any` (如果前面的Class无法转换成第二个Class就会出现ClassCastException)
 Observable.just(Date()).cast(Any::class.java).subscribe { print("$it  ") }
 ```
-#### 4.2 flatMap()、contactMap() 操作符
+### 4.2 flatMap()、contactMap() 操作符
 
 `map`与`flatMap`的区别:
 
@@ -276,7 +276,7 @@ Observable.just(Date()).cast(Any::class.java).subscribe { print("$it  ") }
 
 两者区别：`flatMap`不保证顺序  `contactMap()`保证顺序
 
-#### 4.3 flatMap() 的原理是这样的：
+### 4.3 flatMap() 的原理是这样的：
 
 - 1. 使用传入的事件对象创建一个 Observable 对象；
 - 2. 并不发送这个 Observable, 而是将它激活，于是它开始发送事件；
@@ -303,7 +303,7 @@ arrayListOf(
 )
 ```
 
-#### 4.4 flatMapIterable() 操作符
+### 4.4 flatMapIterable() 操作符
 
 使用`flatMapIterable()`做变换操作，将上流的任意一个元素转换成一个Iterable对象
 ```kotlin
@@ -311,7 +311,7 @@ Observable.range(1, 5)
     .flatMapIterable { integer -> Collections.singletonList("$integer") }
     .subscribe { print("$it  ") }
 ```
-#### 4.5 buffer() 操作符
+### 4.5 buffer() 操作符
 
 使用`buffer(count,skip)`，将事件缓冲至列表中
 
@@ -326,7 +326,7 @@ Observable.range(1, 5).buffer(3)
         print("${Arrays.toString(it.toIntArray())}  ")
     }
 ```
-#### 4.6 groupBy()
+### 4.6 groupBy()
 
 使用`groupBy()`做变换操作，用于分组元素(根据groupBy()方法返回的值进行分组)
 
@@ -350,7 +350,7 @@ Observable.fromIterable(lst)
         .subscribe(grp -> grp.subscribe( d -> System.out.println(d)));
 ```
 
-#### 4.7 scan() 操作符
+### 4.7 scan() 操作符
 
 使用`scan()`做变换操作将数据以一定的逻辑聚合起来，scan() 会接收两个参数:上一次生成的值(也被称为累加器)以及上游 Observable 的当前值。
 
@@ -371,7 +371,7 @@ Observable.just(10, 14, 12, 13, 14, 16) //progress
 //1 11 25 37 50 64 80  会先把1（初始值）发送，然后再和 progress 数据项累加。
 ```
 
-#### 4.8 window() 操作符
+### 4.8 window() 操作符
 
 使用`window()`做变换操作将事件分组 参数`count`就是分的组数
 
@@ -385,9 +385,9 @@ Observable.range(1, 10).window(3)
    )
 ```
 
-### 5. 过滤操作/条件操作符
+## 5. 过滤操作/条件操作符
 
-#### 5.1 filter() 操作符
+### 5.1 filter() 操作符
 
 使用`filter()`做过滤操作对源做过滤
 
@@ -395,7 +395,7 @@ Observable.range(1, 10).window(3)
 // 过滤掉 <=5 的数据源 只有 >5 的数据源会发送出去
 Observable.range(1, 10).filter { it > 5 }.subscribe { print("$it  ") }
 ```
-#### 5.2 element() 操作符
+### 5.2 element() 操作符
 
 使用`element()`获取源中指定位置的数据
  * `elementAt`  指定位置
@@ -413,7 +413,7 @@ Observable.range(1, 19).firstElement().subscribe { print("$it  ") }
 print("[lastElement]: ")
 Observable.range(34, 2).lastElement().subscribe { print("$it  ") }
 ```
-#### 5.3 distinct() 去重
+### 5.3 distinct() 去重
 
 使用`distinct()`对源中相同的数据进行过滤
 
@@ -426,7 +426,7 @@ Observable.just(1, 1, 1, 2, 3, 4, 1, 5, 5, 6)
       .distinctUntilChanged()
       .subscribe { print("$it  ") } //1  2  3  4  1  5  6
 ```
-#### 5.4 skip() 过滤掉数据的前n项
+### 5.4 skip() 过滤掉数据的前n项
 
 使用`skip()` 过滤掉数据的前n项
  * `skip`         过滤掉数据的前n项 参数count代表跳过事件的数量
@@ -449,7 +449,7 @@ Observable.just(1, 2, 3, 4)
         .skipWhile {  it < 3 }.subscribe { print("$it  ") } // [skipWhile]: 3  4
     
 ```
-#### 5.5 take() 取数据的前n项
+### 5.5 take() 取数据的前n项
 
 使用`take()` 取数据的前n项
  * `take`          取数据的前n项 参数count代表取的事件的数量
@@ -459,7 +459,7 @@ Observable.just(1, 2, 3, 4)
 ```kotlin
 Observable.range(1, 5).take(2).subscribe { print("$it  ") } // 1  2
 ```
-#### 5.6 ignoreElements() 过滤所有源Observable产生的结果
+### 5.6 ignoreElements() 过滤所有源Observable产生的结果
 
 使用`ignoreElements()` 过滤所有源Observable产生的结果，只会把Observable的`onComplete`和`onError`事件通知给订阅者
 
@@ -471,7 +471,7 @@ Observable.just(1, 1, 2, 3, 4)
         onError = { print(" onError ") }
             // 没有`onNext`)
 ```
-#### 5.7 debounce() 限制发射频率过快
+### 5.7 debounce() 限制发射频率过快
 
 使用`debounce()` 限制发射频率过快，如果两件事件发送的时间间隔小于设定的时间间隔则`前一件`事件就不会发送给观察者
 
@@ -483,7 +483,7 @@ Observable.create<Int> { emitter ->
 }.debounce(1, TimeUnit.SECONDS)
 .subscribe { print("$it  ") } // 2
 ```
-#### 5.8 ofType() 过滤不符合该类型事件
+### 5.8 ofType() 过滤不符合该类型事件
 
 使用`ofType()` 过滤不符合该类型事件
 ```kotlin
@@ -492,7 +492,7 @@ Observable.just(1, 2, 3, "k", "Y")
     .subscribe { print("$it  ") } // [ofType]: k  Y
 ```
 
-#### 5.9 all() 判断事件序列是否全部满足某个事件
+### 5.9 all() 判断事件序列是否全部满足某个事件
 
 all 判断事件序列是否全部满足某个事件，如果都满足则返回 true，反之则返回 false
 ```kotlin
@@ -502,7 +502,7 @@ Observable.just(1, 2, 3, 4)
         print("$it  ")
     }) // [all]: true
 ```
-#### 5.10 contains() 判断事件序列中是否含有某个元素
+### 5.10 contains() 判断事件序列中是否含有某个元素
 
 判断事件序列中是否含有某个元素，如果有则返回 true，如果没有则返回 false。
 
@@ -513,7 +513,7 @@ Observable.just(1, 2, 3, 4)
         print("$it  ")
     })  // [contains]: true
 ```
-#### 5.11 isEmpty() 判断事件序列是否为空
+### 5.11 isEmpty() 判断事件序列是否为空
 
 判断事件序列是否为空  是返回true  否返回false
 
@@ -526,7 +526,7 @@ Observable.create<String> { emitter ->
 }) 
 // [isEmpty]: true
 ```
-#### 5.12 defaultIfEmpty() 操作符
+### 5.12 defaultIfEmpty() 操作符
 
 如果观察者只发送一个 onComplete() 事件，则可以利用这个方法发送一个值。
 
@@ -538,7 +538,7 @@ Observable.create<Int> { emitter ->
 // [defaultIfEmpty]: 666
 ```
 
-#### 5.13 amb() 操作符
+### 5.13 amb() 操作符
 
 amb()， 它会订阅上游其所操控的所有 Observable 并等待第一个事件的发布。其中有一个 Observable 发布第一个事件之后， amb() 会丢弃所有其他的流，接下来只跟踪第一个发布事件的 Observable。
 
@@ -550,9 +550,9 @@ Observable.amb(list)
     .subscribe { print("$it  ") }
 // [amb]:  6  7  8  9  10
 ```
-### 6. 组合操作
+## 6. 组合操作
 
-#### 6.1 concat() 组合操作
+### 6.1 concat() 组合操作
 
 将多个Observable拼接起来，但是它会严格按照传入的Observable的顺序进行发射，一个 Observable 没有发射完毕之前不会发射另一个 Observable 里面的数据
 
@@ -565,7 +565,7 @@ Observable.concat(Observable.range(1, 5), Observable.range(6, 5))
     .subscribe { print("$it  ") }
 // [concat]: 1  2  3  4  5  6  7  8  9  10
 ```
-#### 6.2 merge() 做组合操作
+### 6.2 merge() 做组合操作
 
 让多个数据源的数据合并起来进行发射(merge后的数据可能会交错发射)
 
@@ -585,7 +585,7 @@ Observable.merge(Observable.range(1, 5), Observable.range(6, 5))
 // [merge]: 1  2  3  4  5  6  7  8  9  10
 ```
 
-#### 6.3 startWith()
+### 6.3 startWith()
 
 使用`startWith` 做组合操作 在发送事件之前追加事件
 
@@ -600,7 +600,7 @@ Observable.range(5, 3)
     .startWith(0).subscribe { print("$it  ") }
 // [startWith]: 0  1  2  3  4  5  6  7
 ```
-#### 6.4 zip() 做组合操作
+### 6.4 zip() 做组合操作
 
 用来将多个数据项进行合并 根据各个被观察者发送事件的顺序一个个结合起来，最终发送的事件数量会与源 Observable 中最少事件的数量一样
 
@@ -614,7 +614,7 @@ Observable.zip(Observable.range(1, 6), Observable.range(6, 5), BiFunction<Int, I
 // 看上面两行再看结果很明显了吧
 // [zip]: 6  14  24  36  50
 ```
-#### 6.5 combineLast() 做组合操作
+### 6.5 combineLast() 做组合操作
 
 任意一个上游流产生事件时，就使用另外一个流最新的已知值。
 
@@ -646,7 +646,7 @@ F1000:S587
 F1000:S588
 F1001:S588
 ```
-#### 6.6 reduce() 做组合操作
+### 6.6 reduce() 做组合操作
 
 与 scan() 操作符的作用一样也是将发送数据以一定逻辑聚合起来，
 
@@ -658,7 +658,7 @@ Observable.just(0, 1, 2, 3)
     .subscribe { print("$it  ") }
 // [reduce]: 6
 ```
-#### 6.7 collect() 做组合操作
+### 6.7 collect() 做组合操作
 
 将数据收集到数据结构当中
 
@@ -671,7 +671,7 @@ Observable.just(1, 2, 3, 4)
     })
 // [collect]: [1, 2, 3, 4]
 ```
-#### 6.8 count() 做组合操作
+### 6.8 count() 做组合操作
 
 返回被观察者发送事件的数量
 
@@ -681,14 +681,14 @@ Observable.just(1, 2, 3)
     .subscribe(Consumer {print("$it  ")})
 // [count]: 3
 ```
-### 7. 功能操作符/辅助操作
+## 7. 功能操作符/辅助操作
 
-#### 7.1 delay() 用于在发射数据之前停顿指定的时间
+### 7.1 delay() 用于在发射数据之前停顿指定的时间
 
 ```kotlin
 Observable.range(1, 5).delay(1, TimeUnit.SECONDS).subscribe { print("$it  ") }
 ```
-#### 7.2 do 系列
+### 7.2 do 系列
 
 ```kotlin
 // `doOnEach`  当每个`onNext`调用[前]触发 并可取出`onNext`发送的值  但是方法参数是一个`Notification<T>`的包装 可以通过`.value`取出`onNext`的值
@@ -719,7 +719,7 @@ Observable.create<String> { emitter ->
     onError = { print("  onError  ") }
 )
 ```
-#### 7.3 retry()
+### 7.3 retry()
 
 另：`retryUntil` 出现错误事件之后，可以通过此方法判断是否继续发送事件 true 不重试 false 重试
  
@@ -738,7 +738,7 @@ Observable.create<String> { emitter ->
 // [retry]: accept: K  accept: K  accept: K    onError
 // 重试了2次
 ```
-#### 7.4 subscribeOn 和 observeOn 
+### 7.4 subscribeOn 和 observeOn 
 
 简单地说，subscribeOn() 指定的就是发射事件的线程，observerOn 指定的就是订阅者接收事件的线程。
 
@@ -750,7 +750,7 @@ Observable.create<String> { emitter ->
 
 observeOn 指定观察者的线程，每指定一次就会生效一次。
 
-#### 7.5 compose() 操作符
+### 7.5 compose() 操作符
 
 `compose`操作符和Transformer结合使用，一方面让代码看起来更加简洁化，另一方面能够提高代码的复用性。
 
@@ -777,7 +777,7 @@ fun <T> applySchedulers() =
     ObservableTransformer<T, T> { upstream -> upstream.observeOn(Schedulers.io()).subscribeOn(Schedulers.io()) }
 ```
 
-### 8. RxKotlin扩展库
+## 8. RxKotlin扩展库
 
 RxKotlin扩展库的一个简单使用
 
