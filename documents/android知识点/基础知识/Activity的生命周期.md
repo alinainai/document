@@ -1,56 +1,70 @@
-### MainActivity 启动 SecondActivity
+## 1.A界面启动B界面（standard启动模式）
 
-启动 MainActivity。
+- onStart、onStop 针对可见性。
+- onResume、onPause 针对可交互。
 
-onStart、onStop 针对可见性。
-onResume、onPause 针对可交互。
-
+启动A界面
 ```shell
-04-14 23:34:52.692 22963-22963/com.burjal.performancetest I/MainActivity: ====onCreate=====
-04-14 23:34:52.692 22963-22963/com.burjal.performancetest I/MainActivity: ====onStart=====
-04-14 23:34:52.692 22963-22963/com.burjal.performancetest I/MainActivity: ====onResume=====
+A界面: onCreate
+A界面: onStart
+A界面: onResume
+```
+A界面打开B界面
+```shell
+A界面: onPause
+
+B界面: onCreate
+B界面: onStart
+B界面: onResume
+
+A界面: onStop
 ```
 
-从 MainActivity 打开 SecondActivity。
+从B界面返回A界面。
 
 ```shell
-04-14 23:34:57.532 22963-22963/com.burjal.performancetest I/MainActivity: ====onPause=====
-04-14 23:34:57.562 22963-22963/com.burjal.performancetest I/SecondActivity: ====onCreate=====
-04-14 23:34:57.562 22963-22963/com.burjal.performancetest I/SecondActivity: ====onStart=====
-04-14 23:34:57.562 22963-22963/com.burjal.performancetest I/SecondActivity: ====onResume=====
-04-14 23:34:57.972 22963-22963/com.burjal.performancetest I/MainActivity: =====onStop====
-```
+B界面: onPause
 
-从 SecondActivity 返回 MainActivity。
+A界面: onRestart
+A界面: onStart
+A界面: onResume
+
+B界面: onStop
+B界面: onDestroy
+```
+## 2.A界面启动B界面(透明，Theme 为 Dialog)
+
+A界面启动透明主题的B界面，**不会调用A界面 onStop() 方法**。
 
 ```shell
-04-14 23:48:10.692 22963-22963/com.burjal.performancetest I/SecondActivity: ====onPause=====
-04-14 23:48:10.692 22963-22963/com.burjal.performancetest I/MainActivity: ====onRestart=====
-04-14 23:48:10.692 22963-22963/com.burjal.performancetest I/MainActivity: ====onStart=====
-04-14 23:48:10.692 22963-22963/com.burjal.performancetest I/MainActivity: ====onResume=====
-04-14 23:48:11.062 22963-22963/com.burjal.performancetest I/SecondActivity: =====onStop====
-04-14 23:48:11.062 22963-22963/com.burjal.performancetest I/SecondActivity: ====onDestroy=====
-```
-### MainActivity 启动 TransActivity 问题
+A界面: onCreate
+A界面: onStart
+A界面: onResume
+A界面: onPause
 
-MainActivity 启动透明主题的 TransActivity，**不会调用 MainActivity onStop() 方法**。
+B界面: onCreate
+B界面: onStart
+B界面: onResume
+```
+
+从B界面返回A界面，**不会调用A界面的 onRestart() 和 onStart()**。
 
 ```shell
-2021-09-11 14:41:58.447 3360-3360/com.gas.app D/lifecycle: MainActivity_onCreate
-2021-09-11 14:41:58.460 3360-3360/com.gas.app D/lifecycle: MainActivity_onStart
-2021-09-11 14:41:58.460 3360-3360/com.gas.app D/lifecycle: MainActivity_onResume
-2021-09-11 14:42:00.497 3360-3360/com.gas.app D/lifecycle: MainActivity_onPause
+B界面: onPause
 
-2021-09-11 14:42:00.530 3360-3360/com.gas.app D/lifecycle: TransActivity_onCreate
-2021-09-11 14:42:00.545 3360-3360/com.gas.app D/lifecycle: TransActivity_onStart
-2021-09-11 14:42:00.546 3360-3360/com.gas.app D/lifecycle: TransActivity_onResume
+A界面: onResume
+
+B界面: onStop
+B界面: onDestroy
 ```
+## 3.弹出 Dialog 对生命周期有什么影响
 
-从 TransActivity 返回 MainActivity，**不会调用 onRestart() 和 onStart()**。
+我们知道，生命周期回调都是 AMS 通过 Binder 通知应用进程调用的；而弹出 Dialog、Toast、PopupWindow 本质上都直接是通过 WindowManager.addView() 显示的（没有经过 AMS），所以不会对生命周期有任何影响。
 
-```shell
-2021-09-11 14:42:17.447 3360-3360/com.gas.app D/lifecycle: TransActivity_onPause
-2021-09-11 14:42:17.472 3360-3360/com.gas.app D/lifecycle: MainActivity_onResume
-2021-09-11 14:42:17.483 3360-3360/com.gas.app D/lifecycle: TransActivity_onStop
-2021-09-11 14:42:17.485 3360-3360/com.gas.app D/lifecycle: TransActivity_onDestroy
-```
+如果是启动一个 Theme 为 Dialog 的 Activity , 则生命周期为： A.onPause -> B.onCreate -> B.onStart -> B.onResume 注意这边没有前一个 Activity 不会回调 onStop，因为只有在 Activity 切到后台不可见才会回调 onStop；而弹出 Dialog 主题的 Activity 时前一个页面还是可见的，只是失去了焦点而已所以仅有 onPause 回调。
+
+## 4.onActivityResult 调用时机
+onActivityResult 方法的注释：You will receive this call immediately before onResume() when your activity is re-starting. 跟一下代码（TransactionExecutor.execute 有兴趣的可以自己打断点跟一下），会发现 onActivityResult 回调先于该 Activity 的所有生命周期回调，从 B Activity 返回 A Activity 的生命周期调用为： B.onPause -> A.onActivityResult -> A.onRestart -> A.onStart -> A.onResume
+
+
+
