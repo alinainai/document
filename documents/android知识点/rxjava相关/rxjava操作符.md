@@ -2,7 +2,7 @@
 官方文档
 [http://reactivex.io/documentation/observable.html](http://reactivex.io/documentation/observable.html)
 
-## RxJava2 gradle集成：
+### RxJava2 gradle集成：
 
 >implementation "io.reactivex.rxjava2:rxjava:2.2.8"
 >
@@ -29,7 +29,7 @@ Flowable.create(FlowableOnSubscribe<String> { emitter ->
 
 Observable: 无背压 (被观察者)，最常用的一个
 
-官方的建议：
+两者官方的使用建议：
 
 使用Observable 
 
@@ -48,7 +48,7 @@ Observable: 无背压 (被观察者)，最常用的一个
 
 Single: 只有一个元素或者错误的流
 
-Single只包含两个事件，一个是正常处理成功的onSuccess，另一个是处理失败的onError，它只发送一次消息
+Single只包含两个事件，一个是正常处理成功的 onSuccess，另一个是处理失败的 onError，它只发送一次消息，一般在Android中网络请求返回结果使用 Single 接收。
 
 ```kotlin
 Single.create(SingleOnSubscribe<Int> { emitter -> emitter.onSuccess(1) })
@@ -117,7 +117,7 @@ Observable.create<String> { emitter ->
 使用`interval()`方法创建事件序列间隔发射
 
 ```kotlin
-//每隔1秒发送一个整数，从0开始 (默认执行无数次 使用`take(int)`方法限制执行次数)
+//每隔1秒发送一个整数，从0开始 (默认执行无数次 使用 take(int) 方法限制执行次数)
 Observable.interval(0, 1, TimeUnit.SECONDS)
     .take(5)
     .subscribe { print("$it  ") }
@@ -135,13 +135,10 @@ public static Observable<Long> intervalRange(long start, long count, long initia
 ### 3.3 defer() 创建事件序列
 
 `defer`直到有观察者订阅时才创建Observable，并且为每个观察者创建一个刷新的Observable
-
-`defer`操作符会一直等待直到有观察者订阅它，然后它使用 Observable 工厂方法生成一个 Observable
   
 ```kotlin
 val observable = Observable.defer { Observable.just(System.currentTimeMillis()) }
 observable.subscribe { print("$it ") }   // 454  订阅时才产生了Observable
-print("   ")
 observable.subscribe { print("$it ") }   // 459  订阅时才产生了Observable
 ```
 
@@ -189,16 +186,15 @@ public final Observable<T> repeat(long times)
 public final Observable<T> repeatUntil(BooleanSupplier stop)
 public final Observable<T> repeatWhen(Function<? super Observable<Object>, ? extends ObservableSource<?>> handler)
 
-// 不指定次数即无限次发送(内部调用有次数的重载方法并传入Long.MAX_VALUE) 
+// 不指定次数即无限次发送
 Observable.range(5, 10).repeat().subscribe { print("$it  ") }
 Observable.range(5, 10).repeat(1).subscribe { print("$it  ") }
 
 // repeatUntil在满足指定要求的时候停止重复发送，否则会一直发送
 // 这里当随机产生的数字`<10`时停止发送 否则继续  (这里始终为true(即停止重复) 省的疯了似的执行)
 val numbers = arrayOf(0, 1, 2, 3, 4)
-numbers.toObservable().repeatUntil {
-    Random(10).nextInt() < 10
-}.subscribe { print("$it  ") }    
+numbers.toObservable().repeatUntil {Random(10).nextInt() < 10}
+    .subscribe { print("$it  ") }    
 ```
 
 ### 3.6 timer() 创建事件序列
@@ -207,8 +203,7 @@ numbers.toObservable().repeatUntil {
 
 ```kotlin
 // 在500毫秒之后输出一个数字0
-val disposable = Observable.timer(500, TimeUnit.MILLISECONDS).subscribe { print("$it  ") }
-if (!disposable.isDisposed) disposable.dispose()
+Observable.timer(500, TimeUnit.MILLISECONDS).subscribe { print("$it  ") }
 ```
 ### 3.7 from 操作符系列
 
@@ -220,7 +215,7 @@ if (!disposable.isDisposed) disposable.dispose()
 ```kotlin
 val names = arrayOf("ha", "hello", "yummy", "kt", "world", "green", "delicious")
 // 注意：使用`*`展开数组
-val disposable = Observable.fromArray(*names).subscribe { print("$it  ") }
+Observable.fromArray(*names).subscribe { print("$it  ") }
 
 // 可以在Callable内执行一段代码 并返回一个值给观察者
 Observable.fromCallable { 1 }.subscribe { print("$it  ") }
@@ -230,30 +225,20 @@ Observable.fromCallable { 1 }.subscribe { print("$it  ") }
 使用`just()`方法快捷创建事件队列，将传入的参数依次发送出来(最少1个 最多10个)
 
 ```kotlin
-val disposable = Observable.just("Just1", "Just2", "Just3")
-    .subscribe { print("$it  ") }
+val disposable = Observable.just("Just1", "Just2", "Just3").subscribe { print("$it  ") }
 // 将会依次调用：onNext("Just1"); onNext("Just2"); onNext("Just3");  onCompleted();
 ```
 
 ### 3.9 range() 操作符
 
-使用`range()`方法快捷创建事件队列，创建一个序列
+使用`range(start, count)`方法快捷创建事件队列，创建一个int序列
 
 ```kotlin
-// 用Observable.range()方法产生一个序列
-// 用map方法将该整数序列映射成一个字符序列
-// 最后将得到的序列输出来 forEach 内部也是调用的 subscribe(Consumer<? super T> onNext)
-Observable.range(0, 10)
-.map { item -> "range$item" }
-//.forEach { print("$it  ") }
-.subscribeBy(
-    onNext = { print("$it  ") },
-    onComplete = { print("range complete !!! ") }
-)
+ Observable.range(3, 5).forEach { print("$it ") } //3 4 5 6 7
 ```
-### 4. 变换操作
+## 4. 变换操作
 
-### 4.1 mapCast() 操作符
+### 4.1 map() 和 cast() 
 
 - `map`操作符对原始Observable发射的每一项数据应用一个函数，然后返回一个发射这些结果的Observable。默认不在任何特定的调度器上执行
 - `cast`操作符将原始Observable发射的每一项数据都强制转换为一个指定的类型`（多态）`，然后再发射数据，它是map的一个特殊版本
@@ -313,12 +298,10 @@ Observable.range(1, 5)
 ```
 ### 4.5 buffer() 操作符
 
-使用`buffer(count,skip)`，将事件缓冲至列表中
+使用`buffer(count,skip)`，将事件缓冲至列表中，count 是一个buffer的最大值，skip 是指针后移的距离(不定义时就为count)。
 
 ```kotlin
-// 生成一个7个整数构成的流，然后使用`buffer`之后，这些整数会被3个作为一组进行输出
-// count 是一个buffer的最大值
-// skip 是指针后移的距离(不定义时就为count)
+// 生成一个5个整数构成的流，然后使用`buffer`之后，这些整数会被3个作为一组进行输出
 // 例如 1 2 3 4 5 buffer(3) 的结果为：[1,2,3] [4,5] ( buffer(3) 也就是 buffer(3,3))
 // 例如 1 2 3 4 5 buffer(3,2) 的结果为：[1,2,3] [3,4,5] [5]
 Observable.range(1, 5).buffer(3)
@@ -333,21 +316,12 @@ Observable.range(1, 5).buffer(3)
 将每个元素都赋予一个组ID，然后将组ID相同元素放在一个 Observable 内发射出来
 
 ```kotlin
-List<Dict> lst = new ArrayList<>();
-lst.add(new Dict("1", "A"));
-lst.add(new Dict("2", "B"));
-lst.add(new Dict("1", "B"));
-lst.add(new Dict("2", "A"));
-lst.add(new Dict("3", "B"));
-lst.add(new Dict("3", "A"));
+val lst: MutableList<Pair<String,String>> = ArrayList()
+lst.add(Pair("A", "5"))
+lst.add(Pair("C", "3"))
+lst.add(Pair("A", "2"))
 Observable.fromIterable(lst)
-        .groupBy(new Function<Dict, String>() {
-            @Override
-            public String apply(Dict dict) throws Exception {
-                return dict.getValue()+"group";
-            }
-        })
-        .subscribe(grp -> grp.subscribe( d -> System.out.println(d)));
+    .groupBy { t -> t.first }
 ```
 
 ### 4.7 scan() 操作符
@@ -357,12 +331,12 @@ Observable.fromIterable(lst)
 ```kotlin 
 Observable.just(10, 14, 12, 13, 14, 16) //progress
     .scan {total, chunk -> total + chunk }
-    .subscribe { print("$it  ") }
-//10, 24, 36, 49, 63, 79
+    .subscribe { print("$it  ") } //10, 24, 36, 49, 63, 79
 ```
-在第一轮迭代中，total 就是来自 progress 的第一个条目;而在第二次迭代中，它变成了上一次 scan() 操作的结果值。
+在第一轮迭代中，total 就是来自 progress 的第一个条目;
+而在第二次迭代中，它变成了上一次 scan() 操作的结果值。
 
-重载方法：可以在 scan 中添加 初始值。如下，我们将初始值设置为1，结果会先把初始值 1 发送。
+重载方法：可以在 scan 中添加初始值。如下，我们将初始值设置为1，上游会先把初始值 1 发送。
 
 ```kotlin
 Observable.just(10, 14, 12, 13, 14, 16) //progress
@@ -423,7 +397,7 @@ Observable.just(1, 1, 1, 2, 3, 4, 1, 5, 5, 6)
       .subscribe { print("$it  ") } // 1  2  3  4  5  6
 
 Observable.just(1, 1, 1, 2, 3, 4, 1, 5, 5, 6)
-      .distinctUntilChanged()
+      .distinctUntilChanged()//这个比较常用，通过 equits() 过滤紧邻的相同数据，缓存
       .subscribe { print("$it  ") } //1  2  3  4  1  5  6
 ```
 ### 5.4 skip() 过滤掉数据的前n项
@@ -540,14 +514,13 @@ Observable.create<Int> { emitter ->
 
 ### 5.13 amb() 操作符
 
-amb()， 它会订阅上游其所操控的所有 Observable 并等待第一个事件的发布。其中有一个 Observable 发布第一个事件之后， amb() 会丢弃所有其他的流，接下来只跟踪第一个发布事件的 Observable。
+订阅所有上游 Observable 并等待它们发布事件，当其中有 Observable 发布第一个事件之后，amb() 会丢弃所有其他的流，接下来只跟踪第一个发布事件的 Observable。
 
 ```kotlin
 val list = ArrayList<Observable<Long>>()
 list.add(Observable.intervalRange(1, 5, 2, 1, TimeUnit.SECONDS))
 list.add(Observable.intervalRange(6, 5, 0, 1, TimeUnit.SECONDS))
-Observable.amb(list)
-    .subscribe { print("$it  ") }
+Observable.amb(list).subscribe { print("$it  ") }
 // [amb]:  6  7  8  9  10
 ```
 ## 6. 组合操作
@@ -619,8 +592,6 @@ Observable.zip(Observable.range(1, 6), Observable.range(6, 5), BiFunction<Int, I
 任意一个上游流产生事件时，就使用另外一个流最新的已知值。
 
 ```kotlin
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static rx.Observable.interval;
 Observable.combineLatest(
     interval(17, MILLISECONDS).map(x -> "S" + x),
     interval(10, MILLISECONDS).map(x -> "F" + x),
@@ -648,9 +619,7 @@ F1001:S588
 ```
 ### 6.6 reduce() 做组合操作
 
-与 scan() 操作符的作用一样也是将发送数据以一定逻辑聚合起来，
-
-这两个的区别在于 scan() 每处理一次数据就会将事件发送给观察者，而 reduce() 会将所有数据聚合在一起才会发送事件给观察者
+与 scan() 操作符的作用一样也是将发送数据以一定逻辑聚合起来，区别在于 scan() 每处理一次数据就会将事件发送给观察者，而 reduce() 会等到所有数据聚合在一起才会发送事件给观察者
 
 ```kotlin
 Observable.just(0, 1, 2, 3)
@@ -740,15 +709,13 @@ Observable.create<String> { emitter ->
 ```
 ### 7.4 subscribeOn 和 observeOn 
 
-简单地说，subscribeOn() 指定的就是发射事件的线程，observerOn 指定的就是订阅者接收事件的线程。
+- subscribeOn() 指定发射事件的线程
+- observerOn 指定订阅者接收事件的线程
 
-多次指定发射事件的线程只有第一次指定的有效，也就是说多次调用 subscribeOn() 只有第一次的有效，其余的会被忽略。
+指定发射事件的线程只有第一次指定的有效，即多次调用 subscribeOn() 只有第一次的有效，其余的会被忽略。
 
 但多次指定订阅者接收线程是可以的，也就是说每调用一次 observerOn()，下游的线程就会切换一次
 
->subscribeOn 指定被观察者的线程，要注意的时，如果多次调用此方法，只有第一次有效。
-
-observeOn 指定观察者的线程，每指定一次就会生效一次。
 
 ### 7.5 compose() 操作符
 
