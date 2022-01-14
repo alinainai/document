@@ -326,7 +326,9 @@ Observable.fromIterable(lst)
 
 ### 4.7 scan() 操作符
 
-使用`scan()`做变换操作将数据以一定的逻辑聚合起来，scan() 会接收两个参数:上一次生成的值(也被称为累加器)以及上游 Observable 的当前值。
+使用`scan()`做变换操作将数据以一定的逻辑聚合起来。
+
+scan() 会接收两个参数: 上一次生成的值(也被称为累加器)、还有上游 Observable 的当前值。
 
 ```kotlin 
 Observable.just(10, 14, 12, 13, 14, 16) //progress
@@ -334,9 +336,12 @@ Observable.just(10, 14, 12, 13, 14, 16) //progress
     .subscribe { print("$it  ") } //10, 24, 36, 49, 63, 79
 ```
 在第一轮迭代中，total 就是来自 progress 的第一个条目;
+
 而在第二次迭代中，它变成了上一次 scan() 操作的结果值。
 
-重载方法：可以在 scan 中添加初始值。如下，我们将初始值设置为1，上游会先把初始值 1 发送。
+可以在 scan 中添加初始值。
+
+如下，我们将初始值设置为1，上游会先把初始值 1 发送。
 
 ```kotlin
 Observable.just(10, 14, 12, 13, 14, 16) //progress
@@ -345,19 +350,6 @@ Observable.just(10, 14, 12, 13, 14, 16) //progress
 //1 11 25 37 50 64 80  会先把1（初始值）发送，然后再和 progress 数据项累加。
 ```
 
-### 4.8 window() 操作符
-
-使用`window()`做变换操作将事件分组 参数`count`就是分的组数
-
- `window`和`buffer`类似，但不是发射来自原始Observable的数据包，它发射的是Observable， 这些Observables中的每一个都发射原始Observable数据的一个子集，最后发射一个onCompleted通知。
-
-```kotlin
-Observable.range(1, 10).window(3)
-   .subscribeBy(
-       onNext = { it.subscribe { int -> print("{${it.hashCode()} : $int} ") } },
-       onComplete = { print("onComplete ") }
-   )
-```
 
 ## 5. 过滤操作/条件操作符
 
@@ -717,7 +709,41 @@ Observable.create<String> { emitter ->
 但多次指定订阅者接收线程是可以的，也就是说每调用一次 observerOn()，下游的线程就会切换一次
 
 
-### 7.5 compose() 操作符
+### 7.5 window() 操作符
+
+使用`window()`做变换操作将事件分组 参数`count`就是分的组数
+
+ `window`和`buffer`类似，但不是发射来自原始Observable的数据包，它发射的是Observable， 这些Observables中的每一个都发射原始Observable数据的一个子集，最后发射一个onCompleted通知。
+
+```kotlin
+Observable.range(1, 10).window(3)
+   .subscribeBy(
+       onNext = { it.subscribe { int -> print("{${it.hashCode()} : $int} ") } },
+       onComplete = { print("onComplete ") }
+   )
+```
+
+
+## 8. 拓展
+
+### 8.1 RxKotlin扩展库的一个简单使用
+
+更多查看：https://github.com/ReactiveX/RxKotlin/blob/2.x/README.md
+
+```kotlin
+val list = listOf("Alpha", "Beta", "Gamma", "Delta", "Epsilo
+// 相当于是Observable.fromIterable(this) 和上面的fromArray()类似 一个数组 一个集合
+list.toObservable()
+    .filter { it.length > 5 }
+    .subscribeBy(   // 对应上面`create`创建方式的最后调用的subscribe
+        onNext = { print("$it  ") },
+        onError = { it.printStackTrace() },
+        onComplete = { print(" Done! ") })
+	
+// [rkExExample]: Epsilon   Done!
+```
+
+### 8.2 compose() 操作符
 
 `compose`操作符和Transformer结合使用，一方面让代码看起来更加简洁化，另一方面能够提高代码的复用性。
 
@@ -742,25 +768,6 @@ fun transformerInt2String() = ObservableTransformer<Int, String> { upstream -> u
 // 切换线程
 fun <T> applySchedulers() =
     ObservableTransformer<T, T> { upstream -> upstream.observeOn(Schedulers.io()).subscribeOn(Schedulers.io()) }
-```
-
-## 8. RxKotlin扩展库
-
-RxKotlin扩展库的一个简单使用
-
-更多查看：https://github.com/ReactiveX/RxKotlin/blob/2.x/README.md
-
-```kotlin
-val list = listOf("Alpha", "Beta", "Gamma", "Delta", "Epsilo
-// 相当于是Observable.fromIterable(this) 和上面的fromArray()类似 一个数组 一个集合
-list.toObservable()
-    .filter { it.length > 5 }
-    .subscribeBy(   // 对应上面`create`创建方式的最后调用的subscribe
-        onNext = { print("$it  ") },
-        onError = { it.printStackTrace() },
-        onComplete = { print(" Done! ") })
-	
-// [rkExExample]: Epsilon   Done!
 ```
 
 
