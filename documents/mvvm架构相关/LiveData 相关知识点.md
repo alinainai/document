@@ -282,3 +282,7 @@ private final Runnable mPostValueRunnable = new Runnable() {
     }
 };
 ```
+
+### 数据倒灌问题
+
+https://tech.meituan.com/2018/07/26/android-livedatabus.html
