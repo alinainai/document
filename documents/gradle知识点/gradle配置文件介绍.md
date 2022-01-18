@@ -6,7 +6,7 @@ Gradle 是 Android 项目的构建工具，目前支持 Java、Groovy、Kotlin�
 
 使用 gradlew 执行命令的时候，就是执行 gradle-wrapper 的指令。每个 gradle 版本有差异性，gradle-wrapper 对 gradle 进行封装。
 
-### 1.1 Android Gradle 的 Project 和 Tasks
+### 1.1 Gradle 的 Project 和 Tasks
 
 每次构建（build）至少由一个 project 构成，一个 project 由一到多个 task 构成。
 
@@ -146,13 +146,13 @@ task deleteFile(type: Delete) {
 }
 ```
 
-
-
 参考：
 
 [Android Gradle 自定义Task 详解](https://blog.csdn.net/zhaoyanjun6/article/details/76408024)
 
 [Android Gradle使用总结](https://blog.csdn.net/zhaoyanjun6/article/details/77678577)
+
+[Gradle 使用指南 -- Gradle 生命周期](https://www.heqiangfly.com/2016/03/18/development-tool-gradle-lifecycle/)
 
 
 
