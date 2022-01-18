@@ -1,9 +1,9 @@
 
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/132071778-9edaabe1-0fc8-4fd8-a476-b361a90ed53b.png">
 
-### 1.运行时数据区
+## 1.运行时数据区
 
-#### 1.1 虚拟机栈
+### 1.1 虚拟机栈
 
 线程私有，虚拟机栈和线程的生命周期相同，线程运行方法时会在虚拟机栈中为方法创建一个栈帧。
 
@@ -11,29 +11,29 @@
 
 <img width="150" alt="类图" src="https://user-images.githubusercontent.com/17560388/132072640-1967c247-aede-4d06-849e-c16aad7e6efa.png">
 
-#### 1.2 本地方法栈
+### 1.2 本地方法栈
 
 线程私有的，native 方法使用。
 
-#### 1.3 程序计数器
+### 1.3 程序计数器
 
 线程私有的，Java 程序是多线程的，CPU 可以在多个线程中分配执行时间片段。当某一个线程被 CPU 挂起时，需要记录代码已经执行到的位置，方便 CPU 重新执行此线程时，知道从哪行指令开始执行。这就是程序计数器的作用。
 
-#### 1.4 堆
+### 1.4 堆
 
 线程共享的，用来存放大部分实例对象。GC 。
 
-#### 1.5 方法区
+### 1.5 方法区
 
 线程共享，存储类元信息、常量、静态变量。
 
-### 2.GC 回收机制与分代回收策略
+## 2.GC 回收机制与分代回收策略
 
 **什么是垃圾** ： 不再使用的对象。
 
 **可达性分析** ：GCRoot 作为起点。
 
-**GCRoot** ：
+### 2.1 GCRoot：
 
 1.Java 虚拟机栈（局部变量表）中的引用的对象。
 
@@ -43,13 +43,13 @@
 
 4.Native 方法中 JNI 引用的对象。
 
-**回收时机** 
+### 2.2 回收时机
 
 1.Allocation Failure
 
 2.System.gc()
 
-**标记清除算法（Mark and Sweep GC）**
+### 2.3 标记清除算法（Mark and Sweep GC）
 
 <img width="500" alt="类图" src="https://user-images.githubusercontent.com/17560388/133190305-c79ae35c-cc5b-42a7-842b-f4e547ef69d8.png">
 
@@ -57,7 +57,7 @@
 
 缺点：这个算法需要中断进程内其他组件的执行（stop the world），并且可能产生内存碎片，提高了垃圾回收的频率。
 
-**复制算法（Copying）**
+### 2.4 复制算法（Copying）
 
 <img width="500" alt="类图" src="https://user-images.githubusercontent.com/17560388/133190386-0ba6de67-a3d5-4d8d-a7b9-99af3312d6c1.png">
 
@@ -65,7 +65,7 @@
 
 缺点：可用的内存大小缩小为原来的一半，对象存活率高时会频繁进行复制。
 
-**标记-压缩算法 (Mark-Compact)**
+### 2.5 标记-压缩算法 (Mark-Compact)
 
 <img width="500" alt="类图" src="https://user-images.githubusercontent.com/17560388/133190437-f33e6005-789b-422a-9e61-92481570d431.png">
 
@@ -73,7 +73,7 @@
 
 缺点：所谓压缩操作，仍需要进行局部对象移动，所以一定程度上还是降低了效率。
 
-**分代回收策略**
+### 2.6 分代回收策略
 
 新生代 
 
