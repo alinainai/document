@@ -145,6 +145,31 @@ task deleteFile(type: Delete) {
     delete "path"
 }
 ```
+### 3.3 执行 shell
+
+1. Use Gradle [Exec](https://docs.gradle.org/current/dsl/org.gradle.api.tasks.Exec.html) task type
+```groovy
+task fooExec(type: Exec) {
+    workingDir "${buildDir}/foo"
+    commandLine 'echo', 'Hello world!'
+    doLast {
+        println "Executed!"
+    }
+}
+```
+2. Use Gradle [Project.exec](https://docs.gradle.org/current/javadoc/org/gradle/api/Project.html#exec-groovy.lang.Closure-) method
+```groovy
+task execFoo {
+    doLast {
+        exec {
+            workingDir "${buildDir}/foo"
+            executable 'echo'
+            args 'Hello world!'
+        }
+        println "Executed!"
+    }
+}
+```
 
 参考：
 
@@ -154,5 +179,6 @@ task deleteFile(type: Delete) {
 
 [Gradle 使用指南 -- Gradle 生命周期](https://www.heqiangfly.com/2016/03/18/development-tool-gradle-lifecycle/)
 
+[Gradle execute command lines in custom task](https://stackoverflow.com/questions/38250735/gradle-execute-command-lines-in-custom-task)
 
 
