@@ -171,6 +171,16 @@ task execFoo {
 }
 ```
 
+## 4. 将 task 放到单独的文件
+
+```groovy
+// ../代表根目录
+apply from:"../utils.gradle"
+```
+
+
+
+
 参考：
 
 [Android Gradle 自定义Task 详解](https://blog.csdn.net/zhaoyanjun6/article/details/76408024)
