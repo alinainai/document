@@ -5,46 +5,34 @@
 
 启动A界面
 ```shell
-A界面: onCreate
-A界面: onStart
-A界面: onResume
+A: onCreate -> onStart -> onResume
 ```
 A界面打开B界面
 ```shell
-A界面: onPause
+A: onPause
 
-B界面: onCreate
-B界面: onStart
-B界面: onResume
+B: onCreate -> onStart -> onResume
 
-A界面: onStop
+A: onStop
 ```
 
 从B界面返回A界面。
 
 ```shell
-B界面: onPause
+B: onPause
 
-A界面: onRestart
-A界面: onStart
-A界面: onResume
+A: onRestart -> onStart -> onResume
 
-B界面: onStop
-B界面: onDestroy
+B: onStop -> onDestroy
 ```
 ## 2.A界面启动B界面(透明，Theme 为 Dialog)
 
 A界面启动透明主题的B界面，**不会调用A界面 onStop() 方法**。
 
 ```shell
-A界面: onCreate
-A界面: onStart
-A界面: onResume
 A界面: onPause
 
-B界面: onCreate
-B界面: onStart
-B界面: onResume
+B界面: onCreate -> onStart -> onResume
 ```
 
 从B界面返回A界面，**不会调用A界面的 onRestart() 和 onStart()**。
@@ -54,8 +42,7 @@ B界面: onPause
 
 A界面: onResume
 
-B界面: onStop
-B界面: onDestroy
+B界面: onStop -> onDestroy
 ```
 ## 3.弹出 Dialog 对生命周期有什么影响
 
