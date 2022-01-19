@@ -46,8 +46,6 @@ Observable: 无背压 (被观察者)，最常用的一个
 
 ### 1.3 Single 操作符
 
-Single: 只有一个元素或者错误的流
-
 Single只包含两个事件，一个是正常处理成功的 onSuccess，另一个是处理失败的 onError，它只发送一次消息，一般在Android中网络请求返回结果使用 Single 接收。
 
 ```kotlin
@@ -114,7 +112,9 @@ Observable.create<String> { emitter ->
 ```
 ### 3.2 interval() 操作符
 
-使用`interval()`方法创建事件序列间隔发射
+`interval()`: 从 0 开始，每隔固定的时间发送一个数字，默认运行在 computation Scheduler。
+
+<img width="600" alt="interval弹珠图" src="https://user-images.githubusercontent.com/17560388/150051644-9d7b171d-6d36-416b-9bb2-33a8204fb555.png">
 
 ```kotlin
 //每隔1秒发送一个整数，从0开始 (默认执行无数次 使用 take(int) 方法限制执行次数)
@@ -134,8 +134,10 @@ public static Observable<Long> intervalRange(long start, long count, long initia
 ```
 ### 3.3 defer() 创建事件序列
 
-`defer`直到有观察者订阅时才创建Observable，并且为每个观察者创建一个刷新的Observable
-  
+`defer`：只有当有 Subscriber 来订阅的时候才会创建一个新的 Observable 对象，也就是说每次订阅都会得到一个刚创建的最新的 Observable 对象。
+
+<img width="600" alt="defer弹珠图" src="https://user-images.githubusercontent.com/17560388/150052605-9b3ec29e-c51d-44ec-8d32-42ec66b66050.png">
+
 ```kotlin
 val observable = Observable.defer { Observable.just(System.currentTimeMillis()) }
 observable.subscribe { print("$it ") }   // 454  订阅时才产生了Observable
@@ -201,6 +203,8 @@ numbers.toObservable().repeatUntil {Random(10).nextInt() < 10}
 
 创建一个在给定的时间段之后返回一个特殊值的 Observable ，它在延迟一段给定的时间后发射一个简单的数字 0
 
+<img width="600" alt="timer弹珠图" src="https://user-images.githubusercontent.com/17560388/150058290-2dbfa735-7d9b-4c42-920b-e60e52d7a966.png">
+
 ```kotlin
 // 在500毫秒之后输出一个数字0
 Observable.timer(500, TimeUnit.MILLISECONDS).subscribe { print("$it  ") }
@@ -224,14 +228,18 @@ Observable.fromCallable { 1 }.subscribe { print("$it  ") }
 
 使用`just()`方法快捷创建事件队列，将传入的参数依次发送出来(最少1个 最多10个)
 
+<img width="600" alt="just弹珠图" src="https://user-images.githubusercontent.com/17560388/150057560-9c996804-e792-4307-bee0-8688661a9ca7.png">
+
 ```kotlin
-val disposable = Observable.just("Just1", "Just2", "Just3").subscribe { print("$it  ") }
+Observable.just("Just1", "Just2", "Just3").subscribe { print("$it  ") }
 // 将会依次调用：onNext("Just1"); onNext("Just2"); onNext("Just3");  onCompleted();
 ```
 
 ### 3.9 range() 操作符
 
 使用`range(start, count)`方法快捷创建事件队列，创建一个int序列
+
+<img width="600" alt="range弹珠图" src="https://user-images.githubusercontent.com/17560388/150058014-6ff10698-f1e5-4e75-87a6-992008702327.png">
 
 ```kotlin
  Observable.range(3, 5).forEach { print("$it ") } //3 4 5 6 7
@@ -241,8 +249,13 @@ val disposable = Observable.just("Just1", "Just2", "Just3").subscribe { print("$
 ### 4.1 map() 和 cast() 
 
 - `map`操作符对原始Observable发射的每一项数据应用一个函数，然后返回一个发射这些结果的Observable。默认不在任何特定的调度器上执行
+
+<img width="600" alt="map弹珠图" src="https://user-images.githubusercontent.com/17560388/150059561-fde07e5f-3f21-4ad5-b62e-e89bd53e5a10.png">
+
 - `cast`操作符将原始Observable发射的每一项数据都强制转换为一个指定的类型`（多态）`，然后再发射数据，它是map的一个特殊版本
- 
+
+<img width="600" alt="cast弹珠图" src="https://user-images.githubusercontent.com/17560388/150059822-84b11051-4553-46f1-9e6e-f5b9595ffa21.png">
+
 ```kotlin
 Observable.range(1, 5).map { item -> "to String $item" }.subscribe { print("$it  ") }
 // 将`Date`转换为`Any` (如果前面的Class无法转换成第二个Class就会出现ClassCastException)
@@ -273,19 +286,6 @@ Observable.just(Date()).cast(Any::class.java).subscribe { print("$it  ") }
 ```kotlin
 Observable.range(1, 5).flatMap { Observable.just("$it to flat")}.subscribe { print("$it  ") }
 Observable.range(1, 5).concatMap { Observable.just("$it to concat") }.subscribe { print("$it  ") }
-//latMap`挺重要的，再举一个例子,依次打印Person集合中每个元素中Plan的action
-arrayListOf(
-    Person("KYLE", arrayListOf(Plan(arrayListOf("Study RxJava", "May 1 to go home")))),
-    Person("WEN QI", arrayListOf(Plan(arrayListOf("Study Java", "See a Movie")))),
-    Person("LU", arrayListOf(Plan(arrayListOf("Study Kotlin", "Play Game")))),
-    Person("SUNNY", arrayListOf(Plan(arrayListOf("Study PHP", "Listen to music"))))
-).toObservable().flatMap {
-    Observable.fromIterable(it.planList)
-}.flatMap {
-    Observable.fromIterable(it.actionList)
-}.subscribeBy(
-    onNext = { print("$it  ") }
-)
 ```
 
 ### 4.4 flatMapIterable() 操作符
@@ -299,6 +299,8 @@ Observable.range(1, 5)
 ### 4.5 buffer() 操作符
 
 使用`buffer(count,skip)`，将事件缓冲至列表中，count 是一个buffer的最大值，skip 是指针后移的距离(不定义时就为count)。
+
+<img width="600" alt="buffer弹珠图" src="https://user-images.githubusercontent.com/17560388/150054634-83c85dbe-f5d3-4fd2-b31d-7adf1c644515.png">
 
 ```kotlin
 // 生成一个5个整数构成的流，然后使用`buffer`之后，这些整数会被3个作为一组进行输出
