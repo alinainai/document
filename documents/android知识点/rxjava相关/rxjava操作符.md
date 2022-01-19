@@ -103,8 +103,6 @@ Maybe.create(MaybeOnSubscribe<Int> {e->
 ```kotlin
 Observable.create<String> { emitter ->
         with(emitter) {
-        onNext("Hello")
-        onNext("Handsome")
         onNext("Kotlin")
         onComplete()
     }
@@ -446,7 +444,9 @@ Observable.just(1, 1, 2, 3, 4)
 ```
 ### 5.7 debounce() 限制发射频率过快
 
-使用`debounce()` 限制发射频率过快，如果两件事件发送的时间间隔小于设定的时间间隔则`前一件`事件就不会发送给观察者
+使用`debounce(timeout,unit)` 限制发射频率过快，如果两件事件发送的时间间隔小于设定的时间间隔则`前一个`事件就会被丢弃
+
+<img width="600" alt="debounce弹珠图" src="https://user-images.githubusercontent.com/17560388/150105069-3f5e36c8-6378-494b-80da-1e0ceb617886.png">
 
 ```kotlin
 Observable.create<Int> { emitter ->
@@ -456,9 +456,21 @@ Observable.create<Int> { emitter ->
 }.debounce(1, TimeUnit.SECONDS)
 .subscribe { print("$it  ") } // 2
 ```
-### 5.8 ofType() 过滤不符合该类型事件
+`debounce(fun)` 参数为一个函数，这个函数的返回值是一个临时 Observable，源 Observable 每发送出一个数据，就会将其传入到函数中产生一个临时的 Observable。
+如果源 Observable 在发送一个新的数据时，上一个数据所生成的临时 Observable 还没有结束，那么上一个数据就会被过滤掉。
 
-使用`ofType()` 过滤不符合该类型事件
+<img width="600" src="https://user-images.githubusercontent.com/17560388/150108108-07bc9402-171f-4c58-bf28-e1da879823eb.png" alt="">
+
+```kotlin
+Observable.interval(1000, TimeUnit.MILLISECONDS)
+    .take(8)
+    .debounce { n -> Observable.timer(n % 2 * 1500, TimeUnit.MILLISECONDS) }
+    .forEach { print("$it  ") } //0 2 4 6 7
+```
+### 5.8 ofType()只发射指定类型的事件
+
+ofType(clazz)只发射指定类型的事件
+
 ```kotlin
 Observable.just(1, 2, 3, "k", "Y")
     .ofType(String::class.java)
