@@ -311,11 +311,13 @@ Observable.range(1, 5).buffer(3)
         print("${Arrays.toString(it.toIntArray())}  ")
     }
 ```
-### 4.6 groupBy()
+### 4.6 groupBy() 分组操作
 
-使用`groupBy()`做变换操作，用于分组元素(根据groupBy()方法返回的值进行分组)
+将源 Observable发送的数据按照 key 来拆分成一些小的 Observable，然后这些小的 Observable 分别发送其所包含的数据
 
-将每个元素都赋予一个组ID，然后将组ID相同元素放在一个 Observable 内发射出来
+源 Observable 经过 groupBy 转化后发送出来的每个数据都是 GroupedObservable。 GroupedObservable 是 Observable 的一个子类，有一个自己的 key。
+
+<img width="600" alt="groupBy弹珠图" src="https://user-images.githubusercontent.com/17560388/150070827-69631f53-706f-4ffc-ab81-a5ad36f201f9.png">
 
 ```kotlin
 val lst: MutableList<Pair<String,String>> = ArrayList()
@@ -332,6 +334,8 @@ Observable.fromIterable(lst)
 
 scan() 会接收两个参数: 上一次生成的值(也被称为累加器)、还有上游 Observable 的当前值。
 
+<img width="600" alt="scan弹珠图" src="https://user-images.githubusercontent.com/17560388/150072641-4d36f1c0-7dec-4f06-8264-c8739233afd3.png">
+
 ```kotlin 
 Observable.just(10, 14, 12, 13, 14, 16) //progress
     .scan {total, chunk -> total + chunk }
@@ -341,9 +345,10 @@ Observable.just(10, 14, 12, 13, 14, 16) //progress
 
 而在第二次迭代中，它变成了上一次 scan() 操作的结果值。
 
-可以在 scan 中添加初始值。
 
-如下，我们将初始值设置为1，上游会先把初始值 1 发送。
+重载方法：在 scan 中添加初始值。将初始值设置为1，上游会先把初始值 1 发送。
+
+<img width="600" alt="scanSeed弹珠图" src="https://user-images.githubusercontent.com/17560388/150072975-cd0858a9-7f6e-46a8-9133-e9873203173d.png">
 
 ```kotlin
 Observable.just(10, 14, 12, 13, 14, 16) //progress
@@ -506,17 +511,17 @@ Observable.create<Int> { emitter ->
 // [defaultIfEmpty]: 666
 ```
 
-### 5.13 amb() 操作符
+### 5.13 count() 统计个数
 
-订阅所有上游 Observable 并等待它们发布事件，当其中有 Observable 发布第一个事件之后，amb() 会丢弃所有其他的流，接下来只跟踪第一个发布事件的 Observable。
+返回被观察者发送事件的数量
 
 ```kotlin
-val list = ArrayList<Observable<Long>>()
-list.add(Observable.intervalRange(1, 5, 2, 1, TimeUnit.SECONDS))
-list.add(Observable.intervalRange(6, 5, 0, 1, TimeUnit.SECONDS))
-Observable.amb(list).subscribe { print("$it  ") }
-// [amb]:  6  7  8  9  10
+Observable.just(1, 2, 3)
+    .count()
+    .subscribe(Consumer {print("$it  ")})
+// [count]: 3
 ```
+
 ## 6. 组合操作
 
 ### 6.1 concat() 组合操作
@@ -634,16 +639,19 @@ Observable.just(1, 2, 3, 4)
     })
 // [collect]: [1, 2, 3, 4]
 ```
-### 6.8 count() 做组合操作
 
-返回被观察者发送事件的数量
+### 6.8 amb() 操作符
+
+订阅所有上游 Observable 并等待它们发布事件，当其中有 Observable 发布第一个事件之后，amb() 会丢弃所有其他的流，接下来只跟踪第一个发布事件的 Observable。
 
 ```kotlin
-Observable.just(1, 2, 3)
-    .count()
-    .subscribe(Consumer {print("$it  ")})
-// [count]: 3
+val list = ArrayList<Observable<Long>>()
+list.add(Observable.intervalRange(1, 5, 2, 1, TimeUnit.SECONDS))
+list.add(Observable.intervalRange(6, 5, 0, 1, TimeUnit.SECONDS))
+Observable.amb(list).subscribe { print("$it  ") }
+// [amb]:  6  7  8  9  10
 ```
+
 ## 7. 功能操作符/辅助操作
 
 ### 7.1 delay() 用于在发射数据之前停顿指定的时间
