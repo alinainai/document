@@ -403,7 +403,13 @@ Observable.just(1, 1, 1, 2, 3, 4, 1, 5, 5, 6)
  * `skip`         过滤掉数据的前n项 参数count代表跳过事件的数量
  * `skipLast`     与`skip` 功能相反 过滤掉数据的后n项
  * `skipUntil`    当 skipUntil() 中的 Observable 发送事件了，原来的 Observable 才会发送事件给观察者。
- * `skipWhile`    可以设置条件，当某个数据满足条件时不发送该数据，反之则发送。
+ 
+<img width="600" alt="skipUntil弹珠图" src="https://user-images.githubusercontent.com/17560388/150118874-16b925b8-956f-43ab-b9f1-5f4dea8915e4.png">
+
+ * `skipWhile`    设置特定条件，当事件不满足条件时，发送该事件和之后的所有事件。
+
+<img width="600" alt="scanSeed弹珠图" src="https://user-images.githubusercontent.com/17560388/150118823-faed40c0-d697-47af-8273-b83be926b92d.png">
+
  
 ```kotlin
 Observable.just(1, 2, 3, 4, 5, 6)
@@ -412,8 +418,6 @@ Observable.just(1, 2, 3, 4, 5, 6)
 
 Observable.just(6)
         .skipUntil<Int> { Observable.just(2).delay(2, TimeUnit.SECONDS).subscribe { print("$it  ") } }
-        .subscribeOn(Schedulers.io())
-        .observeOn(Schedulers.io())
         .subscribe { print("$it  ") }
 	
 Observable.just(1, 2, 3, 4)
