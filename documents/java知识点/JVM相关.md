@@ -15,7 +15,7 @@
 
 栈帧结构如下图：
 
-<img width="150" alt="栈帧结构" src="https://user-images.githubusercontent.com/17560388/132072640-1967c247-aede-4d06-849e-c16aad7e6efa.png">
+<img width="400" alt="栈帧结构" src="https://user-images.githubusercontent.com/17560388/150509470-d9b93dc6-cbe6-43c7-9c19-508f466ff1f4.png">
 
 
 ### 2. GC 回收机制 与 分代回收策略
