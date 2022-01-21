@@ -1,72 +1,89 @@
 ## 1.synchronized 简介
 
-独占式悲观锁，JVM 隐式实现，只允许同一时刻只有一个线程操作资源。
+`synchronized` 是独占式悲观锁，通过 `JVM` 隐式实现，只允许同一时刻只有一个线程操作资源。
 
-每个对象都隐式包含一个 monitor 对象，加锁的过程其实就是竞争 monitor 的过程。
+每个对象都隐式包含一个 `monitor` 对象，加锁的过程其实就是竞争 `monitor` 的过程。
 
-线程进入字节码 monitorenter 指令之后，线程将持有 monitor 对象，执行 monitorexit 时释放 monitor 对象。
+线程进入字节码 `monitorenter `指令之后，线程将持有 `monitor` 对象，执行 `monitorexit` 时释放 `monitor` 对象。
 
-其他线程没有拿到 monitor 对象时，则需要阻塞等待获取该 monitor 对象。
+其他线程没有拿到 `monitor` 对象时，则需要阻塞等待获取该 `monitor` 对象。
 
-## 2.synchronized修饰方法和代码块的区别
+## 2. synchronized修饰方法和代码块的区别
 
-#### 2.1 实现细节
+### 2.1 实现细节
 
 synchronized 既可以作用于方法，也可以作用于某一代码块。但在实现上是有区别的。 比如如下代码，使用 synchronized 作用于代码块：
 
 <img width="400" alt="实现细节" src="https://user-images.githubusercontent.com/17560388/120887375-fbc44b80-c624-11eb-90ec-98922b74c1d5.png">  
 
-使用 javap 查看上述 test1 方法的字节码，可以看出，编译而成的字节码中会包含 monitorenter 和 monitorexit 这两个字节码指令。如下所示：
+使用 javap 查看上述 `test1()` 方法的字节码，可以看到，编译而成的字节码中会包含 `monitorenter` 和 `monitorexit` 这两个字节码指令。
+
+如下所示：
 
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/120887381-0383f000-c625-11eb-90bf-1d5ba2ef33c3.png">  
 
-字节码中有 1 个 monitorenter 和 2 个 monitorexit，因为虚拟机保证异常发生时也能释放锁。2 个 monitorexit 一个是代码正常执行结束后释放锁，一个是在代码执行异常时释放锁。
+为什么字节码中有 1 个 `monitorenter` 和 2 个 `monitorexit`：
 
-再看下 synchronized 修饰方法有哪些区别：
+因为虚拟机保证异常发生时也能释放锁。2 个 `monitorexit` 一个是代码正常执行结束后释放锁，一个是在代码执行异常时释放锁。
+
+### 2.1 synchronized修饰方法
+
+再看下 `synchronized` 修饰方法有哪些区别：
 
 <img width="400" alt="修饰方法" src="https://user-images.githubusercontent.com/17560388/120887392-1e566480-c625-11eb-888b-06473f82651f.png">  
 
-synchronized 修饰的方法在被编译后，方法的 flags 属性中会被标记为 ACC_SYNCHRONIZED 。当虚拟机访问一个被标记为 ACC_SYNCHRONIZED 的方法时，会自动在方法的开始和结束（或异常）位置添加 monitorenter 和 monitorexit 指令。
+`synchronized` 修饰的方法在被编译后，方法的 `flags` 属性中会被标记为 `ACC_SYNCHRONIZED`。
 
-#### 2.2 关于 monitorenter 和 monitorexit，可以理解为一把具体的锁。
+当虚拟机访问一个被标记为 `ACC_SYNCHRONIZED` 的方法时，会自动在方法的开始和结束（或异常）位置添加 `monitorenter` 和 `monitorexit` 指令。
+
+### 2.3 monitorenter和monitorexit。
+
+可以把 `monitorenter` 和 `monitorexit` 理解为一把具体的锁。
 
 在这个锁中保存着两个比较重要的属性：计数器和指针。
 
 - 计数器代表当前线程一共访问了几次这把锁；
 - 指针指向持有这把锁的线程。
 
-
 <img width="400" alt="计数器和指针" src="https://user-images.githubusercontent.com/17560388/120887398-2910f980-c625-11eb-8073-eb8b5b7f4050.png"> 
 
-锁计数器默认为0，当执行monitorenter指令时，如锁计数器值为0 说明这把锁并没有被其它线程持有。那么这个线程会将计数器加1，并将锁中的指针指向自己。当执行monitorexit指令时，会将计数器减1。
+锁计数器默认为0，当执行`monitorenter`指令时，如锁计数器值为 `0` 说明这把锁并没有被其它线程持有。
+这个线程会将计数器加1，并将锁中的`指针`指向自己。当执行`monitorexit`指令时，会将计数器减1。
 
 ## 3. ReentrantLock 简介
-ReentrantLock 是 Lock 的默认实现方式之一，基于 AQS（Abstract Queued Synchronizer，队列同步器）实现的，默认非公平锁，在它的内部有一个 state 的状态字段用于表示锁是否被占用，如果是 0 则表示锁未被占用，此时线程就可以把 state 改为 1，并成功获得锁，而其他未获得锁的线程只能去排队等待获取锁资源。
 
-synchronized 和 ReentrantLock 都提供了锁的功能，具备互斥性和不可见性。在 JDK 1.5 中 synchronized 的性能远远低于 ReentrantLock，但在 JDK 1.6 之后 synchronized 的性能略低于 ReentrantLock，它的区别如下：
+`ReentrantLock` 是 `Lock` 的默认实现方式之一，基于 `AQS`（Abstract Queued Synchronizer，队列同步器）实现的，默认是非公平锁。
 
-- synchronized 是 JVM 隐式实现的，而 ReentrantLock 是 Java 语言提供的 API；
-- ReentrantLock 可设置为公平锁，而 synchronized 却不行；
-- ReentrantLock 只能修饰代码块，而 synchronized 可以用于修饰方法、修饰代码块等；
-- ReentrantLock 需要手动加锁和释放锁，如果忘记释放锁，则会造成资源被永久占用，而 synchronized 无需手动释放锁；
-- ReentrantLock 可以知道是否成功获得了锁，而 synchronized 却不行。
+在它的内部有一个 `state` 的状态字段用于表示锁是否被占用，如果是 0 则表示锁未被占用，此时线程就可以把 state 改为 1，并成功获得锁，而其他未获得锁的线程只能去排队等待获取锁资源。
+
+`synchronized` 和 `ReentrantLock` 都提供了锁的功能，具备互斥性和不可见性。
+
+在 `JDK 1.5` 中 `synchronized` 的性能远远低于 `ReentrantLock`，但在 `JDK 1.6` 之后 `synchronized` 的性能略低于 `ReentrantLock`。
+
+### 3.1 synchronized和ReentrantLock的区别
+
+它们的区别如下：
+
+- `synchronized` 是 `JVM` 隐式实现的，而 `ReentrantLock` 是 `Java` 语言提供的 API；
+- `ReentrantLock` 可设置为公平锁，而 `synchronized` 却不行；
+- `ReentrantLock` 只能修饰代码块，而 `synchronized` 可以用于修饰方法、修饰代码块等；
+- `ReentrantLock` 需要手动加锁和释放锁，如果忘记释放锁，则会造成资源被永久占用，而 `synchronized` 无需手动释放锁；
+- `ReentrantLock` 可以知道是否成功获得了锁，而 `synchronized` 却不行。
+
+### 3.2 公平锁和非公平锁
+
+- `公平锁`的含义是线程需要按照请求的顺序来获得锁；
+- `非公平锁`则允许线程在发送请求的同时该锁的状态恰好变成了可用，那么此线程就可以跳过队列中所有排队的线程直接拥有该锁。
+
+而`公平锁`由于有`挂起`和`恢复`所以存在一定的开销，因此性能不如`非公平锁`，所以 `ReentrantLock` 和 `synchronized` 默认都是`非公平锁`的实现方式。
+
 
 ## 4. ReentrantLock 源码分析
 
-```java
-public ReentrantLock() {
-    sync = new NonfairSync(); // 非公平锁
-}
-public ReentrantLock(boolean fair) {
-    sync = fair ? new FairSync() : new NonfairSync();
-}
-```
-- 公平锁的含义是线程需要按照请求的顺序来获得锁；
-- 非公平锁则允许线程在发送请求的同时该锁的状态恰好变成了可用，那么此线程就可以跳过队列中所有排队的线程直接拥有该锁。
 
-而公平锁由于有挂起和恢复所以存在一定的开销，因此性能不如非公平锁，所以 ReentrantLock 和 synchronized 默认都是**非公平锁**的实现方式。
+### 4.1 基本使用
 
-ReentrantLock 是通过 lock() 来获取锁，并通过 unlock() 释放锁，使用代码如下：
+`ReentrantLock` 是通过 `lock()` 来获取锁，并通过 `unlock()` 释放锁，使用代码如下：
 
 ```java
 Lock lock = new ReentrantLock();
@@ -77,9 +94,23 @@ try {
     lock.unlock(); // 释放锁
 }
 ```
-ReentrantLock 中的 lock() 是通过 sync.lock() 实现的，但 Sync 类中的 lock() 是一个抽象方法，需要子类 NonfairSync 或 FairSync 去实现。
 
-#### NonfairSync 中的 lock()
+### 4.2 ReentrantLock的构造方法
+
+```java
+public ReentrantLock() {
+    sync = new NonfairSync(); // 非公平锁
+}
+public ReentrantLock(boolean fair) {
+    sync = fair ? new FairSync() : new NonfairSync();
+}
+```
+
+### 4.3 lock()方法的实现类
+
+`ReentrantLock` 中的 `lock()` 是通过 `sync.lock()` 实现的，但 `Sync` 类中的 `lock()` 是一个抽象方法，需要子类 `NonfairSync` 或 `FairSync` 去实现。
+
+`NonfairSync` 中的 `lock()`
 
 ```java
 final void lock() {
@@ -91,7 +122,7 @@ final void lock() {
 }
 ```
 
-#### FairSync 中的 lock() 源码如下：
+FairSync 中的 lock() 源码如下：
 
 ```java
 final void lock() {
@@ -99,9 +130,9 @@ final void lock() {
 }
 ```
 
-可以看出非公平锁比公平锁只是多了一行 compareAndSetState 方法，该方法是尝试将 state 值由 0 置换为 1，如果设置成功的话，则说明当前没有其他线程持有该锁，不用再去排队了，可直接占用该锁，否则，则需要通过 acquire 方法去排队。
+可以看出非公平锁比公平锁只是多了一行 `compareAndSetState` 方法，该方法是尝试将 `state` 值由 0 置换为 1，如果设置成功的话，则说明当前没有其他线程持有该锁，不用再去排队了，可直接占用该锁。否则，则需要通过 `acquire` 方法去排队。
 
-#### 父类 AQS 中的 acquire 源码：
+### 4.4 父类`AQS`中的`acquire`源码：
 
 ```java
 public final void acquire(int arg) {
