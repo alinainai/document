@@ -1,5 +1,9 @@
 ## 1.synchronized 简介
 
+1. 修饰实例方法；
+2. 修饰静态类方法；
+3. 修饰代码块。
+
 `synchronized` 是独占式悲观锁，通过 `JVM` 隐式实现，只允许同一时刻只有一个线程操作资源。
 
 每个对象都隐式包含一个 `monitor` 对象，加锁的过程其实就是竞争 `monitor` 的过程。
@@ -8,15 +12,13 @@
 
 其他线程没有拿到 `monitor` 对象时，则需要阻塞等待获取该 `monitor` 对象。
 
-## 2. synchronized修饰方法和代码块的区别
-
-### 2.1 实现细节
+### 1.1 synchronized 修饰方法和代码块的区别
 
 synchronized 既可以作用于方法，也可以作用于某一代码块。但在实现上是有区别的。 比如如下代码，使用 synchronized 作用于代码块：
 
 <img width="400" alt="实现细节" src="https://user-images.githubusercontent.com/17560388/120887375-fbc44b80-c624-11eb-90ec-98922b74c1d5.png">  
 
-使用 javap 查看上述 `test1()` 方法的字节码，可以看到，编译而成的字节码中会包含 `monitorenter` 和 `monitorexit` 这两个字节码指令。
+使用 javap -v 查看上述 `test1()` 方法的字节码，可以看到，编译而成的字节码中会包含 `monitorenter` 和 `monitorexit` 这两个字节码指令。
 
 如下所示：
 
@@ -26,7 +28,7 @@ synchronized 既可以作用于方法，也可以作用于某一代码块。但�
 
 因为虚拟机保证异常发生时也能释放锁。2 个 `monitorexit` 一个是代码正常执行结束后释放锁，一个是在代码执行异常时释放锁。
 
-### 2.1 synchronized修饰方法
+### 1.2 synchronized 修饰方法
 
 再看下 `synchronized` 修饰方法有哪些区别：
 
@@ -36,7 +38,7 @@ synchronized 既可以作用于方法，也可以作用于某一代码块。但�
 
 当虚拟机访问一个被标记为 `ACC_SYNCHRONIZED` 的方法时，会自动在方法的开始和结束（或异常）位置添加 `monitorenter` 和 `monitorexit` 指令。
 
-### 2.3 monitorenter和monitorexit。
+### 1.3 monitorenter 和 monitorexit。
 
 可以把 `monitorenter` 和 `monitorexit` 理解为一把具体的锁。
 
@@ -50,7 +52,7 @@ synchronized 既可以作用于方法，也可以作用于某一代码块。但�
 锁计数器默认为0，当执行`monitorenter`指令时，如锁计数器值为 `0` 说明这把锁并没有被其它线程持有。
 这个线程会将计数器加1，并将锁中的`指针`指向自己。当执行`monitorexit`指令时，会将计数器减1。
 
-## 3. ReentrantLock 简介
+## 2. ReentrantLock 简介
 
 `ReentrantLock` 是 `Lock` 的默认实现方式之一，基于 `AQS`（Abstract Queued Synchronizer，队列同步器）实现的，默认是非公平锁。
 
@@ -60,7 +62,7 @@ synchronized 既可以作用于方法，也可以作用于某一代码块。但�
 
 在 `JDK 1.5` 中 `synchronized` 的性能远远低于 `ReentrantLock`，但在 `JDK 1.6` 之后 `synchronized` 的性能略低于 `ReentrantLock`。
 
-### 3.1 synchronized和ReentrantLock的区别
+### 2.1 synchronized和ReentrantLock的区别
 
 它们的区别如下：
 
@@ -70,7 +72,7 @@ synchronized 既可以作用于方法，也可以作用于某一代码块。但�
 - `ReentrantLock` 需要手动加锁和释放锁，如果忘记释放锁，则会造成资源被永久占用，而 `synchronized` 无需手动释放锁；
 - `ReentrantLock` 可以知道是否成功获得了锁，而 `synchronized` 却不行。
 
-### 3.2 公平锁和非公平锁
+### 2.2 公平锁和非公平锁
 
 - `公平锁`的含义是线程需要按照请求的顺序来获得锁；
 - `非公平锁`则允许线程在发送请求的同时该锁的状态恰好变成了可用，那么此线程就可以跳过队列中所有排队的线程直接拥有该锁。
@@ -78,10 +80,10 @@ synchronized 既可以作用于方法，也可以作用于某一代码块。但�
 而`公平锁`由于有`挂起`和`恢复`所以存在一定的开销，因此性能不如`非公平锁`，所以 `ReentrantLock` 和 `synchronized` 默认都是`非公平锁`的实现方式。
 
 
-## 4. ReentrantLock 源码分析
+## 3. ReentrantLock 源码分析
 
 
-### 4.1 基本使用
+### 3.1 基本使用
 
 `ReentrantLock` 是通过 `lock()` 来获取锁，并通过 `unlock()` 释放锁，使用代码如下：
 
@@ -95,7 +97,7 @@ try {
 }
 ```
 
-### 4.2 ReentrantLock的构造方法
+### 3.2 ReentrantLock的构造方法
 
 ```java
 public ReentrantLock() {
@@ -106,7 +108,7 @@ public ReentrantLock(boolean fair) {
 }
 ```
 
-### 4.3 lock()方法的实现类
+### 3.3 lock()方法的实现类
 
 `ReentrantLock` 中的 `lock()` 是通过 `sync.lock()` 实现的，但 `Sync` 类中的 `lock()` 是一个抽象方法，需要子类 `NonfairSync` 或 `FairSync` 去实现。
 
@@ -132,7 +134,7 @@ final void lock() {
 
 可以看出非公平锁比公平锁只是多了一行 `compareAndSetState` 方法，该方法是尝试将 `state` 值由 0 置换为 1，如果设置成功的话，则说明当前没有其他线程持有该锁，不用再去排队了，可直接占用该锁。否则，则需要通过 `acquire` 方法去排队。
 
-### 4.4 父类`AQS`中的`acquire`源码：
+### 3.4 父类`AQS`中的`acquire`源码：
 
 ```java
 public final void acquire(int arg) {
@@ -144,7 +146,7 @@ public final void acquire(int arg) {
 
 tryAcquire 方法尝试获取锁，如果获取锁失败，则把它加入到阻塞队列中。
 
-#### tryAcquire 的源码：
+tryAcquire 的源码：
 
 ```java
 protected final boolean tryAcquire(int acquires) {
@@ -174,7 +176,7 @@ protected final boolean tryAcquire(int acquires) {
 
 如果获取锁失败，则调用 addWaiter 方法把线程包装成 Node 对象，同时放入到队列中，但 addWaiter 方法并不会尝试获取锁，acquireQueued 方法才会尝试获取锁，如果获取失败，则此节点会被挂起.
 
-#### hasQueuedPredecessors 的源码
+### hasQueuedPredecessors 的源码
 
 ```java
 public final boolean hasQueuedPredecessors() {
@@ -185,58 +187,51 @@ public final boolean hasQueuedPredecessors() {
         ((s = h.next) == null || s.thread != Thread.currentThread());
 }
 ```
-#### addWaiter 用来添加新的节点到队列的尾部。
+
+### addWaiter 用来添加新的节点到队列的尾部。
  
 ```java
-   
-    private Node addWaiter(Node mode) {
-        //根据传进来的参数mode=Node.EXCLUSIVE,表示将要构造一个独占锁。
-        Node node = new Node(Thread.currentThread(), mode);
-        Node pred = tail;
-        //tail为空的情况下直接调用enq方法去进行head和tail的初始化。
-        if (pred != null) {
-           //tail不为空的情况下，将新构造节点的前驱设置为原尾部节点。
-            node.prev = pred;
-           //使用CAS进行交换，如果成功，则将原尾部节点的后继节点设置为新节点，做双向列表关联；
-           //（这里要注意一点，交换成功的同时有其他线程读取该列表，有可能读取不到新节点。例如A线程
-           //执行完下方步骤1后，还未执行步骤2，遍历的时候将会获取不到新节点，这也是
-           //hasQueuedPredecessors方法中的第一种情况）
-           //如果不成功，则代表有竞争，有其他线程修改了尾部,则去调用下方enq方法
-            if (compareAndSetTail(pred, node)) {   //1
-                pred.next = node;   //2
-                return node;
-            }
-        }
-        enq(node);
-        return node;
-    }
-
-     private Node enq(final Node node) {
-        for (;;) {
-            Node t = tail;
-            if (t == null) { // Must initialize
-                //初始化head和tail，初始化完成后，会继续执行外面的死循环，进行compareAndSetTail将
-               //新节点设置到尾部，和上述执行流程一样，这里就不详述了。
-                if (compareAndSetHead(new Node()))
-                    tail = head;
-            } else {
-                node.prev = t;
-                if (compareAndSetTail(t, node)) {
-                    t.next = node;
-                    return t;
-                }
-            }
+private Node addWaiter(Node mode) {
+    //根据传进来的参数mode=Node.EXCLUSIVE，表示将要构造一个独占锁。
+    Node node = new Node(Thread.currentThread(), mode);
+    Node pred = tail;
+    //tail为空的情况下直接调用enq方法去进行head和tail的初始化。
+    if (pred != null) {//tail不为空的情况下，将新构造节点的前驱设置为原尾部节点。       
+        node.prev = pred;
+        //使用CAS进行交换，如果成功，则将原尾部节点的后继节点设置为新节点，做双向列表关联；（这里要注意一点，交换成功的同时有其他线程读取该列表，有可能读取不到新节点。例如A线程
+        //执行完下方步骤1后，还未执行步骤2，遍历的时候将会获取不到新节点，这也是 hasQueuedPredecessors方法 中的第一种情况）
+        //如果不成功，则代表有竞争，有其他线程修改了尾部，则去调用下方enq方法
+        if (compareAndSetTail(pred, node)) {   //1
+            pred.next = node;   //2
+            return node;
         }
     }
+    enq(node);
+    return node;
+}
 
+private Node enq(final Node node) {
+   for (;;) {
+       Node t = tail;
+       if (t == null) { // Must initialize
+           //初始化head和tail，初始化完成后，会继续执行外面的死循环，进行compareAndSetTail将新节点设置到尾部，和上述执行流程一样，这里就不详述了。
+           if (compareAndSetHead(new Node()))
+               tail = head;
+       } else {
+           node.prev = t;
+           if (compareAndSetTail(t, node)) {
+               t.next = node;
+               return t;
+           }
+       }
+   }
+}
 ```
 
-#### acquireQueued的源码如下：
+### acquireQueued的源码如下：
 
 ```java
-/**
- * 队列中的线程尝试获取锁，失败则会被挂起
- */
+//队列中的线程尝试获取锁，失败则会被挂起
 final boolean acquireQueued(final Node node, int arg) {
     boolean failed = true; // 获取锁是否成功的状态标识
     try {
@@ -295,7 +290,6 @@ private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
 
 到这里整个加锁的流程就已经走完了，最后的情况是，没有拿到锁的线程会在队列中被挂起，直到拥有锁的线程释放锁之后，才会去唤醒其他的线程去获取锁资源，整个运行流程如下图所示：
 
-
 unlock 相比于 lock 来说就简单很多了，源码如下：
 
 ```java
@@ -336,7 +330,6 @@ protected final boolean tryRelease(int releases) {
 ```
 在 tryRelease 方法中，会先判断当前的线程是不是占用锁的线程，如果不是的话，则会抛出异常；
 如果是的话，则先计算锁的状态值 getState() - releases 是否为 0，如果为 0，则表示可以正常的释放锁，然后清空独占的线程，最后会更新锁的状态并返回执行结果。
-
 
 https://www.codenong.com/cs106477645/
 
