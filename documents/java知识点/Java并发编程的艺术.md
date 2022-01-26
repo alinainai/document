@@ -80,6 +80,11 @@ Jvm 基于进入和退出 Monitor 对象来实现方法同步和代码块同步�
 
 <img width="600" alt="类图" src="https://user-images.githubusercontent.com/17560388/151096616-9321cf5d-f56b-48ed-b564-78286c9ab136.png">
 
+**锁的升级**
+1. 偏向锁
+
+
+
 
 
 
