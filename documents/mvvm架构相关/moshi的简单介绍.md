@@ -12,8 +12,9 @@ Moshi 底层 IO 操作采用 Okio，序列化的时候性能优于Gson及KS以�
 | Moshi    | 编译插件  |   Kotlin  |KSerializer|
 
 
-#### 1.1 相对于 gson 的优点
-默认值
+### 2. 优点
+
+支持 反射和注解 两种方式。
 
 
 
