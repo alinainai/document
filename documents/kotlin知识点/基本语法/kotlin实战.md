@@ -159,3 +159,23 @@ private inline fun showToast(function1: () -> Unit, noinline function2: () -> Un
     ToastUtils.show(message)
 }
 ```
+### 7. 类委托语法
+```kotlin
+// 实现一个默认的日志策略类
+class LogStrategyImpl : ILogStrategy {
+    override fun log(message: String) {
+        Log.i("测试输出", message)
+    }
+}
+
+interface ILogStrategy {
+    fun log(message: String)
+}
+
+// 创建一个日志代理类
+class LogStrategyProxy(strategy: ILogStrategy) : ILogStrategy by strategy
+
+// 使用
+val logStrategyImpl = LogStrategyImpl()
+LogStrategyProxy(logStrategyImpl).log("666666")
+```
