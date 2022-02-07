@@ -1,6 +1,43 @@
-####  1.类实现双接口默认方法
+### 1. Volatile 关键字
 
-需要在类中重写方法否则编译不过
+```kotlin
+@Volatile
+var instance: ThreadPoolManager
+```
+
+### 2. Synchronized 关键字
+
+```kotlin
+@Synchronized
+fun getInstance(): ThreadPoolManager? {}
+
+fun getInstance(): ThreadPoolManager? {
+    synchronized(ThreadPoolManager::class.java, {
+    })
+}
+```
+
+### 3. 枚举
+
+Java 的写法
+
+```java
+enum Sex {
+
+    MAN(1), WOMAN(2);
+
+    Sex(int type) {}
+}
+```
+
+Kotlin 的写法
+
+```kotlin
+enum class Sex (var type: Int) {
+    MAN(1), WOMAN(2)
+}
+```
+### 4. 当子类需要实现双接口默认方法时，需要在类中重写方法否则编译不过
 
 ```kotlin
 interface Focus {
@@ -17,7 +54,7 @@ class Button: Click, Focus {
     }
 }
 ```
-#### Sealed 类的作用
+### 5. Sealed 类的作用
 
 先看一段代码不适用 Sealed 类的代码
 
@@ -54,4 +91,5 @@ fun eval(e:Expr):Int{
     }
 }
 ```
+
 
