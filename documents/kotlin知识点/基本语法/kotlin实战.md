@@ -91,5 +91,71 @@ fun eval(e:Expr):Int{
     }
 }
 ```
+### 6. 内联函数
 
+内联最适用于参数为函数类型的函数
+```kotlin
+class Demo {
+    fun test() {
+        showToast({
+            println("测试输出了")
+        }, "toast")
+    }
 
+    private inline fun showToast(function: () -> Unit, message: String) {
+        function.invoke()
+        ToastUtils.show(message)
+    }
+}
+```
+编译后
+```kotlin
+/* compiled from: Demo.kt */
+public final class Demo {
+    public final void test() {
+        System.out.println("\u6d4b\u8bd5\u8f93\u51fa\u4e86");
+        ToastUtils.show("toast");
+    }
+}
+```
+
+不加 inline 反编译，会导致多生成一个内部类，这个是 lambda 函数多出来的类
+
+```kotlin
+/* compiled from: Demo.kt */
+public final class Demo {
+
+    public final void test() {
+        showToast(1.INSTANCE, "7777777");
+    }
+
+    private final void showToast(Function0<Unit> function, String message) {
+        function.invoke();
+        ToastUtils.show(message);
+    }
+}
+```
+```kotlin
+/* compiled from: Demo.kt */
+final class Demo$test$1 extends Lambda implements Function0<Unit> {
+    public static final Demo$test$1 INSTANCE = new Demo$test$1();
+
+    Demo$test$1() {
+        super(0);
+    }
+
+    public final void invoke() {
+        System.out.println("\u6d4b\u8bd5\u8f93\u51fa\u4e86");
+    }
+}
+```
+
+假设一个 inline 函数上面有多个 lambda 参数，某个 lambda 参数不需要内联可以用 noinline 修饰
+
+```kotlin
+private inline fun showToast(function1: () -> Unit, noinline function2: () -> Unit, message: String) {
+    function1.invoke()
+    function2.invoke()
+    ToastUtils.show(message)
+}
+```
