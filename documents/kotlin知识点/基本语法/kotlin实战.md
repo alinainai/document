@@ -159,6 +159,19 @@ private inline fun showToast(function1: () -> Unit, noinline function2: () -> Un
     ToastUtils.show(message)
 }
 ```
+crossinline 内联加强
+
+如果内联函数内部还使用 lambda 表达式，需要在 内联函数的参数加上 crossinline，否则编译不通过。但是传入 foo 的 lambda 表达式不能添加 return 语句。
+```kotlin
+inline fun foo(crossinline f: () -> Unit) {
+    bar { f() }
+}
+
+fun bar(f: () -> Unit) {
+    f()
+}
+```
+
 ### 7. 类委托语法
 ```kotlin
 // 实现一个默认的日志策略类
