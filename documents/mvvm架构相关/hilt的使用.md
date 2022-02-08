@@ -123,6 +123,9 @@ Hilt 会按照相应 Android 类的生命周期自动创建和销毁生成的组
 和 Dagger2 相同，如果不指定作用域，每绑定一次都会生成一个新的实例。
 我们可以通过指定 Component 的作用域，在同一个作用域下共用一个 Component 实例。
 
+<img width="600" alt="image" src="https://user-images.githubusercontent.com/17560388/152905229-d76e8392-93a1-4e1b-8bff-80590f7967e5.png">
+
+如果使用 @ActivityScoped 将 AnalyticsAdapter 的作用域限定为 ActivityComponent，Hilt 会在相应 Activity 的整个生命周期内提供 AnalyticsAdapter 的同一实例。
 
 ### 参考
 
