@@ -6,36 +6,36 @@
 
 ```java
 class ActivityThread{
-	  public static void main(String[] args) {
-		    //构造一个主线程对应的Looper实例，存放在Looper.sMainLooper中
-	 	    Looper.prepareMainLooper();
-	 	    //...
-	 	    //创建一个Handler对象实例
-	 	    if (sMainThreadHandler == null) {
+    public static void main(String[] args) {
+        //构造一个主线程对应的Looper实例，存放在Looper.sMainLooper中
+        Looper.prepareMainLooper();
+	//...
+	//创建一个Handler对象实例
+	if (sMainThreadHandler == null) {
             sMainThreadHandler = thread.getHandler();
         }
         //开启事件循环
         Looper.loop();
-	  }
-	  //handler实例
-	  final H mH = new H();
-	  final Handler getHandler() {
+    }
+    //handler实例
+    final H mH = new H();
+    final Handler getHandler() {
         return mH;
     }
     static volatile Handler sMainThreadHandler;
 }
 ```
-### 2. Looper分析1
+### 2. Looper分析
 
 为避免一次性分析所有代码所带来的烦恼这chapter只解析部分
 
-Looper.prepareMainLooper分析
+Looper.prepareMainLooper 分析
 
 ```java
 class Looper{
- 	  //用于存放线程对应Looper实例
+    //用于存放线程对应Looper实例
     static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
-	  @Deprecated
+    @Deprecated
     public static void prepareMainLooper() {
         prepare(false);
         synchronized (Looper.class) {
@@ -68,43 +68,40 @@ class Looper{
 Looper.loop分析
 ```java
 class Looper{
-	 public static void loop() {      	
-        final Looper me = myLooper(); //得到当前线程对应实例
-        final MessageQueue queue = me.mQueue; //得到Looper对应MessageQueue
-        boolean slowDeliveryDetected = false;
-
-        for (;;) {
-        	  //取出消息队列
+    public static void loop() {      	
+    	final Looper me = myLooper(); //得到当前线程对应实例
+    	final MessageQueue queue = me.mQueue; //得到Looper对应MessageQueue
+    	boolean slowDeliveryDetected = false;
+    	for (;;) {
+            //取出消息队列
             Message msg = queue.next(); // might block
             //没有消息那么就退出死循环
             if (msg == null) {
-                return;
+             	return;
             }
             // Looper中你可以自定义一个日志器实例，然后就可以统计主线程是否耗时了
             final Printer logging = me.mLogging;
             if (logging != null) {
-                logging.println(">>>>> Dispatching to " + msg.target + " " 
-                        msg.callback + ": " + msg.what);
+            logging.println(">>>>> Dispatching to " + msg.target + " " 
+                msg.callback + ": " + msg.what);
             }
-			      //分配消息给回调
-           	msg.target.dispatchMessage(msg);
+            //分配消息给回调
+            msg.target.dispatchMessage(msg);
             if (observer != null) {
-                    observer.messageDispatched(token, msg);
+                observer.messageDispatched(token, msg);
             }
             if (logging != null) {
                 logging.println("<<<<< Finished to " + msg.target + " " + msg.callback);
             }
-
         }
     }
-
 }
 ```
 
 我们可以大概知道looper的loop函数会从MessageQueue不断取出Message对象,然后进行分发.
 
 一个可以用于统计主线程耗时的技巧
-```java
+```kotlin
 class MainActivity : AppCompatActivity() {
     class MyPrinter : Printer {
         var startTime = System.currentTimeMillis()
@@ -121,7 +118,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
@@ -137,33 +133,29 @@ Looper 会不断调用 MessageQueue 的 next
 ### 3. MessageQueue 分析1
 ```java
 class MessageQueue{
-	//一个用于标识状态的类，这个标志位被native代码所使用
-	  private long mPtr; // used by native code
-	
+    //一个用于标识状态的类，这个标志位被native代码所使用
+    private long mPtr; // used by native code
     Message next() {
         // Return here if the message loop has already quit and been disposed.
-      	//如果标志位为0那么证明消息循环已经结束那么返回null即可
+      	//如果标志位为 0 那么证明消息循环已经结束，那么返回 null 即可
         final long ptr = mPtr;
         if (ptr == 0) {
             return null;
-        }
-		
-		    //未决的消息数目
+        }	
+	//未决的消息数目
         int pendingIdleHandlerCount = -1; // -1 only during first iteration
         //下次轮询的时间
         int nextPollTimeoutMillis = 0;
-        //死循环取出消息
         for (;;) {
-        	//如果现在最近的一个消息需要若干时间才能运行
+            //如果现在最近的一个消息需要若干时间才能运行
             if (nextPollTimeoutMillis != 0) {
             	//刷新所有的binder命令到内核，这里不需要关心
                 Binder.flushPendingCommands();
             }
-			      //调用linux的epoll函数进行休眠
-			      //epoll是linux的下的api，这里不需要深究只需要认为object.wait 和object.notify的作用即可
-			      //当有信息要处理或者休眠到期或被内核唤醒
+            //调用linux的epoll函数进行休眠
+	    //epoll是linux的下的api，这里不需要深究只需要认为object.wait 和object.notify的作用即可
+	    //当有信息要处理或者休眠到期或被内核唤醒
             nativePollOnce(ptr, nextPollTimeoutMillis);
-
             synchronized (this) {
                 // Try to retrieve the next message.  Return if found.
                 final long now = SystemClock.uptimeMillis();
@@ -178,7 +170,6 @@ class MessageQueue{
                         msg = msg.next;
                     } while (msg != null && !msg.isAsynchronous());
                 }
-                
                 if (msg != null) {
                     //当前消息的所预期的运行时间未到那么 设置一个休眠时间
                     if (now < msg.when) {
@@ -202,27 +193,27 @@ class MessageQueue{
                //...略
         }
     }
-
 }
 ```
 
 Message 作为队列节点的数据机构，我们看下他的属性：
+
 ```java
 public final class Message implements Parcelable {
    	//用户多定义的消息标识号
     public int what;
     /**
-	   * 目标消息要送达的时间。这个时间是基于{@link SystemClock#uptimeMillis}.
+     * 目标消息要送达的时间。这个时间是基于{@link SystemClock#uptimeMillis}.
      */
     @UnsupportedAppUsage
     @VisibleForTesting(visibility = VisibleForTesting.Visibility.PACKAGE)
     public long when;
 	
-	  //所对应的handler如果这个为空那么标识这个消息作为同步凭证
+    //所对应的handler如果这个为空那么标识这个消息作为同步凭证
     @UnsupportedAppUsage
     /*package*/ Handler target;
     
-	  //如果你希望直接回调自定义的函数那么赋值这个即可
+    //如果你希望直接回调自定义的函数那么赋值这个即可
     @UnsupportedAppUsage
     /*package*/ Runnable callback;
 
@@ -239,9 +230,8 @@ class MessageQueue{
     //标识消息队列在调用next函数的时候被阻塞在pollOnce()传入非零的超时参数
     private boolean mBlocked;
     final long ptr = mPtr; //当mPtr为0时退出消息循环，在构造MessageQueue的时候会初始化一个非0数值
-	  //when 表示此消息要送达的时间
+    //when 表示此消息要送达的时间
     boolean enqueueMessage(Message msg, long when) {
-    	  //加锁
         synchronized (this) {       
             msg.markInUse();
             msg.when = when;
@@ -305,8 +295,8 @@ class Handler{
 我们知道消息分发的时候会调用下面的代码：
 ```java
 class Looper{
-	 public static void loop() {
-			  // 其中 msg 是 Message 类型, target 是 Handler 类型
+    public static void loop() {
+	// 其中 msg 是 Message 类型, target 是 Handler 类型
         msg.target.dispatchMessage(msg);      
     }
 }
@@ -320,7 +310,7 @@ class Handler{
         if (msg.callback != null) { //1. 如果 Message 有指定回调，直接调用 Message 的 callback
             handleCallback(msg);
         } else {
-        	//构造函数传入callback如果设置了根据返回值确定是否继续调用自己的handleMessage
+            //构造函数传入callback如果设置了根据返回值确定是否继续调用自己的handleMessage
             if (mCallback != null) { //2. 如果 handler 构造传入 callback 不为空，优先响应 mCallback。如果 mCallback 返回值为 true，结束回调。
                 if (mCallback.handleMessage(msg)) 
                     return;
@@ -337,10 +327,11 @@ class Handler{
 ```
 回调流程图：
 
+<img width="501" alt="msg回调流程" src="https://user-images.githubusercontent.com/17560388/154253375-a203c5d7-6a30-46e3-9841-983abc3bd84a.png">
 
 ### 6. 同步屏障
 
-Android 的主线程负责更新 ui，一般会每 16ms 重绘一次屏幕，为了防止 `UI绘制事件` 延迟，Android 系统设计了一套方案。
+Android 的主线程负责更新 ui，一般会每 16ms 重绘一次屏幕，为了防止 `UI绘制事件` 延迟。
 
 我们将 Message 分为 同步消息 和 异步消息，默认情况我们的消息都是同步消息。只需要调用 Message.setAsynchronous 即可成为异步消息.
 
@@ -363,6 +354,7 @@ class Message{
 
 我们回过头看下MessageQueue的异步处理部分
 
+```java
 class MessageQueue{
     Message next() {
                 //...略
@@ -379,14 +371,14 @@ class MessageQueue{
         }
     }
 }
+```
 
-示意图：
 
 ### 7. UI更新机制
-
+```java
 class ViewRootImpl{
-	//这个函数开始便利根view致性各种绘制操作
-  void scheduleTraversals() {
+    //这个函数开始便利根view致性各种绘制操作
+    void scheduleTraversals() {
         if (!mTraversalScheduled) {
             mTraversalScheduled = true;
             //放入一个屏障
@@ -400,17 +392,19 @@ class ViewRootImpl{
         }
     }
 }
+```
 
 具体插入屏障代码，由于只是简单的链表操作不在解释
 
+```java
 class Looper{
- public int postSyncBarrier() {
+    public int postSyncBarrier() {
         return mQueue.enqueueSyncBarrier(SystemClock.uptimeMillis());
     }
 }
 
 class MessageQueue(){
-  int enqueueSyncBarrier(long when) {
+    int enqueueSyncBarrier(long when) {
         synchronized (this) {
             final int token = mNextBarrierToken++;
             final Message msg = Message.obtain();
@@ -436,8 +430,8 @@ class MessageQueue(){
             return token;
         }
     }
-	//移除
- void removeSyncBarrier(int token) {
+    //移除
+    void removeSyncBarrier(int token) {
         // Remove a sync barrier token from the queue.
         // If the queue is no longer stalled by a barrier then wake it.
         synchronized (this) {
@@ -469,62 +463,50 @@ class MessageQueue(){
         }
     }
 }    
-
+```
 IdleHandler
 MessageQueue我们重新看下这个类的next函数
-
+```java
 //MessageQueue.java
-
 Class MessageQueue{
     private IdleHandler[] mPendingIdleHandlers;
-
-  Message next() {
- 
+    Message next() {
         final long ptr = mPtr;
         if (ptr == 0) {
             return null;
         }
-
         int pendingIdleHandlerCount = -1; // -1 only during first iteration
         int nextPollTimeoutMillis = 0;
         for (;;) {
             if (nextPollTimeoutMillis != 0) {
                 Binder.flushPendingCommands();
             }
-
             nativePollOnce(ptr, nextPollTimeoutMillis);
-
             synchronized (this) {
-               
-               
                 final long now = SystemClock.uptimeMillis();
                 Message prevMsg = null;
                 Message msg = mMessages;
-                if (msg != null && msg.target == null) {
- 					//如果有消息就分发 然后返回
- 				}
+                if (msg != null && msg.target == null) { //如果有消息就分发 然后返回
+ 		
+ 		}
 
              //如果没有消息那么就调用IdleHandler集合中的对象
             for (int i = 0; i < pendingIdleHandlerCount; i++) {
                 final IdleHandler idler = mPendingIdleHandlers[i];
                 mPendingIdleHandlers[i] = null; // release the reference to the handler
-
                 boolean keep = false;
-        		//调用函数
-               keep = idler.queueIdle();
-               
-				//如果函数返回false，那么会将其移除
+        	//调用函数
+                keep = idler.queueIdle();
+                //如果函数返回false，那么会将其移除
                 if (!keep) {
                     synchronized (this) {
                         mIdleHandlers.remove(idler);
                     }
                 }
             }
-
-          
             pendingIdleHandlerCount = 0;
-
             nextPollTimeoutMillis = 0;
         }
     }
 }
+```
