@@ -321,12 +321,12 @@ class Handler{
             handleCallback(msg);
         } else {
         	//构造函数传入callback如果设置了根据返回值确定是否继续调用自己的handleMessage
-            if (mCallback != null) { //2. 如果 handler 构造传入 callback 不为空，直接响应 mCallback
-                if (mCallback.handleMessage(msg)) {
+            if (mCallback != null) { //2. 如果 handler 构造传入 callback 不为空，优先响应 mCallback。如果 mCallback 返回值为 true，结束回调。
+                if (mCallback.handleMessage(msg)) 
                     return;
                 }
             }
-            handleMessage(msg); //3. 上面两种 callback 都没有，回调给 handler 的 handleMessage 方法。
+            handleMessage(msg); //3. 回调给 handler 的 handleMessage 方法
         }
     }
     //调用Message定义的回调然后直接返回
@@ -335,7 +335,7 @@ class Handler{
     }
 }
 ```
-流程图：
+回调流程图：
 
 
 ### 6. 同步屏障
@@ -382,7 +382,7 @@ class MessageQueue{
 
 示意图：
 
-我们看下Android系统下如何利用这个机制进行刷新ui的
+### 7. UI更新机制
 
 class ViewRootImpl{
 	//这个函数开始便利根view致性各种绘制操作
@@ -400,22 +400,7 @@ class ViewRootImpl{
         }
     }
 }
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
+
 具体插入屏障代码，由于只是简单的链表操作不在解释
 
 class Looper{
@@ -485,76 +470,11 @@ class MessageQueue(){
     }
 }    
 
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51
-52
-53
-54
-55
-56
-57
-58
-59
-60
-61
-62
-63
-64
-65
-66
 IdleHandler
 MessageQueue我们重新看下这个类的next函数
 
 //MessageQueue.java
+
 Class MessageQueue{
     private IdleHandler[] mPendingIdleHandlers;
 
