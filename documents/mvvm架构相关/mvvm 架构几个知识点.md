@@ -3,7 +3,7 @@
 
 [官方的架构指南](https://developer.android.com/jetpack/guide?hl=zh-cn) 
 
-升级版架构指南 2021、12，有点 MVI 的味道
+升级版架构指南 2021、12，有点 `MVI` 的味道
 
 <img width="573" alt="升级版架构指南" src="https://user-images.githubusercontent.com/17560388/154452988-d81d8ab8-e7a0-4713-8289-239d1e274956.png">
 
@@ -53,8 +53,9 @@ https://developer.android.com/jetpack/guide/ui-layer#additional-considerations
 
 <img width="573" alt="官方新版架构图" src="https://user-images.githubusercontent.com/17560388/154453572-e8e847d8-71c1-4c45-8078-6e525f87bffc.png">
 
+### Jetpack 包
 
-### 1.ViewModle
+#### 1.ViewModle
 
 1.ViewModel 以生命周期的方式存储和管理界面相关的数据。
 
@@ -64,7 +65,7 @@ https://developer.android.com/jetpack/guide/ui-layer#additional-considerations
 
 4.多个 Fragment 共享数据。
 
-### 2.LiveData 和 MultableLiveData 的区别
+#### 2.LiveData 和 MultableLiveData 的区别
 
 MultableLiveData 是 LiveData 子类。并对外公开了 postValue 和 setValue 的方法。
 
