@@ -3,33 +3,39 @@ Kotlin 的泛型和 Java 相当接近:它们使用同样的方式声明泛型函
 不能把带类型实参的类型和 is 运算符一起使用，因为类型实参在运行时将被擦除。
 
 #### 1. 上界 
-```
+```kotlin
 <T : Number> //等同于 java 中的 <T extends Number>
 ```
 #### 2. 如何确保 T 非空
+```kotlin
+List<T> 
 ```
-List<T> `T` 默认父类为 `Any?`，如果想让 `T` 默认非空: List<T : Any>
+这里`T` 默认父类为 `Any?`，如果想让 `T` 默认非空
+```kotlin
+List<T : Any>
 ```
 #### 3.reified 实化泛型
-reified 实化只对内联函数有效，reified 声明了类型参数不会在运行时被擦除
+
+reified 实化只对内联函数有效，reified 修饰的泛型，类型参数不会在运行时被擦除，所以可以用 `is` 判断类型，并且可以获得 `java.lang.Class` 实例。
+
 ```kotlin
 inline fun <reified T> Iterable<*>.filterIsInstance(): List<T> {
     val destination = mutableListOf<T>()
     for (element in this) {
-        if (element is T) {
+        if (element is T) {//允许你在运行时对它们使用 `is` 检查
             destination.add(element)
         }
     }
     return destination
 }
 ```
-内联函数的类型参数可以标记成实化的，允许你在运行时对它们使用 `is` 检查，以及获得 `java.lang.Class` 实例。
 
 #### 4. 协变:保留子类型化关系
 
 如果 A 是 B 的子类型，那么 `Producer<A>` 就是 `Producer<B>` 的子类型
   
 在 Kotiin 中，要声明类在某个类型参数上是可以协变的，在该`类型参数的名称`前加上 out 关键字即可:
+
 ```kotlin
 //类被声明成在 T 上协变
 interface Producer<out T>{
@@ -39,8 +45,7 @@ interface Producer<out T>{
 
 Kotlin 中的 只读接口 List 声明成了协变的 ，这意味着 List<String> 是 List<Any> 的子类型。
 
-
-类型参数 `T` 上的关键宇 `out` 有两层含义
+**Tips: 类型参数 `T` 上的关键宇 `out` 有两层含义**
   
 - 子类型化会被保留( Producer<Cat> 是 Producer<Anirnal> 的子类型)
 - T只能用在out位置
