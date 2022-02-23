@@ -7,12 +7,13 @@ Kotlin 的泛型和 Java 相当接近:它们使用同样的方式声明泛型函
 <T : Number> //等同于 java 中的 <T extends Number>
 ```
 #### 2. 如何确保 T 非空
+
 ```kotlin
-List<T> 
+List<T>  //T:Any?
 ```
-这里`T` 默认父类为 `Any?`，如果想让 `T` 默认非空
+上面代码中的 `T` 默认父类为 `Any?`，如果想让 `T` 默认非空，需要作如下处理：
 ```kotlin
-List<T : Any>
+List<T : Any> // T:Any 
 ```
 #### 3.reified 实化泛型
 
