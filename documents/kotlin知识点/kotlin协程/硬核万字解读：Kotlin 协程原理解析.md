@@ -14,7 +14,7 @@ Kotlin 协程是一套基于 Java Thread 的线程框架，相较于 Java Execut
 在上述代码中，通过 GlobalScope.launch 创建并启动了一个使用默认调度器 Dispatchers.Default 分配运行线程的协程，闭包内的内容是一个协程体。源码分析都基于这个示例。
 
 
-### 准备
+## 准备
 
 在正式开始源码分析之前，我们改造一下协程启动的代码，如下是完整代码，将`协程体`单独定义一个变量，并在协程体中调用`suspend挂起函数`。
 ```kotlin
@@ -48,7 +48,7 @@ Kotlin 协程是一套基于 Java Thread 的线程框架，相较于 Java Execut
 Kotlin协程中使用了状态机，编译器会将协程体编译成一个匿名内部类，每一个挂起函数的调用位置对应一个挂起点。
 
 
-#### 01反编译
+### 1、反编译
 
 对上述代码进行反编译，反编译的代码如下：
 ```kotlin
@@ -120,12 +120,12 @@ Kotlin协程中使用了状态机，编译器会将协程体编译成一个匿�
 
 在编译前的代码中，协程体的操作就是调用 suspendFun1()、suspendFun2() 挂起函数，仔细一些查看编译后代码，其实可以发现，类的成员变量中有一个 label 字段，控制 invokeSuspend() 方法执行不同的条件分支，挂起函数的调用被分布在了不同的条件分支中，并且挂起函数传参为 this，也就是协程体自身。
 
-由此协程体被编译成一个继承SuspendLambda的类，并将协程体中的操作分割成invokeSuspend()中不同条件分支的调用，在后面篇幅中就称这个类为协程体类。
+由此协程体被编译成一个继承SuspendLambda的类，并将协程体中的操作分割成invokeSuspend()中不同条件分支的调用，在后面篇幅中就称这个类为`协程体类`。
 
 
-#### 02概念小结
+### 2、概念小结
 
-这里先总结出Kotlin协程在执行过程中会出现的一些概念，避免在后续源码分析中出现混淆：
+这里先总结出`Kotlin协程`在执行过程中会出现的一些概念，避免在后续源码分析中出现混淆：
 
 - 协程体：协程中要执行的操作，它是一个被suspend修饰的lambda 表达式;
 - 协程体类:编译器会将协程体编译成封装协程体操作的匿名内部类;
@@ -134,16 +134,16 @@ Kotlin协程中使用了状态机，编译器会将协程体编译成一个匿�
 - 挂起点：一般对应挂起函数被调用的位置;
 - 续体:续体的换概念可以理解为挂起后，协程体中剩余要执行代码，笔者在文章中，将其看作为协程体类，在协程体类中封装了协程的要执行的操作，由状态机的状态将操作分割了成不同的片段，每一个状态对应不同代码片段的执行，可以与续体的概念对应。
 
-### 核心类
+## 核心类
 
-#### 01SuspendLambda
+### 1、SuspendLambda
 
 
-在上文中提到协程体编译成了一个继承SuspendLambda的类，接下来我们看下SuspendLambda是什么。
+在上文中提到协程体编译成了一个继承 SuspendLambda 的类，接下来我们看下 SuspendLambda 是什么。
 
 SuspendLambda的类图如下：
 
-<img width="800" alt="SuspendLambda的类图" src="https://user-images.githubusercontent.com/17560388/155473086-2843f35f-c7aa-4c0b-8749-8523a8745dbe.png">
+<img width="600" alt="SuspendLambda的类图" src="https://user-images.githubusercontent.com/17560388/155473086-2843f35f-c7aa-4c0b-8749-8523a8745dbe.png">
 
 继承链：SuspendLambda -> ContinuationImpl -> BaseContinuationImpl -> Continuation
 
@@ -187,7 +187,7 @@ BaseContinuationImpl 的源码被简化一部分，这里先不用管过多的�
 了解上面的这些概念，在接下来的分析过程中会轻松一些。
 
 
-#### 02GlobalScope作用域
+### 2、GlobalScope作用域
 
 在示例中使用 GlobalScope 创建了一个协程，看一下 GlobalScope 的源码：
 ```kotlin
@@ -235,7 +235,7 @@ launch函数存在3个参数:
 接下来分别看下这个三个参数的含义。
 
 
-#### 03CoroutineContext上下文
+### 3、CoroutineContext上下文
 
 
 CoroutineContext 协程的上下文，这是一个数据集合接口声明，协程中 Job、Dispatcher 调度器都可以是它的元素,CoroutineContext 有一个非常好的作用就是我们可以通过它拿到 Job、Dispatcher 调度器等数据。
@@ -307,7 +307,7 @@ CombinedContext 是 CoroutineContext 接口的具体实现类，存在两个属�
 
 看一下链表节点 CombinedContext 的实现，类图如下：
 
-<img width="400" alt="CombinedContext的实现" src="https://user-images.githubusercontent.com/17560388/155476708-ea78c444-8c80-4235-879b-25640301fd45.png">
+<img width="600" alt="CombinedContext的实现" src="https://user-images.githubusercontent.com/17560388/155476708-ea78c444-8c80-4235-879b-25640301fd45.png">
 
 源码解析：
 ```kotlin
@@ -367,7 +367,7 @@ CombinedContext 是 CoroutineContext 接口的具体实现类，存在两个属�
 CoroutineContex 定义集合的能力，而 CombinedContext 是 CoroutineContext 集合能力的具体实现，这个实现是一个左向链表;
 
 
-#### 04CoroutineStart 启动模式
+### 4、CoroutineStart 启动模式
 
 
 CoroutineStart 是协程的启动模式，存在以下4种模式：
@@ -377,7 +377,7 @@ CoroutineStart 是协程的启动模式，存在以下4种模式：
 - ATOMIC 立即调度，协程肯定会执行，执行前不可以被取消
 - UNDISPATCHED 立即在当前线程执行，直到遇到第一个挂起点（可能切线程）
 
-#### 05suspend CoroutineScope.() -> Unit
+### 5、suspend CoroutineScope.() -> Unit
 
 suspend CoroutineScope.() -> Unit 协程体，这是一个 Lambda 表达式，也就是协程中要执行的代码块，即上文中 launch 函数闭包中的代码，这是一个被 suspend 修饰符修饰的 "CoroutineScope扩展函数类型" 的参数，这样定义的好处就是可以在协程体中访问这个对象的属性，比如 CoroutineContext 上下文集合。
 
@@ -385,7 +385,7 @@ suspend CoroutineScope.() -> Unit 协程体，这是一个 Lambda 表达式，�
 
 从启动协程的示例代码中，launch 函数传入 Dispatchers.Default 默认调度器，这个 Dispatchers.Default 对应的 launch 函数的 CoroutineContext 参数.
 
-#### 06Dispatchers调度器
+### 6、Dispatchers调度器
 
 Dispatchers 是协程中提供的线程调度器，用来切换线程，指定协程所运行的线程。
 
@@ -408,21 +408,21 @@ Dispatchers源码分析：
      public val IO: CoroutineDispatcher = DefaultScheduler.IO  
  }
 ```
-Dispatchers中提供了4种类型调度器：
+Dispatchers 中提供了4种类型调度器：
 
 - Default 默认调度器，适合CPU密集型任务调度器 比如逻辑计算；
 - Main UI调度器；
 - Unconfined 无限制调度器，对协程执行的线程不做限制，协程恢复时可以在任意线程；
 - IO IO调度器，适合IO密集型任务调度器 比如读写文件，网络请求等。
 
-以示例中的Dispatchers.Default为例分析，从上述Dispatchers的源码中可以看到，Default的类型是一个CoroutineDispatcher（所有的调度器都是CoroutineDispatcher的子类）。
+以示例中的 Dispatchers.Default 为例分析，从上述 Dispatchers 的源码中可以看到，Default 的类型是一个 CoroutineDispatcher（所有的调度器都是 CoroutineDispatcher 的子类）。
 
 
-#### 2.6.1 CoroutineDispatcher调度器
+### 2.6.1 CoroutineDispatcher调度器
 
 首先看一下它的类图：
 
-<img width="800" alt="类图" src="https://user-images.githubusercontent.com/17560388/155477733-a78c6888-5ff5-431b-b78d-a5da5581f495.png">
+<img width="600" alt="类图" src="https://user-images.githubusercontent.com/17560388/155477733-a78c6888-5ff5-431b-b78d-a5da5581f495.png">
 
 CoroutineDispatcher 继承 AbstractCoroutineContextElement，AbstractCoroutineContextElement 是 Element接口的一个抽象实现类，而 Element 又实现 CoroutineContext 接口，所以调度器本身既是一个 CoroutineContext，也可以作为 CoroutineContext 集合的元素存放其中。
 
@@ -475,11 +475,11 @@ ContinuationInterceptor#interceptContinuation 的作用是对协程体类对象 
 在 CoroutineDispatcher 中重写了 interceptContinuation()，将我们协程体类对象 Continuation 包装成一个 DispatchedContinuation 对象，这个 DispatchedContinuation 本质上是代理了协程体类对象 Continuation，并且它自身也是一个 Continuation。
 
 
-#### 2.6.2 DispatchedContinuation 包装
+### 2.6.2 DispatchedContinuation 包装
 
 DispatchedContinuation 是出现的第二个 Continuation 对象，代理协程体 Continuation 对象并持有线程调度器，它的作用就是使用线程调度器将协程体调度到指定的线程执行。熟悉一下DispatchedContinuation 的类图，然后看下它的源码实现：
 
-<img width="800" alt="类图" src="https://user-images.githubusercontent.com/17560388/155478483-e952f44b-9c64-42e4-babb-c2134dc604e3.png">
+<img width="700" alt="类图" src="https://user-images.githubusercontent.com/17560388/155478483-e952f44b-9c64-42e4-babb-c2134dc604e3.png">
 
 我们看下源码：
 ```kotlin
@@ -552,7 +552,7 @@ DispatchedContinuation 还继承了 DispatchedTask 类，从类图中可以看�
  internal abstract class DispatchedTask<in T>(  
      @JvmField public var resumeMode: Int  
  ) : SchedulerTask() {  
- ’  
+ 
      // 在DispatchedContinuation中重写了该属性，delegate实际是指DispatchedContinuation对象  
      internal abstract val delegate: Continuation<T>  
    
@@ -579,11 +579,11 @@ DispatchedContinuation 还继承了 DispatchedTask 类，从类图中可以看�
 在 run() 的逻辑中，通过 DispatchedContinuation 拿到了原始的协程体类 Continuation 对象，并通过 Continuation 的扩展方法 resume() 触发协程体的 resumeWith()，到这里就清楚了，只要让这个 runable 在指定的的线程运行就实现了线程的调度。而调度器的实现就是将这个 runable 对象在指定的线程运行，这也是 dispatcher#dispatch() 的作用。
 
 
-2.6.3 Dispatchers.Default 默认调度器
+### 2.6.3 Dispatchers.Default默认调度器
 
 dispatcher#dispatch() 的实现是在调度器的具体实现类中，比如示例中的 Dispatchers.Default，看一下 Dispatchers.Default 的整体类图:
 
-<img width="800" alt="类图" src="https://user-images.githubusercontent.com/17560388/155480562-77b9d2d6-e583-40b5-9fd3-d3e1d82928d1.png">
+<img width="600" alt="类图" src="https://user-images.githubusercontent.com/17560388/155480562-77b9d2d6-e583-40b5-9fd3-d3e1d82928d1.png">
 
 现在继续分析 Dispatchers.Default 的实现。使用 createDefaultDispatcher() 创建一个默认的调度器：
     
@@ -659,7 +659,7 @@ dispatcher#dispatch() 的实现是在调度器的具体实现类中，比如示�
 再次提醒一下，coroutineScheduler.dispatch() 方法中，这个 Runnable 类型的参数 block 是指 DispatchedContinuation。
 
 
-#### 2.6.4 Worker线程
+### 2.6.4 Worker线程
 
 CoroutineScheduler 是一个Kotlin实现的线程池，提供协程运行的线程。
 
@@ -713,8 +713,8 @@ Worker源码解析：
                              tryReleaseCpu(WorkerState.PARKING)  
                              // 线程中断标识更新为中断  
                              interrupted()  
-                                                         // 阻塞当前线程不超过minDelayUntilStealableTaskNs 纳秒，使其在尽可能在任务可窃取到后唤醒  
-                            LockSupport.parkNanos(minDelayUntilStealableTaskNs)  
+                             // 阻塞当前线程不超过minDelayUntilStealableTaskNs 纳秒，使其在尽可能在任务可窃取到后唤醒  
+                             LockSupport.parkNanos(minDelayUntilStealableTaskNs)  
                              minDelayUntilStealableTaskNs = 0L  
                          }  
    
@@ -728,16 +728,14 @@ Worker源码解析：
 ```
 Worker 继承 Thread 是一个线程，线程的启动会执行 run 方法，在 Worker 的 run() 中，调用 runWorker()，而 runWorker() 中首先启动了一个有条件的死循环，在线程的状态未被置为 TERMINATED终止时，线程一直存活，在循环体中遍历私有和全局任务队列，此时分为两个分支：
 
-- 1. 如找到Task,则运行该Task
-
-- 2. 如未找到判断是否存在可窃取的任务，这里的判断条件是根据 minDelayUntilStealableTaskNs 来进行的，它的定义就是经过本身值的时间之后，至少存在一个可窃取的任务：
-
-minDelayUntilStealableTaskNs 非 0 时，重新扫描一遍队列，是否已有任务，如依然没有任务，进入下次循环，这次循环将线程阻塞 minDelayUntilStealableTaskNs 纳秒后唤醒，同时将minDelayUntilStealableTaskNs 置为 0；
-minDelayUntilStealableTaskNs 为 0，没有可偷窃的任务，将线程进行挂起，等待唤醒;
+- 1.如找到Task,则运行该Task
+- 2.如未找到判断是否存在可窃取的任务，这里的判断条件是根据 minDelayUntilStealableTaskNs 来进行的，它的定义就是经过本身值的时间之后，至少存在一个可窃取的任务：
+- minDelayUntilStealableTaskNs 非 0 时，重新扫描一遍队列，是否已有任务，如依然没有任务，进入下次循环，这次循环将线程阻塞 minDelayUntilStealableTaskNs 纳秒后唤醒，同时将minDelayUntilStealableTaskNs 置为 0；
+- minDelayUntilStealableTaskNs 为 0，没有可偷窃的任务，将线程进行挂起，等待唤醒;
 
 下面给出 Worker#run() 的处理流程图：
 
-<img width="800" alt="Worker#run()的处理流程图" src="https://user-images.githubusercontent.com/17560388/155482139-88fc210d-1a6e-4128-a4eb-98bdb7154736.png">
+<img width="600" alt="Worker#run()的处理流程图" src="https://user-images.githubusercontent.com/17560388/155482139-88fc210d-1a6e-4128-a4eb-98bdb7154736.png">
 
 下面的篇幅中会对循环体中各个操作进行分析：
 
@@ -978,9 +976,9 @@ tryUnpark() 并不是 Worker 中的方法，而是在 CoroutineScheduler 线程�
 
 可以再看下Worker中个对任务处理流程，加深印象：
 
-<img width="800" alt="任务处理流程" src="https://user-images.githubusercontent.com/17560388/155484757-2950eee2-70ee-49bc-9bff-76d8c2e626ff.png">
+<img width="600" alt="任务处理流程" src="https://user-images.githubusercontent.com/17560388/155484757-2950eee2-70ee-49bc-9bff-76d8c2e626ff.png">
 
-#### 2.6.5 CoroutineScheduler线程池
+### 2.6.5 CoroutineScheduler线程池
 
 分析完Woker线程之后，我们再来看下线程池的实现，在调度器章节的最后分析到，线程最终由 CoroutineScheduler#dispatch() 来分配运行的线程，我们看一下它的实现：
 ```kotlin
@@ -1049,14 +1047,13 @@ tryUnpark() 并不是 Worker 中的方法，而是在 CoroutineScheduler 线程�
 - CoroutineScheduler:线程池，提供协程运行的线程。
 - Worker：Worker的实现是继承了Thread，本质上还是对java线程的一次封装。
 
-#### 2.6.6  IO调度器
+### 2.6.6  IO调度器
 
 回过头去再看一下Dispatchers.Default调度器的类图，IO调度器是Dispatchers.Default内的一个变量，并且它和Default调度器共享CoroutineScheduler线程池。
 
 上面的大部分篇幅中分析了协程的一些核心类的作用，下面从示例中配置的各项条件开始，进行一个整体流程的分析，这里将会串联起这些类。
 
-
-launch的实现
+## launch的实现
 
 再看一下launch函数的实现代码
 
@@ -1077,7 +1074,7 @@ launch的实现
         return coroutine
     }
 ```
-#### 01Job
+### 1、Job
 
 launch函数的返回值是一个Job,通过launch或者async创建的协程都会返回一个Job实例，它的作用是管理协程的生命周期，也作为协程的唯一标志。
 
@@ -1090,8 +1087,9 @@ Job的状态：
 - Completing: 完成中
 - Completed: 已完成
 
-Job
-```kotlin    
+
+```kotlin
+  //Job
   public interface Job : CoroutineContext.Element {  
        // 在CoroutineContext集合中的Key：Job  
      public companion object Key : CoroutineContext.Key<Job>  
@@ -1135,7 +1133,7 @@ Job
 Job 实现了 CoroutineContext.Element，它是 CoroutineContext 集合的元素类型，并且 Key 为Job。Job 内提供了isActive、isCompleted、isCancelled 属性用以判断协程的状态，以及取消协程、等待协程完成、监听协程状态的操作。
 
 
-#### 02launch函数体
+### 2、launch函数体
 
 
 接下来看下launch函数体的实现：
@@ -1161,7 +1159,7 @@ CoroutineScope. newCoroutineContext()
 
 StandaloneCoroutine具体来说是一个协程对象，实现比较简单，继承AbstractCoroutine，并重写了handleJobException()异常处理方法，所有的协程对象都继承AbstractCoroutine。继续看它的父类AbstractCoroutine，类图如下:
 
-<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/155485769-e3cf3fc8-34a4-4c51-ada4-0abeb6dae4c4.png">
+<img width="600" alt="类图" src="https://user-images.githubusercontent.com/17560388/155485769-e3cf3fc8-34a4-4c51-ada4-0abeb6dae4c4.png">
 
 AbstractCoroutine 继承或者实现了 JobSupport、Job、Continuation、CoroutineScope。
 
@@ -1267,10 +1265,12 @@ SuspendLambda是BaseContinuationImpl的一个子类，所以这里的判断if (t
 create()方法创建了一个协程体类的实例，到这里真正拿到了一个协程体类的实例。
 
 注意看下构造函数的参数continuation，continuation就是AbstractCoroutine，在协程体类的继承链中，这个continuation一直传递到了BaseContinuationImpl父类中，后续分析挂起恢复时，会看到它的使用。继续分析intercepted()
+
 ```kotlin
 public actual fun <T> Continuation<T>.intercepted(): Continuation<T> =  
      (this as? ContinuationImpl)?.intercepted() ?: this  
 ```
+
 代码很简单，首先将 this 强转成了 ContinuationImpl 类型，this 是协程体类的实例，继承 ContinuationImpl，可以进行强转，接着看 ContinuationImpl.intercepted()。
 
 ```kotlin
@@ -1282,20 +1282,17 @@ public fun intercepted(): Continuation<Any?> =
 context[ContinuationInterceptor] 从集合中取到调度器，并调用调度器的interceptContinuation()，而调度器的方法interceptContinuation()的作用是将协程体Continuation包装成一个DispatchedContinuation，之后的源码中会调用DispatchedContinuation的resumeCancellableWith()，而在resumeCancellableWith()中将DispatchedContinuation分发给调度器进行了线程的调度，之后协程就在执行的线程启动了。
 
 
-#### 03启动流程小结
+### 3、启动流程小结
 
 
 以示例代码为前置条件，调度器为Dispatchers.Default,启动模式为CoroutineStart.DEFAULT:
 
-- 1. CoroutineScope#launch()创建一个协程，在其内部实现中根据启动模式为CoroutineStart.DEFAULT，创建一个StandaloneCoroutine协程对象，并触发StandaloneCoroutine#start(start, coroutine, block);
+- 1.CoroutineScope#launch()创建一个协程，在其内部实现中根据启动模式为CoroutineStart.DEFAULT，创建一个StandaloneCoroutine协程对象，并触发StandaloneCoroutine#start(start, coroutine, block);
+- 2.StandaloneCoroutine的父类是AbstractCoroutine，StandaloneCoroutine#start()的实现在其父类中，即AbstractCoroutine#start();
+- 3.在AbstractCoroutine#start()中，触发CoroutineStart#invoke();
+- 4.CoroutineStart#invoke()的处理逻辑中，根据调度器为Dispatchers.Default，调用协程体的startCoroutineCancellable()方法;
+- 5.startCoroutineCancellable()的内部处理是一个链式调用：
 
-- 2. StandaloneCoroutine的父类是AbstractCoroutine，StandaloneCoroutine#start()的实现在其父类中，即AbstractCoroutine#start();
-
-- 3. 在AbstractCoroutine#start()中，触发CoroutineStart#invoke();
-
-- 4. CoroutineStart#invoke()的处理逻辑中，根据调度器为Dispatchers.Default，调用协程体的startCoroutineCancellable()方法;
-
-- 5. startCoroutineCancellable()的内部处理是一个链式调用：
 ```kotlin
 createCoroutineUnintercepted(..).intercepted().resumeCancellableWith(Result.success(Unit))
 ```
@@ -1305,14 +1302,14 @@ intercepted()使用拦截器（调度器）将协程体类对象包装成Dispatc
 
 调用DispatchedContinuation#resumeCancellableWith()。
     
-- 6. 在DispatchedContinuation#resumeCancellableWith()中，使用线程调度器触发dispatcher#dispatch(context, this)进行调度，该调度器为Dispatchers.Default;
+- 6.在DispatchedContinuation#resumeCancellableWith()中，使用线程调度器触发dispatcher#dispatch(context, this)进行调度，该调度器为Dispatchers.Default;
 
-- 7. Dispatchers.Default#dispatch()调度处理中，将DispatchedContinuation分发到CoroutineScheduler线程池中，由CoroutineScheduler分配一个线程Worker,最终在Woreder的run()方法中触发了DispatchedContinuation的run(),其内部实现是使协程体Continuation对象的resumeWithI()得以执行，前文中分析到协程体的执行其实就是resumeWith()方法被调用,这样协程体就可以在执行的线程中执行了;
+- 7.Dispatchers.Default#dispatch()调度处理中，将DispatchedContinuation分发到CoroutineScheduler线程池中，由CoroutineScheduler分配一个线程Worker,最终在Woreder的run()方法中触发了DispatchedContinuation的run(),其内部实现是使协程体Continuation对象的resumeWithI()得以执行，前文中分析到协程体的执行其实就是resumeWith()方法被调用,这样协程体就可以在执行的线程中执行了;
 
 
 下面给出时序图会更清晰一些：
 
-<img width="800" alt="类图" src="https://user-images.githubusercontent.com/17560388/155488663-90262adf-b5ae-4bca-961c-aa2866c0eebb.png">
+<img width="600" alt="类图" src="https://user-images.githubusercontent.com/17560388/155488663-90262adf-b5ae-4bca-961c-aa2866c0eebb.png">
 
 在上文的分析中出现了三个Continuation类型的对象：
 
@@ -1330,7 +1327,7 @@ intercepted()使用拦截器（调度器）将协程体类对象包装成Dispatc
 挂起有一个特点就是，挂起而不阻塞线程，这里要清楚一点，挂起的本质是切线程，并且在相应的逻辑处理完成之后，再重新切回线程。挂起使协程体的操作被return而停止，等待恢复，它阻塞的是协程体的操作，并未阻塞线程。
 
 
-### 01 BaseContinuationImpl
+### 1、BaseContinuationImpl
 
 
 再瞅一眼BaseContinuationImpl的源码实现,BaseContinuationImpl负责协程体逻辑的处理:
@@ -1416,7 +1413,7 @@ invokeSuspend()的执行就是协程体的执行，当invokeSuspend()返回值�
 现在知道了一个结论，挂起函数内执行挂起操作的时候会返回coroutine_suspended标志，结束协程体的运行，使协程挂起，接下来看下协程提供的挂起函数中是如何操作的。
 
 
-### 02withContext()挂起函数
+### 2、withContext()挂起函数
 
 
 withContext()是kotlin协程提供的挂起函数。
@@ -1487,7 +1484,7 @@ trySuspend()方法中，_decision默认为UNDECIDED，预期的参数值传参�
 与挂起对应的就是恢复了，接下来分析，协程挂起后是如何恢复的。
 
 
-### 挂起恢复
+## 挂起恢复
 
 以在挂起章节中，withContext()为例，withContex()的协程的启动调用了startCoroutineCancellable()方法。
 ```kotlin
@@ -1574,11 +1571,11 @@ startCoroutineCancellable方法的第二个参数为协程完成的回调，在w
 
 
     
-### 原文链接
+## 原文链接
     
 [硬核万字解读——Kotlin协程原理解析](https://mp.weixin.qq.com/s/N9BiufCWTRuoh6J-QERlWQ)
     
-### 参考：
+## 参考：
 
 [Kotlin协程源码分析-2 调用挂起函数](https://fanmingyi.blog.csdn.net/article/details/105027646)
     
