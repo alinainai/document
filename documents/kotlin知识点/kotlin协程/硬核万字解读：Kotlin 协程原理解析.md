@@ -428,8 +428,7 @@ CoroutineDispatcher 继承 AbstractCoroutineContextElement，AbstractCoroutineCo
 
 CoroutineDispatcher 还实现 ContinuationInterceptor 接口，ContinuationInterceptor 是一个拦截器的接口定义，也是 Kotlin 协程提供的拦截器的规范。
 ```kotlin
- ContinuationInterceptor
-   public interface ContinuationInterceptor : CoroutineContext.Element {  
+ public interface ContinuationInterceptor : CoroutineContext.Element {  
      // 实现CoroutineContext.Element接口，说明自身是CoroutineContext上下文集合的一个元素类型  
      // 定义伴生对象Key作为集合中的索引key，可直接通过类名访问该伴生对象  
      companion object Key : CoroutineContext.Key<ContinuationInterceptor>  
