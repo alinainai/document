@@ -44,7 +44,7 @@ interface Producer<out T>{
 }
 ```
 
-Kotlin 中的 只读接口 List 声明成了协变的 ，这意味着 List<String> 是 List<Any> 的子类型。
+Kotlin 中的 只读接口 `List` 声明成了协变的 ，这意味着 `List<String>` 是 `List<Any>` 的子类型。
 
 **Tips: 类型参数 `T` 上的关键宇 `out` 有两层含义**
   
