@@ -323,8 +323,13 @@ fun main() = runBlocking<Unit> {
 
 ## 3.捕获异常
 
-### 3.1 通过 try catch 捕获，不过不能做到异常透明性。
-### 3.2 使用 catch 操作符来保留此异常的透明性并允许封装它的异常处理。
+### 3.1 通过 try catch 捕获
+
+不过不能做到异常透明性。
+
+### 3.2 使用 catch 操作符捕获
+
+catch 操作符捕获异常，会保留此异常的透明性并允许封装它的异常处理。
 
 catch 操作符的代码块可以分析异常并根据捕获到的异常以不同的方式对其做出反应：
 
@@ -334,6 +339,7 @@ catch 操作符的代码块可以分析异常并根据捕获到的异常以不�
 
 catch 过渡操作符遵循异常透明性，仅捕获上游异常（catch 操作符上游的异常，但是它下面的不是）。 如果 collect { ... } 块（位于 catch 之下）抛出一个异常，那么异常会逃逸
 
+```kotlin
 fun simple(): Flow<Int> = flow {
     for (i in 1..3) {
         println("Emitting $i")
@@ -349,6 +355,72 @@ fun main() = runBlocking<Unit> {
             println(value) 
         }
 } 
+```
+
+## 4. Flow 结束的监听
+
+### 4.1 命令式 finally 块
+
+```kotlin
+fun simple(): Flow<Int> = (1..3).asFlow()
+
+fun main() = runBlocking<Unit> {
+    try {
+        simple().collect { value -> println(value) }
+    } finally {
+        println("Done")
+    }
+}
+```
+
+```shell   
+1
+2
+3
+Done
+```
+
+### 4.2 声明式处理
+
+流拥有 onCompletion 过渡操作符，它在流完全收集时调用。
+
+```kotlin
+fun main() = runBlocking<Unit> {
+    simple()
+        .onCompletion { println("Done") }
+        .collect { value -> println(value) }
+}
+```
+
+```shell 
+1
+2
+3
+Done
+```
+当异常发生时会可以接收到一个 `Throwable` 参数，这个可空参数 `Throwable` 可以用于确定流收集是正常完成还是有异常发生。
+
+`onCompletion` 操作符与 `catch` 不同，它不处理异常。我们可以看到前面的示例代码，异常仍然流向下游。
+
+```kotlin
+fun simple(): Flow<Int> = flow {
+    emit(1)
+    throw RuntimeException()
+}
+
+fun main() = runBlocking<Unit> {
+    simple()
+        .onCompletion { cause -> if (cause != null) println("Flow completed exceptionally") }
+        .catch { cause -> println("Caught exception") }
+        .collect { value -> println(value) }
+} 
+```
+
+```shell
+1
+Flow completed exceptionally1
+Caught exception
+```
 
 ## 参考
 
