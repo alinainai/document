@@ -1,13 +1,18 @@
-## 1. LiveData的简单使用
+### 1. LiveData的简单使用
 
 ViewModel 使用：
 
 ```kotlin
-private val _loginLiveData = MutableLiveData<<LoginBean>>() //内部数据更新 MutableLiveData 
-val loginLiveData: LiveData<Resource<LoginResponse>> get() = _loginLiveData //对外暴露 LiveData
+// 内部更新数据使用 MutableLiveData，因为该类对外公开了 postValue 和 setValue 方法
+private val _loginLiveData = MutableLiveData<<LoginBean>>() 
 
-//LiveData setValue
+//对外公开的 LiveData，不提供 postValue 和 setValue。
+val loginLiveData: LiveData<Resource<LoginResponse>> 
+    get() = _loginLiveData 
+
+// LiveData 通过 setValue 赋值
 _loginLiveData.value = LoginBean()
+
 ```
 
 Activity/Fragment 使用
@@ -16,59 +21,66 @@ Activity/Fragment 使用
 loginViewModel.loginLiveData.observe(this){bean->
 }
 ```
-### 1.1 LiveData 和 MultableLiveData 的区别
 
-MultableLiveData 是 LiveData 子类。并对外公开了 postValue 和 setValue 的方法。
-
-### 1.2 特点
+**LiveData的特点**：
 
  1. 采用观察者模式，数据发生改变，可以自动回调。
  2. 不需要手动处理生命周期，不会因为Activity的销毁重建而丢失数据。
 
-## 2. 源码分析
+**LiveData 和 MultableLiveData 的区别**:
 
-LiveData（abstract类） 的 实现类MutableLiveData：
+MultableLiveData 是 LiveData 子类。并对外公开了 postValue 和 setValue 的方法。
 
-```kotlin
+### 2. 源码分析
+
+`LiveData（abstract类）` 的子类 `MutableLiveData`的源码
+
+```java
 public class MutableLiveData<T> extends LiveData<T> {
+    //将 protected 修饰符变为 public，这个方法一般在子线程中使用，来设置数据
     @Override
-    public void postValue(T value) { //LiveData.postValue() 是一个 protected 方法
+    public void postValue(T value) { 
         super.postValue(value);
     }
 
+    //将 protected 修饰符变为 public
     @Override
-    public void setValue(T value) { // LiveData.setValue() 是一个 protected 方法
+    public void setValue(T value) { 
         super.setValue(value);
     }
 }
 ```
-创建了Livedata 后，需要通过observe方法或者observeForever 方法设置一个回调，这个回调接口就是Observer
 
-### 2.1 回调接口
+通过调用 `LiveData` 的 observe/observeForever 方法设置一个 `Observer` 回调
 
-```kotlin
+Observer 接口如下：
+
+```java
 public interface Observer<T> {
-    /**
-     * Called when the data is changed.
-     * @param t  The new data
-     */
     void onChanged(@Nullable T t);
 }
 ```
-```kotlin
+
+我们看下 LiveData 的 `observe()` 和 `observeForever()` 的区别
+
+```java
 public abstract class LiveData<T> {
-    ... ...
+    //...
     // 只有 onStart 后，对数据的修改才会触发 observer.onChanged()
     public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<T> observer) {}
 
     // 无论何时，只要数据发生改变，就会触发 observer.onChanged()
     public void observeForever(@NonNull Observer<T> observer) {}
-    ... ...
+    //... 
 }
 ```
-observeForever 的实现跟 observe 是类似的，这里我们重点看一下 observe()的实现过程
+`observeForever` 的实现跟 `observe` 是类似的，这里我们重点看一下 `observe()` 的实现过程
 
-### 2.2 observe 方法
+####  LiveData#observe 方法
+
+2个参数：
+- LifecycleOwner: 声明周期持有类
+- Observer: 监听器
 
 ```kotlin
 @MainThread
@@ -76,7 +88,7 @@ public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> 
     assertMainThread("observe");
     if (owner.getLifecycle().getCurrentState() == DESTROYED) {
         return;
-    }  
+    }
     LifecycleBoundObserver wrapper = new LifecycleBoundObserver(owner, observer);
     ObserverWrapper existing = mObservers.putIfAbsent(observer, wrapper);
     if (existing != null && !existing.isAttachedTo(owner)) {
@@ -90,9 +102,14 @@ public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> 
     owner.getLifecycle().addObserver(wrapper);
 }
 ```
-### 2.3 界面生命周期发生变化时LiveData方法的调用情况
+### 3. 两种方式回调 Observer#onChanged 方式
 
-当生命周期发生变化的时候，会调用 LifecycleBoundObserver # onStateChanged 方法。
+1. 当界面生命周期发生变化时 `LiveData` 方法的调用情况
+2. 当数据发生变化时 `LiveData` 方法的调用情况
+
+#### 3.1 界面生命周期发生变化时，LiveData 方法的调用情况
+
+当生命周期发生变化的时候，会调用 onStateChanged 方法，然后
 
 ```kotlin
 class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventObserver {
@@ -109,8 +126,9 @@ class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventOb
         return mOwner.getLifecycle().getCurrentState().isAtLeast(STARTED);
     }
     
+    //当生命周期发生变化时，会调用该方法
     @Override
-    public void onStateChanged(LifecycleOwner source, Lifecycle.Event event) { //当生命周期发生变化时，会调用该方法
+    public void onStateChanged(LifecycleOwner source, Lifecycle.Event event) { 
         if (mOwner.getLifecycle().getCurrentState() == DESTROYED) { 
             removeObserver(mObserver); //当UI的生命周期为DESTROYED，取消对数据变化的监听，自动移除回调
             return;
@@ -144,15 +162,6 @@ private abstract class ObserverWrapper {
         mObserver = observer;
     }
 
-    abstract boolean shouldBeActive();
-
-    boolean isAttachedTo(LifecycleOwner owner) {
-        return false;
-    }
-
-    void detachObserver() {
-    }
-
     void activeStateChanged(boolean newActive) {
         // 当激活状态没有发生变化，直接返回。onStart-onPause 为 true  在这之外的生命周期为false
         if (newActive == mActive) {
@@ -179,7 +188,7 @@ private abstract class ObserverWrapper {
 
 当界面从 Inactive 变为 Active（onStart-onPause 周期内），如果不调用回调函数，UI的界面还是显示上一次的数据。
 
-### 2.4 LiveData数据发生发生变化时，LiveData的方法调用情况
+#### 3.2 数据发生发生变化时，LiveData的方法调用情况
 
 当数据发生变化，需要调用 LiveData 的 setValue/postValue 方法
 
@@ -226,11 +235,11 @@ void dispatchingValue(@Nullable ObserverWrapper initiator) {
 
 注意上面的两个变量
 
-1. mDispatchingValue 这个变量用来控制，是否进入while 循环，以及while 循环 是否已经结束
-2. mDispatchInvalidated 这个变量用来控制for 循环是否要重新开始
+1. mDispatchingValue 这个变量用来控制是否进入while 循环，以及 while 循环是否已经结束
+2. mDispatchInvalidated 这个变量用来控制 for 循环是否要重新开始
 
 
-看下considerNotify 的函数，调用了之前livedata设置的observer的onChanged函数
+看下 considerNotify 的函数，调用了之前livedata设置的observer的onChanged函数
 
 ```kotlin
 private void considerNotify(ObserverWrapper observer) {
@@ -283,7 +292,7 @@ private final Runnable mPostValueRunnable = new Runnable() {
 };
 ```
 
-### 3. 数据倒灌问题
+### 4. 数据倒灌问题
 
 当 LifeCircleOwner 的状态发生变化的时候，会调用 LiveData.ObserverWrapper 的 activeStateChanged 函数，如果这个时候 ObserverWrapper 的状态是 active，就会调用 LiveData 的dispatchingValue。
 
