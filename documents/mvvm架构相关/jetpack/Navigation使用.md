@@ -250,7 +250,12 @@ val option = navOptions {
 
 1.通过 Bundle() 对象,传递 key:value。上面代码有。
 
-2.使用 Safe Args 传递安全的数据
+2.使用 Safe Args 传递安全的数据，不参考了，没有 bundle 方便
+
+### 5.跳转到指定 fragment
 
 
+### 参考
+
+[Android 架构组件 Navigation 详解，构造一本Fragment的故事书！](https://juejin.cn/post/6844904068830199822#heading-13)
 
