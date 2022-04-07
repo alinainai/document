@@ -248,4 +248,9 @@ val option = navOptions {
 ```
 ### 4.传送数据
 
+1.通过 Bundle() 对象,传递 key:value。上面代码有。
+
+2.使用 Safe Args 传递安全的数据
+
+
 
