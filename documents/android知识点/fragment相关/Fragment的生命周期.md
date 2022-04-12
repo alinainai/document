@@ -1,40 +1,73 @@
-### 1. Fragment 的 start 与 Activity 的 start 的调用顺序
+### 1. 生命周期
+
+Activity 在 onCreate 方法中使用事务替换 layout 中的 FragmentContainerView  中的 Fragment 
 
 ```shell
-Activity: onCreate-start
-Fragment: onAttach
-Fragment: onCreate
-
-Activity: onCreate-end
-Fragment: onCreateView
-Fragment: onViewCreated
-Fragment: onActivityCreated
-Fragment: onViewStateRestored
-Fragment: onCreateAnimation
-Fragment: onCreateAnimator
-Fragment: onStart
-
-Activity: onStart:
-Activity: onResume:
-Fragment: onResume:
+--------------------------------进入--------------------------------
+Activity-OnCreate
+Fragment-onAttach
+Fragment-OnCreate
+Fragment-onCreateView
+Fragment-onViewCreated
+Fragment-onStart
+Activity-onStart
+Activity-onResume
+Fragment-onResume
+--------------------------------退出--------------------------------
+Fragment-onPause
+Activity-onPause
+Fragment-onStop
+Activity-onStop
+Fragment-onDestroyView
+Fragment-onDestroy
+Fragment-onDetach
+Activity-onDestroy
+--------------------------------home键--------------------------------
+Fragment-onPause
+Activity-onPause
+Fragment-onStop
+Activity-onStop
+--------------------------------从home返回--------------------------------
+Fragment-onStart
+Activity-onStart
+Activity-onResume
+Fragment-onResume
 ```
-### 2. Activit 的 Fragment 架构
+### 2. 生命周期的本质
 
-<img width="400" alt="Activit 的 Fragment 架构" src="https://user-images.githubusercontent.com/17560388/161255665-3ef82534-1cde-470e-bbf7-4fa3b91eece7.png">
+Fragment 生命周期的本质是状态的转移，Fragment 生命周期的七个状态如下
+
+```shell
+static final int INITIALIZING = -1;          // Not yet attached.
+static final int ATTACHED = 0;               // Attached to the host.
+static final int CREATED = 1;                // Created.
+static final int VIEW_CREATED = 2;           // View Created.
+static final int AWAITING_EXIT_EFFECTS = 3;  // Downward state, awaiting exit effects
+static final int ACTIVITY_CREATED = 4;       // Fully created, not started.
+static final int STARTED = 5;                // Created and started, not resumed.
+static final int AWAITING_ENTER_EFFECTS = 6; // Upward state, awaiting enter effects
+static final int RESUMED = 7;                // Created started and resumed.
+```
+
+<img width="700" alt="Activit 的 Fragment 架构" src="https://user-images.githubusercontent.com/17560388/161255665-3ef82534-1cde-470e-bbf7-4fa3b91eece7.png">
 
 FragmentActivity 内部持有 FragmentController，FragmentController 持有一个 FragmentManager ，真正做事的就是这个 FragmentManager 的实现类 FragmentManagerImpl。
 
-Fragment有七个状态
+Activity 生命周期与 Fragment 生命周期的关系
 
-```shell
-static final int INVALID_STATE = -1;   // 为空时无效
-static final int INITIALIZING = 0;     // 未创建
-static final int CREATED = 1;          // 已创建，位于后台
-static final int ACTIVITY_CREATED = 2; // Activity已经创建，Fragment位于后台
-static final int STOPPED = 3;          // 创建完成，没有开始
-static final int STARTED = 4;          // 开始运行，但是位于后台
-static final int RESUMED = 5;          // 显示到前台
-```
+|Activity 生命周期|FragmentManager|Fragment 状态转移|Fragment 生命周期回调|
+|:----:|:----:|:----:|:----:|
+|onCreate| dispatchCreate|INITIALIZING -> CREATE| onAttach、onCreate|
+|onStart（首次）|dispatchActivityCreated<br>dispatchStart|CREATE -> ACTIVITY_CREATED -> STARTED |onCreateView<br>onViewCreated<br>onActivityCreated<br>onStart|
+|onStart（非首次）|dispatchStart|ACTIVITY_CREATED -> STARTED| onStart|
+|onResume|dispatchResume|STARTED -> RESUMED（Fragment 可交互）|onResume|
+|onPause|dispatchPause|RESUMED -> STARTED| onPause|
+|onStop|dispatchStop|STARTED -> ACTIVITY_CREATED| onStop|
+|onDestroy|dispatchDestroy|ACTIVITY_CREATED -> CREATED -> INITIALIZING| onDestroyView<br>onDestroy<br> onDetach|
+
+
+
+
 
 FragmentActivity
 ```java
@@ -99,6 +132,13 @@ void moveToState(Fragment f, int newState, int transit, int transitionStyle,
 ```
 
 moveToState 进行状态转移
+
+### 3. 事务替换 Fragment
+- add & remove：Fragment 状态在 INITIALIZING 与 RESUMED 之间转移；
+- detach & attach： Fragment 状态在 CREATE 与 RESUMED 之间转移；
+- replace： 先移除所有 containerId 中的实例，再 add 一个 Fragment；
+- show & hide： 只控制 Fragment 隐藏或显示，不会触发状态转移，也不会销毁 Fragment 视图或实例；
+- hide & detach & remove 的区别： hide 不会销毁视图和实例、detach 只销毁视图不销毁实例、remove 会销毁实例（自然也销毁视图）。不过，如果 remove 的时候将事务添加到回退栈，那么 Fragment 实例就不会被销毁，只会销毁视图。
 
 
 
