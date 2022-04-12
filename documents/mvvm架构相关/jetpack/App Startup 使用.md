@@ -80,7 +80,104 @@ To disable all automatic initialization, remove the entire entry for Initializat
 
 [App Startup 使用](https://developer.android.com/topic/libraries/app-startup)
 
+### 6. 自动初始化源码分析
+    
+App Startup 在 ContentProvider 中调用了AppInitializer#discoverAndInitialize()执行自动初始化。
+    
+先看下 AppInitializer#discoverAndInitialize 方法
 
+```java
+final Set<Class<? extends Initializer<?>>> mDiscovered;
+
+void discoverAndInitialize() {
+   
+    ComponentName provider = new ComponentName(mContext.getPackageName(), InitializationProvider.class.getName());
+    ProviderInfo providerInfo = mContext.getPackageManager().getProviderInfo(provider, GET_META_DATA);
+    String startup = mContext.getString(R.string.androidx_startup);
+    Bundle metadata = providerInfo.metaData;
+    
+    // 核心代码：遍历 meta-data 数据
+    if (metadata != null) {
+        Set<Class<?>> initializing = new HashSet<>();
+        Set<String> keys = metadata.keySet();
+        for (String key : keys) {
+            String value = metadata.getString(key, null);
+            if (startup.equals(value)) {
+                Class<?> clazz = Class.forName(key);
+                if (Initializer.class.isAssignableFrom(clazz)) {
+                    Class<? extends Initializer<?>> component = (Class<? extends Initializer<?>>) clazz;
+                    mDiscovered.add(component);
+                    // 初始化此组件
+                    doInitialize(component, initializing);
+                }
+            }
+        }
+    }
+}
+
+// mDiscovered 用于判断组件是否已经自动启动
+public boolean isEagerlyInitialized(@NonNull Class<? extends Initializer<?>> component) {
+    return mDiscovered.contains(component);
+}
+```
+AppInitializer#doInitialize 方法
+```java
+private static final Object sLock = new Object();
+    
+final Map<Class<?>, Object> mInitialized;
+
+<T> T doInitialize(Class<? extends Initializer<?>> component, Set<Class<?>> initializing) {
+    Object result;
+    
+    // 判断 initializing 中存在当前组件，说明存在循环依赖
+    if (initializing.contains(component)) {
+        String message = String.format("Cannot initialize %s. Cycle detected.", component.getName());
+        throw new IllegalStateException(message);
+    }
+    // 检查当前组件是否已初始化
+    if (!mInitialized.containsKey(component)) {
+        initializing.add(component);
+        // 反射实例化 Initializer 接口
+        Object instance = component.getDeclaredConstructor().newInstance();
+        Initializer<?> initializer = (Initializer<?>) instance;
+        // 遍历所依赖的组件
+        List<Class<? extends Initializer<?>>> dependencies = initializer.dependencies();
+        if (!dependencies.isEmpty()) {
+            for (Class<? extends Initializer<?>> clazz : dependencies) {        
+                // 如果所依赖的组件未初始化，递归执行初始化
+                if (!mInitialized.containsKey(clazz)) {
+                    doInitialize(clazz, initializing); 注意：这里将 initializing 作为参数传入
+                }
+            }
+        }
+        result = initializer.create(mContext);
+        initializing.remove(component);
+        mInitialized.put(component, result);
+    } else {
+        result = mInitialized.get(component);
+    }
+     return (T) result;
+}
+```
+
+手动初始化（懒加载）的源码分析
+```java
+public <T> T initializeComponent(@NonNull Class<? extends Initializer<T>> component) {
+    return return doInitialize(component); // 此方法加锁
+}
+@NonNull
+@SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"})
+<T> T doInitialize(@NonNull Class<? extends Initializer<?>> component) {
+    Object result;
+    synchronized (sLock) {
+        result = mInitialized.get(component);
+        if (result == null) {
+            result = doInitialize(component, new HashSet<Class<?>>());
+        }
+    }
+    return (T) result;
+}
+```
 ### 参考
 
 [Android 开发者>Jetpack>Startup](https://developer.android.com/jetpack/androidx/releases/startup)
