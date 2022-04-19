@@ -25,7 +25,7 @@ private void writeString(String str, boolean unshared) throws IOException {
 
 Parcelable 的内部，是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好，在 Android 中尽量避免使用 Serializable 来序列化
 
-parcel 的 Java 层只是一个壳
+#### parcel 的 Java 层只是一个壳
 
 先看下Java层的代码，首先通过 Parce.obtain() 来获取一个 parcel 对象
 
@@ -51,7 +51,7 @@ public static Parcel obtain() {
 }
 ```
 
-有一个缓存池，复用Parcel对象，第一次调用，返回新建的Parcel对象
+有一个缓存池，复用 Parcel 对象，第一次调用，返回新建的 Parcel 对象
 
 ```java
 private Parcel(long nativePtr) { 
@@ -87,9 +87,9 @@ public final void writeLong(long val) {
 
 ### native层Parcel的初始化
 
-frameworks/base/core/jni/android_os_Parcel.cpp
-
 ```c++
+#frameworks/base/core/jni/android_os_Parcel.cpp
+
 static jlong android_os_Parcel_create(JNIEnv* env, jclass clazz)
 {
     Parcel* parcel = new Parcel();
@@ -117,13 +117,13 @@ int main() {
 
 16进制的值 0x7f9c184059a0 转成 10 进制，刚好就是 140308398496160，所以 nativeCreate() 方法，返回的值，就是这个 parcel 对象指针的值（也就是在内存中的位置）
 
-parcel 的本质其实是一个连续的内存空间
+**parcel 的本质其实是一个连续的内存空间**
 
 ### 先看下parcel的一些本地变量
 
-frameworks/native/libs/binder/include/binder/Parcel.h
-
 ```c++
+#frameworks/native/libs/binder/include/binder/Parcel.h
+
 uint8_t*            mData;     //内存空间的位置指针
 size_t              mDataSize; //当前保存的内容大小
 size_t              mDataCapacity;//总的容量大小
@@ -132,9 +132,9 @@ mutable size_t      mDataPos;  //当前位置的偏移量
 
 mData就是保存内容的地方，其在这里赋值
 
-frameworks/native/libs/binder/Parcel.cpp
-
 ```c++
+#frameworks/native/libs/binder/Parcel.cpp
+
 uint8_t* data = (uint8_t*)malloc(desired);
 if (!data) {
     mError = NO_MEMORY;
@@ -199,7 +199,6 @@ restart_write:
 
 status_t Parcel::finishWrite(size_t len)
 {
-    
     //重新更新mDataPos的偏移量
     mDataPos += len;
     if (mDataPos > mDataSize) {
@@ -213,11 +212,11 @@ int的写入，先在当前偏移量的位置，写入int值，然后再更新�
 
 ### 写入一个string
 
-由于string的长度是不固定的，需要先写入string的长度，然后再写入string的内容
-
-frameworks/native/libs/binder/Parcel.cpp
+由于string的长度是不固定的，需要先写入 string 的长度，然后再写入 string 的内容
 
 ```c++
+# frameworks/native/libs/binder/Parcel.cpp
+
 status_t Parcel::writeString16(const String16& str)
 {
     return writeString16(str.string(), str.size());
@@ -283,7 +282,7 @@ static size_t pad_size(size_t s) {
 
 因为写入的空间，必须以4对齐，就是4个字节，作为最小单位，比如 s = 3, padSize = 4; s = 4, pasSize = 4; s = 5, padSize = 8; 正常这种，也可以用余数的来计算 (s+3)/4，而源码用((s)+3)&~3来计算，采用纯粹的位运算，更高效，更有逼格，这里还可以拓展，计算跟4、8、16、32等的除数和余数，都可以采用这种位运算
 
-比如要计算78跟8的余数，可以这样写78&7
+比如要计算 78 跟 8 的余数，可以这样写 78&7
 
 ### 读取一个字符串
 
@@ -303,9 +302,9 @@ public static class ReadWriteHelper {
 }                                                                                    
 ```
 
-frameworks/native/libs/binder/Parcel.cpp
-
 ```c++
+# frameworks/native/libs/binder/Parcel.cpp
+
 static jstring android_os_Parcel_readString8(JNIEnv* env, jclass clazz, jlong nativePtr)
 {
     Parcel* parcel = reinterpret_cast<Parcel*>(nativePtr);
@@ -343,7 +342,7 @@ const char* Parcel::readString8Inplace(size_t* outLen) const
 }
 ```
 
-读上面源码可以发现，parcel的写跟读，都是按照顺序去操作的，所以这里也可以解释，为什么在实现parcelable接口的时候，writeToParcel和createFromParcel顺序一定要相匹配，比如先写入int，再写入strign，读取的时候，也要先读取int，再读取string
+读上面源码可以发现，parcel的写跟读，都是按照顺序去操作的，所以这里也可以解释，为什么在实现 parcelable 接口的时候，writeToParcel 和 createFromParcel 顺序一定要相匹配，比如先写入 int，再写入 strign，读取的时候，也要先读取 int，再读取 string
 
 ### parcel作为IPC通信的数据媒介
 
