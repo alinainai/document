@@ -350,3 +350,7 @@ const char* Parcel::readString8Inplace(size_t* outLen) const
 
 Android是基于Linux系统，有一个mmap函数，可以把用户空间映射到内核空间，在用户空间的修改直接映射到内核空间，内核空间全局只有一个，
 为所有进程共享，从而可以实现跨进程通信，微信开源的MMKV也是基于类似的机制实现的
+
+### 参考
+
+https://zhuanlan.zhihu.com/p/402790867
