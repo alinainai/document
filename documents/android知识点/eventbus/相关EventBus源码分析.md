@@ -10,7 +10,7 @@
 ```groovy
 implementation("org.greenrobot:eventbus:3.3.1")
 ```
-使用
+#### 1.1 简单使用
 ```java
 // 1. 定义事件 和 事件接收的方法
 public static class MessageEvent { /* Additional fields if needed */ }
@@ -36,7 +36,9 @@ public void onStop() {
 EventBus.getDefault().post(new MessageEvent());
 ```
 
-#### 3.0之后的优化：使用 Subscriber Index
+#### 1.2 进阶使用
+
+3.0之后的优化：使用 Subscriber Index
 
 [Subscriber Index](https://greenrobot.org/eventbus/documentation/subscriber-index/)
 
@@ -219,8 +221,7 @@ private List<SubscriberMethod> getMethodsAndRelease(FindState findState) {
     return subscriberMethods;
 }
 ```
-再来看下 `SubscriberMethodFinder#findUsingInfo(subscriberClass)` 方法，这方式是处理咱们上面讲过的 3.0+ 版本对 EventBus 的优化。
-这个会先查询能不能根据注册的类获取到对用的 SubscriberInfo 对象，可以从 SubscriberInfo 中获取 SubscriberMethod list。
+再来看下 `SubscriberMethodFinder#findUsingInfo(subscriberClass)` 方法。
 ```java                                                                    
 private List<SubscriberMethod> findUsingInfo(Class<?> subscriberClass) {
     FindState findState = prepareFindState();
@@ -242,7 +243,119 @@ private List<SubscriberMethod> findUsingInfo(Class<?> subscriberClass) {
     }
     return getMethodsAndRelease(findState);
 }                                                                       
-```                                                                        
+```  
+这个方法主要是处理咱们上面讲过的 3.0+ 版本使用 Index 对 EventBus 的优化。先查询能不能获取到 subscriberClass 对用的 SubscriberInfo 对象，然后从 SubscriberInfo 中获取 SubscriberMethod 的集合。
+
+                                                                      
 再看下 `SubscriberMethodFinder#findUsingReflectionInSingleClass(findState)` 方法
 
+```java
+private void findUsingReflectionInSingleClass(FindState findState) {
+    Method[] methods;
+    try {
+        // This is faster than getMethods, especially when subscribers are fat classes like Activities
+        methods = findState.clazz.getDeclaredMethods();
+    } catch (Throwable th) {
+        // Workaround for java.lang.NoClassDefFoundError, see https://github.com/greenrobot/EventBus/issues/149
+        try {
+            methods = findState.clazz.getMethods();
+        } catch (LinkageError error) { // super class of NoClassDefFoundError to be a bit more broad...
+            String msg = "Could not inspect methods of " + findState.clazz.getName();
+            if (ignoreGeneratedIndex) {
+                msg += ". Please consider using EventBus annotation processor to avoid reflection.";
+            } else {
+                msg += ". Please make this class visible to EventBus annotation processor to avoid reflection.";
+            }
+            throw new EventBusException(msg, error);
+        }
+        findState.skipSuperClasses = true;
+    }
+    // 上面是获取 subscriberClass 中的所有方法
+    for (Method method : methods) {
+        int modifiers = method.getModifiers();
+        if ((modifiers & Modifier.PUBLIC) != 0 && (modifiers & MODIFIERS_IGNORE) == 0) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes.length == 1) {
+                Subscribe subscribeAnnotation = method.getAnnotation(Subscribe.class);
+                //将有 @Subscribe 注解的方法和注解中参数生成一个 SubscriberMethod 对象，并添加到集合中
+                if (subscribeAnnotation != null) {
+                    Class<?> eventType = parameterTypes[0];
+                    if (findState.checkAdd(method, eventType)) {
+                        ThreadMode threadMode = subscribeAnnotation.threadMode();
+                        findState.subscriberMethods.add(new SubscriberMethod(method, eventType, threadMode,
+                                subscribeAnnotation.priority(), subscribeAnnotation.sticky()));
+                    }
+                }
+            } else if (strictMethodVerification && method.isAnnotationPresent(Subscribe.class)) {
+                String methodName = method.getDeclaringClass().getName() + "." + method.getName();
+                throw new EventBusException("@Subscribe method " + methodName +
+                        "must have exactly 1 parameter but has " + parameterTypes.length);
+            }
+        } else if (strictMethodVerification && method.isAnnotationPresent(Subscribe.class)) {
+            String methodName = method.getDeclaringClass().getName() + "." + method.getName();
+            throw new EventBusException(methodName +
+                    " is a illegal @Subscribe method: must be public, non-static, and non-abstract");
+        }
+    }
+ }
+```
+findUsingReflectionInSingleClass 方法通过反射的方式查找 subscriberClass 中的 SubscriberMethod 方法并添加到集合中
 
+查找 
+
+    // Must be called in synchronized block
+    private void subscribe(Object subscriber, SubscriberMethod subscriberMethod) {
+        Class<?> eventType = subscriberMethod.eventType;
+        Subscription newSubscription = new Subscription(subscriber, subscriberMethod);
+        CopyOnWriteArrayList<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
+        if (subscriptions == null) {
+            subscriptions = new CopyOnWriteArrayList<>();
+            subscriptionsByEventType.put(eventType, subscriptions);
+        } else {
+            if (subscriptions.contains(newSubscription)) {
+                throw new EventBusException("Subscriber " + subscriber.getClass() + " already registered to event "
+                        + eventType);
+            }
+        }
+
+        int size = subscriptions.size();
+        for (int i = 0; i <= size; i++) {
+            if (i == size || subscriberMethod.priority > subscriptions.get(i).subscriberMethod.priority) {
+                subscriptions.add(i, newSubscription);
+                break;
+            }
+        }
+
+        List<Class<?>> subscribedEvents = typesBySubscriber.get(subscriber);
+        if (subscribedEvents == null) {
+            subscribedEvents = new ArrayList<>();
+            typesBySubscriber.put(subscriber, subscribedEvents);
+        }
+        subscribedEvents.add(eventType);
+
+        if (subscriberMethod.sticky) {
+            if (eventInheritance) {
+                // Existing sticky events of all subclasses of eventType have to be considered.
+                // Note: Iterating over all events may be inefficient with lots of sticky events,
+                // thus data structure should be changed to allow a more efficient lookup
+                // (e.g. an additional map storing sub classes of super classes: Class -> List<Class>).
+                Set<Map.Entry<Class<?>, Object>> entries = stickyEvents.entrySet();
+                for (Map.Entry<Class<?>, Object> entry : entries) {
+                    Class<?> candidateEventType = entry.getKey();
+                    if (eventType.isAssignableFrom(candidateEventType)) {
+                        Object stickyEvent = entry.getValue();
+                        checkPostStickyEventToSubscription(newSubscription, stickyEvent);
+                    }
+                }
+            } else {
+                Object stickyEvent = stickyEvents.get(eventType);
+                checkPostStickyEventToSubscription(newSubscription, stickyEvent);
+            }
+        }
+    }
+
+### 参考
+
+[EventBus索引分析](https://www.jianshu.com/p/25388d6446bf)
+
+[第三方开源库 EventBus - 源码分析和手写](https://www.jianshu.com/p/0b35f448acec)
