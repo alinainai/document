@@ -301,59 +301,60 @@ private void findUsingReflectionInSingleClass(FindState findState) {
 ```
 findUsingReflectionInSingleClass 方法通过反射的方式查找 subscriberClass 中的 SubscriberMethod 方法并添加到集合中
 
-查找 
+查找 List<SubscriberMethod> 的过程到这里就结束了，下面我们看下 `EventBus#register(subsricberClass)` 中调用的 `subscribe` 方法
 
-    // Must be called in synchronized block
-    private void subscribe(Object subscriber, SubscriberMethod subscriberMethod) {
-        Class<?> eventType = subscriberMethod.eventType;
-        Subscription newSubscription = new Subscription(subscriber, subscriberMethod);
-        CopyOnWriteArrayList<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
-        if (subscriptions == null) {
-            subscriptions = new CopyOnWriteArrayList<>();
-            subscriptionsByEventType.put(eventType, subscriptions);
-        } else {
-            if (subscriptions.contains(newSubscription)) {
-                throw new EventBusException("Subscriber " + subscriber.getClass() + " already registered to event "
-                        + eventType);
-            }
-        }
-
-        int size = subscriptions.size();
-        for (int i = 0; i <= size; i++) {
-            if (i == size || subscriberMethod.priority > subscriptions.get(i).subscriberMethod.priority) {
-                subscriptions.add(i, newSubscription);
-                break;
-            }
-        }
-
-        List<Class<?>> subscribedEvents = typesBySubscriber.get(subscriber);
-        if (subscribedEvents == null) {
-            subscribedEvents = new ArrayList<>();
-            typesBySubscriber.put(subscriber, subscribedEvents);
-        }
-        subscribedEvents.add(eventType);
-
-        if (subscriberMethod.sticky) {
-            if (eventInheritance) {
-                // Existing sticky events of all subclasses of eventType have to be considered.
-                // Note: Iterating over all events may be inefficient with lots of sticky events,
-                // thus data structure should be changed to allow a more efficient lookup
-                // (e.g. an additional map storing sub classes of super classes: Class -> List<Class>).
-                Set<Map.Entry<Class<?>, Object>> entries = stickyEvents.entrySet();
-                for (Map.Entry<Class<?>, Object> entry : entries) {
-                    Class<?> candidateEventType = entry.getKey();
-                    if (eventType.isAssignableFrom(candidateEventType)) {
-                        Object stickyEvent = entry.getValue();
-                        checkPostStickyEventToSubscription(newSubscription, stickyEvent);
-                    }
-                }
-            } else {
-                Object stickyEvent = stickyEvents.get(eventType);
-                checkPostStickyEventToSubscription(newSubscription, stickyEvent);
-            }
+```java
+// Must be called in synchronized block
+private void subscribe(Object subscriber, SubscriberMethod subscriberMethod) {
+    Class<?> eventType = subscriberMethod.eventType; //获取 subscriberMethod 的事件类型
+    Subscription newSubscription = new Subscription(subscriber, subscriberMethod);
+    CopyOnWriteArrayList<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
+    if (subscriptions == null) {
+        subscriptions = new CopyOnWriteArrayList<>();
+        subscriptionsByEventType.put(eventType, subscriptions);
+    } else {
+        if (subscriptions.contains(newSubscription)) {
+            throw new EventBusException("Subscriber " + subscriber.getClass() + " already registered to event "
+                    + eventType);
         }
     }
 
+    int size = subscriptions.size();
+    for (int i = 0; i <= size; i++) {
+        if (i == size || subscriberMethod.priority > subscriptions.get(i).subscriberMethod.priority) {
+            subscriptions.add(i, newSubscription);
+            break;
+        }
+    }
+
+    List<Class<?>> subscribedEvents = typesBySubscriber.get(subscriber);
+    if (subscribedEvents == null) {
+        subscribedEvents = new ArrayList<>();
+        typesBySubscriber.put(subscriber, subscribedEvents);
+    }
+    subscribedEvents.add(eventType);
+
+    if (subscriberMethod.sticky) {
+        if (eventInheritance) {
+            // Existing sticky events of all subclasses of eventType have to be considered.
+            // Note: Iterating over all events may be inefficient with lots of sticky events,
+            // thus data structure should be changed to allow a more efficient lookup
+            // (e.g. an additional map storing sub classes of super classes: Class -> List<Class>).
+            Set<Map.Entry<Class<?>, Object>> entries = stickyEvents.entrySet();
+            for (Map.Entry<Class<?>, Object> entry : entries) {
+                Class<?> candidateEventType = entry.getKey();
+                if (eventType.isAssignableFrom(candidateEventType)) {
+                    Object stickyEvent = entry.getValue();
+                    checkPostStickyEventToSubscription(newSubscription, stickyEvent);
+                }
+            }
+        } else {
+            Object stickyEvent = stickyEvents.get(eventType);
+            checkPostStickyEventToSubscription(newSubscription, stickyEvent);
+        }
+    }
+}
+```
 ### 参考
 
 [EventBus索引分析](https://www.jianshu.com/p/25388d6446bf)
