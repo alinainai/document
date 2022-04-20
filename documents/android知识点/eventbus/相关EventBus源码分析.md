@@ -534,3 +534,5 @@ private void unsubscribeByEventType(Object subscriber, Class<?> eventType) {
 [EventBus索引分析](https://www.jianshu.com/p/25388d6446bf)
 
 [第三方开源库 EventBus - 源码分析和手写](https://www.jianshu.com/p/0b35f448acec)
+                                 
+[Subscriber Index](https://greenrobot.org/eventbus/documentation/subscriber-index/)
