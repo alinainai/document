@@ -67,7 +67,7 @@ public class MyEventBusIndex implements SubscriberInfoIndex {
 
     static {
         SUBSCRIBER_INDEX = new HashMap<Class<?>, SubscriberInfo>();
-        // 将 class 和 SubscriberMethods 的对应关系添加到缓存容器中
+        // 将 class 和 SubscriberMethods 的对应关系包装为 SubscriberInfo 并添加到缓存容器中
         putIndex(new SimpleSubscriberInfo(com.mihua.ljxbao.ui.splash.Test1Activity.class, true,
                 new SubscriberMethodInfo[] {
             new SubscriberMethodInfo("onMessageEvent", com.mihua.ljxbao.ui.splash.MessageEvent.class, ThreadMode.MAIN),
@@ -142,7 +142,7 @@ public class SubscriberMethod {
     final boolean sticky; //是否是粘性事件，粘性事件
 ```
 
-我们继续追踪 SubscriberMethodFinder # findSubscriberMethods(subscriberClass) 来看下 List<SubscriberMethod> 是怎么查找的
+我们继续追踪 `SubscriberMethodFinder#findSubscriberMethods(subscriberClass)` 方法，来看下 List<SubscriberMethod> 是怎么查找的
 
 ```java 
 List<SubscriberMethod> findSubscriberMethods(Class<?> subscriberClass) {
@@ -151,8 +151,7 @@ List<SubscriberMethod> findSubscriberMethods(Class<?> subscriberClass) {
     if (subscriberMethods != null) {
         return subscriberMethods;
     }
-    // ignoreGeneratedIndex 属性表示是否忽略注解器生成的 MyEventBusIndex。
-    // ignoreGeneratedIndex 的默认值为 false，可以在 EventBus初始化的时候通过 EventBusBuilder 来设置它的值
+    // ignoreGeneratedIndex 属性表示是否忽略注解器生成的 MyEventBusIndex，默认为false，可以通过 EventBusBuilder 来设置它的值
     if (ignoreGeneratedIndex) {
         //通过反射的形式获取
         subscriberMethods = findUsingReflection(subscriberClass);
@@ -171,5 +170,79 @@ List<SubscriberMethod> findSubscriberMethods(Class<?> subscriberClass) {
 }
 ```
 
+再来看下`SubscriberMethodFinder#findSubscriberMethods(subscriberClass)` 方法，该方法比较简单。
+
+```java
+private List<SubscriberMethod> findUsingReflection(Class<?> subscriberClass) {
+    FindState findState = prepareFindState(); //
+    findState.initForSubscriber(subscriberClass);
+    while (findState.clazz != null) {
+        //核心方法，下面分析
+        findUsingReflectionInSingleClass(findState);
+        findState.moveToSuperclass(); //继续搜寻父类中的 @Subscriber 方法
+    }
+    return getMethodsAndRelease(findState); // 释放 FindState 对象到对象池
+}
+```
+    
+`SubscriberMethodFinder#prepareFindState()` 里面有个不错的知识点，采用对象池的方式缓存 FindState 对象。
+    
+```java
+//对象池
+private static final int POOL_SIZE = 4;
+private static final FindState[] FIND_STATE_POOL = new FindState[POOL_SIZE];
+//从对象池中获取 FindState 对象，没有的话就新建一个 FindState
+private FindState prepareFindState() {
+    synchronized (FIND_STATE_POOL) {
+        for (int i = 0; i < POOL_SIZE; i++) {
+            FindState state = FIND_STATE_POOL[i];
+            if (state != null) {
+                FIND_STATE_POOL[i] = null;
+                return state;
+            }
+        }
+    }
+    return new FindState();
+}
+//使用完成之后将 FindState recycle , 并存储到 对象池中
+private List<SubscriberMethod> getMethodsAndRelease(FindState findState) {
+    List<SubscriberMethod> subscriberMethods = new ArrayList<>(findState.subscriberMethods);
+    findState.recycle();
+    synchronized (FIND_STATE_POOL) {
+        for (int i = 0; i < POOL_SIZE; i++) {
+            if (FIND_STATE_POOL[i] == null) {
+                FIND_STATE_POOL[i] = findState;
+                break;
+            }
+        }
+    }
+    return subscriberMethods;
+}
+```
+再来看下 `SubscriberMethodFinder#findUsingInfo(subscriberClass)` 方法，这方式是处理咱们上面讲过的 3.0+ 版本对 EventBus 的优化。
+这个会先查询能不能根据注册的类获取到对用的 SubscriberInfo 对象，可以从 SubscriberInfo 中获取 SubscriberMethod list。
+```java                                                                    
+private List<SubscriberMethod> findUsingInfo(Class<?> subscriberClass) {
+    FindState findState = prepareFindState();
+    findState.initForSubscriber(subscriberClass);
+    while (findState.clazz != null) {
+        findState.subscriberInfo = getSubscriberInfo(findState);
+        if (findState.subscriberInfo != null) {
+            // subscriberInfo 不为空，直接从 subscriberInfo 获取 SubscriberMethods
+            SubscriberMethod[] array = findState.subscriberInfo.getSubscriberMethods();
+            for (SubscriberMethod subscriberMethod : array) {
+                if (findState.checkAdd(subscriberMethod.method, subscriberMethod.eventType)) {
+                    findState.subscriberMethods.add(subscriberMethod);
+                }
+            }
+        } else {
+            findUsingReflectionInSingleClass(findState);
+        }
+        findState.moveToSuperclass();
+    }
+    return getMethodsAndRelease(findState);
+}                                                                       
+```                                                                        
+再看下 `SubscriberMethodFinder#findUsingReflectionInSingleClass(findState)` 方法
 
 
