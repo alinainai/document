@@ -304,14 +304,22 @@ findUsingReflectionInSingleClass 方法通过反射的方式查找 subscriberCla
 查找 List<SubscriberMethod> 的过程到这里就结束了，下面我们看下 `EventBus#register(subsricberClass)` 中调用的 `subscribe` 方法
 
 ```java
+// 存储 eventType 和 subscriptions 对象
+private final Map<Class<?>, CopyOnWriteArrayList<Subscription>> subscriptionsByEventType;
+//存储 订阅者 和 订阅方法使用到的 eventType
+private final Map<Object, List<Class<?>>> typesBySubscriber;
+
 // Must be called in synchronized block
 private void subscribe(Object subscriber, SubscriberMethod subscriberMethod) {
-    Class<?> eventType = subscriberMethod.eventType; //获取 subscriberMethod 的事件类型
+    // 获取 subscriberMethod 方法中使用的事件类型
+    Class<?> eventType = subscriberMethod.eventType; 
+    // 新建一个订阅对象
     Subscription newSubscription = new Subscription(subscriber, subscriberMethod);
+    // 根据事件类型获取订阅对象的集合
     CopyOnWriteArrayList<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
     if (subscriptions == null) {
         subscriptions = new CopyOnWriteArrayList<>();
-        subscriptionsByEventType.put(eventType, subscriptions);
+        subscriptionsByEventType.put(eventType, subscriptions); //将订阅对象集合添加到 subscriptionsByEventType 中
     } else {
         if (subscriptions.contains(newSubscription)) {
             throw new EventBusException("Subscriber " + subscriber.getClass() + " already registered to event "
@@ -320,21 +328,22 @@ private void subscribe(Object subscriber, SubscriberMethod subscriberMethod) {
     }
 
     int size = subscriptions.size();
-    for (int i = 0; i <= size; i++) {
+    for (int i = 0; i <= size; i++) { //处理优先级
         if (i == size || subscriberMethod.priority > subscriptions.get(i).subscriberMethod.priority) {
             subscriptions.add(i, newSubscription);
             break;
         }
     }
-
+    //通过 subscriber 查找对应的 eventTypes 列表
     List<Class<?>> subscribedEvents = typesBySubscriber.get(subscriber);
     if (subscribedEvents == null) {
         subscribedEvents = new ArrayList<>();
         typesBySubscriber.put(subscriber, subscribedEvents);
     }
+    //将 eventType 添加到 subscribedEvents
     subscribedEvents.add(eventType);
 
-    if (subscriberMethod.sticky) {
+    if (subscriberMethod.sticky) {//处理粘性事件
         if (eventInheritance) {
             // Existing sticky events of all subclasses of eventType have to be considered.
             // Note: Iterating over all events may be inefficient with lots of sticky events,
@@ -355,6 +364,171 @@ private void subscribe(Object subscriber, SubscriberMethod subscriberMethod) {
     }
 }
 ```
+这个方法将 订阅者、订阅者中的订阅方法 和 evnetType 缓存到 EventBus 中对应的容器里。
+
+#### 3.2 发送事件 EventBus.getDefault().post(MessageEvent())
+```java
+public void post(Object event) {
+    // currentPostingThreadState 是一个 ThreadLocal
+    PostingThreadState postingState = currentPostingThreadState.get();
+    List<Object> eventQueue = postingState.eventQueue;
+    eventQueue.add(event);// 将消息添加到 eventQueue
+
+    if (!postingState.isPosting) { // 如果没有在发送事件
+        postingState.isMainThread = isMainThread();
+        postingState.isPosting = true; // 改变发送状态
+        if (postingState.canceled) {
+            throw new EventBusException("Internal error. Abort state was not reset");
+        }
+        try {
+            while (!eventQueue.isEmpty()) {
+                // 发送事件
+                postSingleEvent(eventQueue.remove(0), postingState);
+            }
+        } finally {
+            postingState.isPosting = false;
+            postingState.isMainThread = false;
+        }
+    }
+}
+```
+首先根据 currentPostingThreadState 获取当前线程状态 postingState 。currentPostingThreadState 其实就是一个 ThreadLocal 类的对象，不同的线程根据自己独有的索引值可以得到相应属于自己的 postingState 数据。然后把事件 event 加入到 eventQueue 队列中排队。循环遍历 eventQueue ，取出事件发送事件。发送单个事件是调用 postSingleEvent(Object event, PostingThreadState postingState) 方法。
+
+再来看下 `EventBus#postSingleEvent(event,postingState)` 方法
+
+```java
+private void postSingleEvent(Object event, PostingThreadState postingState) throws Error {
+    Class<?> eventClass = event.getClass(); // 获取事件的Class
+    boolean subscriptionFound = false; // 是否找到订阅者
+    if (eventInheritance) {// 如果支持事件继承，默认为支持
+        List<Class<?>> eventTypes = lookupAllEventTypes(eventClass);// 查找 eventClass 的所有父类和接口
+        int countTypes = eventTypes.size();
+        for (int h = 0; h < countTypes; h++) {
+            // 依次向 eventClass 的父类或接口的订阅方法发送事件
+            // 只要有一个事件发送成功，返回 true ，那么 subscriptionFound 就为 true，|= 按位或操作
+            Class<?> clazz = eventTypes.get(h);
+            subscriptionFound |= postSingleEventForEventType(event, postingState, clazz);
+        }
+    } else {
+        subscriptionFound = postSingleEventForEventType(event, postingState, eventClass);
+    }
+    if (!subscriptionFound) { // 没有发现订阅者
+        if (logNoSubscriberMessages) {
+            logger.log(Level.FINE, "No subscribers registered for event " + eventClass);
+        }
+        if (sendNoSubscriberEvent && eventClass != NoSubscriberEvent.class &&
+                eventClass != SubscriberExceptionEvent.class) {
+            post(new NoSubscriberEvent(this, event));
+        }
+    }
+}
+    
+private boolean postSingleEventForEventType(Object event, PostingThreadState postingState, Class<?> eventClass) {
+    CopyOnWriteArrayList<Subscription> subscriptions;
+    synchronized (this) {
+        // 根据事件类型获取 Subscription 列表
+        subscriptions = subscriptionsByEventType.get(eventClass);
+    }
+    if (subscriptions != null && !subscriptions.isEmpty()) {
+        for (Subscription subscription : subscriptions) {
+            postingState.event = event;
+            postingState.subscription = subscription;
+            boolean aborted;
+            try {
+                // 发送事件
+                postToSubscription(subscription, event, postingState.isMainThread);
+                // 是否被取消
+                aborted = postingState.canceled;
+            } finally {
+                postingState.event = null;
+                postingState.subscription = null;
+                postingState.canceled = false;
+            }
+            if (aborted) {// 如果被取消，则跳出循环
+                break;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+private void postToSubscription(Subscription subscription, Object event, boolean isMainThread) {
+    switch (subscription.subscriberMethod.threadMode) { // 根据不同的线程模式执行对应的分支
+        case POSTING:
+            invokeSubscriber(subscription, event);
+            break;
+        case MAIN:
+            if (isMainThread) {
+                invokeSubscriber(subscription, event);
+            } else {
+                mainThreadPoster.enqueue(subscription, event);
+            }
+            break;
+        case MAIN_ORDERED:
+            if (mainThreadPoster != null) {
+                mainThreadPoster.enqueue(subscription, event);
+            } else {
+                // temporary: technically not correct as poster not decoupled from subscriber
+                invokeSubscriber(subscription, event);
+            }
+            break;
+        case BACKGROUND:
+            if (isMainThread) {
+                backgroundPoster.enqueue(subscription, event);
+            } else {
+                invokeSubscriber(subscription, event);
+            }
+            break;
+        case ASYNC:
+            asyncPoster.enqueue(subscription, event);
+            break;
+        default:
+            throw new IllegalStateException("Unknown thread mode: " + subscription.subscriberMethod.threadMode);
+    }
+}
+```
+#### 3.3 EventBus.unregister() 解绑操作
+
+在订阅类销毁的时候要对 EventBus 进行解绑操作。
+
+```java
+/** Unregisters the given subscriber from all event classes. */
+public synchronized void unregister(Object subscriber) {
+    // 获取订阅对象的所有订阅事件类集合
+    List<Class<?>> subscribedTypes = typesBySubscriber.get(subscriber);
+    if (subscribedTypes != null) {
+        for (Class<?> eventType : subscribedTypes) {
+            // 移除订阅者的订阅信息
+            unsubscribeByEventType(subscriber, eventType);
+        }
+        // 移除订阅者
+        typesBySubscriber.remove(subscriber);
+    } else {
+        logger.log(Level.WARNING, "Subscriber to unregister was not registered before: " + subscriber.getClass());
+    }
+}
+
+
+/** Only updates subscriptionsByEventType, not typesBySubscriber! Caller must update typesBySubscriber. */
+private void unsubscribeByEventType(Object subscriber, Class<?> eventType) {
+    // 获取事件类的所有订阅信息列表，将订阅信息从订阅信息集合中移除，同时将订阅信息中的active属性置为FALSE
+    List<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
+    if (subscriptions != null) {
+        int size = subscriptions.size();
+        for (int i = 0; i < size; i++) {
+            Subscription subscription = subscriptions.get(i);
+            if (subscription.subscriber == subscriber) {
+                subscription.active = false;
+                subscriptions.remove(i);
+                i--;
+                size--;
+            }
+        }
+    }
+}
+```
+
 ### 参考
 
 [EventBus索引分析](https://www.jianshu.com/p/25388d6446bf)
