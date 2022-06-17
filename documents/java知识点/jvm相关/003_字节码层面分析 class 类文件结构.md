@@ -255,7 +255,7 @@ CONSTANT_Fieldref_info{
 ```
 继续解析 Text.class 中的字段表，其结构如下图所示：
 
-<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/174243830-19793843-86b7-44bc-9068-6e77d004b0b2.png">
+<img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/174264609-815a084f-cf94-4f41-9ef7-a6caf81626df.png">
 
 #### 字段访问标志
 
