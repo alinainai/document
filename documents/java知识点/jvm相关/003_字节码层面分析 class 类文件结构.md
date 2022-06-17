@@ -94,7 +94,7 @@ public class Test implements Serializable, Cloneable{
 
 紧跟在魔数后面的四个字节代表当前 class 文件的版本号。前两个字节 0000 代表次版本号（minor_version），后两个字节 0034 是主版本号（major_version），对应的十进制值为 52，也就是说当前 class 文件的主版本号为 52，次版本号为 0。所以综合版本号是 52.0，也就是  jdk1.8.0
 
-### 5.常量池（重点）
+#### 4.3 常量池（重点）
 
 紧跟在版本号之后的是一个叫作常量池的表（cp_info）。在常量池中保存了类的各种相关信息，比如类的名称、父类的名称、类中的方法名、参数名称、参数类型等，这些信息都是以各种表的形式保存在常量池中的。
 
@@ -104,7 +104,7 @@ public class Test implements Serializable, Cloneable{
 
 可以看出，常量池中的每一项都会有一个 u1 大小的 tag 值。tag 值是表的标识，JVM 解析 class 文件时，通过这个值来判断当前数据结构是哪一种表。以上 14 种表都有自己的结构，这里不再一一介绍，就以 CONSTANT_Class_info 和 CONSTANT_Utf8_info 这两张表举例说明，因为其他表也基本类似。
 
-#### 首先，CONSTANT_Class_info 表具体结构如下所示：
+首先，CONSTANT_Class_info 表具体结构如下所示：
 
 ```java
 table CONSTANT_Class_info {
@@ -113,7 +113,6 @@ table CONSTANT_Class_info {
 }
 ```
 解释说明。
-
 - tag：占用一个字节大小。比如值为 7，说明是 CONSTANT_Class_info 类型表。
 - name_index：是一个索引值，可以将它理解为一个指针，指向常量池中索引为 name_index 的常量表。比如 name_index = 2，则它指向常量池中第 2 个常量。
 
@@ -124,15 +123,15 @@ table CONSTANT_utf8_info {
     u1  tag;
     u2  length;
     u1[] bytes;
+}    
 ```
 
 解释说明：
-
 - tag：值为1，表示是 CONSTANT_Utf8_info 类型表。
 - length：length 表示 u1[] 的长度，比如 length=5，则表示接下来的数据是 5 个连续的 u1 类型数据。
 - bytes：u1 类型数组，长度为上面第 2 个参数 length 的值。
 
-而我们在java代码中声明的String字符串最终在class文件中的存储格式就 CONSTANT_utf8_info。因此一个字符串最大长度也就是u2所能代表的最大值65536个，但是需要使用2个字节来保存 null 值，因此一个字符串的最大长度为 65536 - 2 = 65534。参考 Java String最大长度分析。
+而我们在java代码中声明的String字符串最终在class文件中的存储格式就 CONSTANT_utf8_info。因此一个字符串最大长度也就是u2所能代表的最大值65536个，但是需要使用2个字节来保存 null 值，因此一个字符串的最大长度为 65536 - 2 = 65534。[参考 Java String最大长度分析](https://mp.weixin.qq.com/s/I16BlY9cJF-JZZReAjuRqg)。
 
 不难看出，在常量池内部的表中也有相互之间的引用。用一张图来理解 CONSTANT_Class_info 和 CONSTANT_utf8_info 表格之间的关系，如下图所示：
 
@@ -155,7 +154,6 @@ CONSTANT_Methodref_info {
     u1 tag = 10;
     u2 class_index;        指向此方法的所属类
     u2 name_type_index;    指向此方法的名称和类型
-
 }
 ```
 
@@ -175,7 +173,6 @@ CONSTANT_Fieldref_info{
     u1 tag;
     u2 class_index;        指向此字段的所属类
     u2 name_type_index;    指向此字段的名称和类型
-
 }
 ```
 同样也是 4 个字节，前后都是两个索引。
@@ -199,7 +196,6 @@ CONSTANT_NameAndType_info{
     u1 tag;
     u2 name_index;    指向某字段或方法的名称字符串
     u2 type_index;    指向某字段或方法的类型字符串
-
 }
 ```
 而下标在 21 的 NameAndType 的 name_index 和 type_index 分别指向了 13 和 14，也就是“<init>”和“()V”。因此最终解析下来常量池中第 1 个常量的解析过程以及最终值如下图所示：
@@ -208,7 +204,7 @@ CONSTANT_NameAndType_info{
 
 仔细解析层层引用，最后我们可以看出，Test.class 文件中常量池的第 1 个常量保存的是 Object 中的默认构造器方法。
 
-### 访问标志（access_flags）
+### 5.访问标志（access_flags）
   
 紧跟在常量池之后的常量是访问标志，占用两个字节，如下图所示：
 
@@ -220,7 +216,7 @@ CONSTANT_NameAndType_info{
 
 我们定义的 Test.java 是一个普通 Java 类，不是接口、枚举或注解。并且被 public 修饰但没有被声明为 final 和 abstract，因此它所对应的 access_flags 为 0021（0X0001 和 0X0020 相结合）。
 
-### 类索引、父类索引与接口索引计数器
+### 6.类索引、父类索引与接口索引计数器
 
 在访问标志后的 2 个字节就是类索引，类索引后的 2 个字节就是父类索引，父类索引后的 2 个字节则是接口索引计数器。如下图所示：
 
@@ -261,7 +257,7 @@ CONSTANT_Fieldref_info{
 
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/174243830-19793843-86b7-44bc-9068-6e77d004b0b2.png">
 
-字段访问标志
+#### 字段访问标志
 
 对于 Java 类中的变量，也可以使用 public、private、final、static 等标识符进行标识。因此解析字段时，需要先判断它的访问标志，字段的访问标志如下所示：
 
@@ -274,12 +270,12 @@ CONSTANT_Fieldref_info{
 因此可以得知类中有一个名为 num，类型为 int 类型的变量。对于第 2 个变量的解析过程也是一样，就不再过多介绍。
 
 注意事项：
-
 - 字段表集合中不会列出从父类或者父接口中继承而来的字段。
 - 内部类中为了保持对外部类的访问性，会自动添加指向外部类实例的字段。
 - 对于以上两种情况，建议你可以自行定义一个类查看并手动分析一下。
 
-方法表
+### 8.方法表
+
 字段表之后跟着的就是方法表常量。相信你应该也能猜到了，方法表常量应该也是以一个计数器开始的，因为一个类中的方法数量是不固定的，如图所示：
 
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/174247441-02e55a6d-aac8-4756-ad88-74e3146daa64.png">
@@ -311,7 +307,7 @@ CONSTANT_Methodref_info{
 - name_index = 0X0011  指向常量池中的第 17 个常量，也就是“add”。
 - type_index = 0X0012   指向常量池中的第 18 个常量，也即是 (I)。这个方法接收 int 类型参数，并返回 int 类型参数。
 
-属性表
+### 9.属性表
 在之前解析字段和方法的时候，在它们的具体结构中我们都能看到有一个叫作 attributes_info 的表，这就是属性表。
 
 属性表并没有一个固定的结构，各种不同的属性只要满足以下结构即可：
@@ -342,7 +338,7 @@ Code 属性表中，最主要的就是一些列的字节码。通过 javap -v Te
 
 JVM 执行 add 方法时，就通过这一系列指令来做相应的操作。
 
-总结：
+### 10.总结：
 本课时我们主要了解了一个 class 文件内容的数据结构到底长什么样子，并通过 Test.class 来模拟演示Java虚拟机解析字节码文件的过程。其中 class 常量池部分是重点内容，它就相当于是 class 文件中的资源仓库，其他的几种结构或多或少都会最终指向到这个资源仓库中。实际上平时我们不太会直接用一个 16 进制编辑器去打开一个 .class 文件。我们可以使用 javap 等命令或者是其他工具，来帮助我们查看 class 内部的数据结构。只不过自己亲手操作一遍是很有助于理解 JVM 的解析过程，并加深对 class 文件结构的记忆。
 
  
