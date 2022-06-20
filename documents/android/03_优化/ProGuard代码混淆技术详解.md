@@ -55,7 +55,7 @@ ProGuar由shrink、optimize、obfuscate和preveirfy四个步骤组成，每个�
 
 1.基本指令
 
-```groove
+```shell
 # 代码混淆压缩比，在0和7之间，默认为5，一般不需要改
 -optimizationpasses 5
  
