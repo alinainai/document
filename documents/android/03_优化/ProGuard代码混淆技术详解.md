@@ -1,11 +1,13 @@
 
 博客比较老，16年的 仅供参考 [ProGuard代码混淆技术详解](https://www.cnblogs.com/cr330326/p/5534915.html)
 
-### 前言   
-    受《APP研发录》启发，里面讲到一名Android程序员，在工作一段时间后，会感觉到迷茫，想进阶的话接下去是看Android系统源码呢，还是每天继续做应用，毕竟每天都是画UI和利用MobileAPI处理Json还是蛮无聊的，做着重复的事情，没有技术的上提升空间的。所以，根据里面提到的Android应用开发人员所需要精通的20个技术点，写篇文章进行总结，一方面是梳理下基础知识和巩固知识，另一方面也是弥补自我不足之处。
-    那么，今天就来讲讲ProGuard代码混淆的相关技术知识点。
+## 前言   
+
+受《APP研发录》启发，里面讲到一名Android程序员，在工作一段时间后，会感觉到迷茫，想进阶的话接下去是看Android系统源码呢，还是每天继续做应用，毕竟每天都是画UI和利用MobileAPI处理Json还是蛮无聊的，做着重复的事情，没有技术的上提升空间的。所以，根据里面提到的Android应用开发人员所需要精通的20个技术点，写篇文章进行总结，一方面是梳理下基础知识和巩固知识，另一方面也是弥补自我不足之处。
+
+那么，今天就来讲讲ProGuard代码混淆的相关技术知识点。
     
-### 内容目录
+## 内容目录
 - ProGuard简介
 - ProGuard工作原理
 - 如何编写一个ProGuard文件
@@ -13,7 +15,7 @@
 - 小结
 
 
-### 1. ProGuard简介
+## 1. ProGuard简介
 
 因为Java代码是非常容易反编码的，况且Android开发的应用程序是用Java代码写的，为了很好的保护Java源代码，我们需要对编译好后的class文件进行混淆。
 
@@ -26,7 +28,7 @@ ProGuard是一个混淆代码的开源项目，它的主要作用是混淆代码
 
 总而言之，根据官网的翻译：Proguard是一个Java类文件压缩器、优化器、混淆器、预校验器。压缩环节会检测以及移除没有用到的类、字段、方法以及属性。优化环节会分析以及优化方法的字节码。混淆环节会用无意义的短变量去重命名类、变量、方法。这些步骤让代码更精简，更高效，也更难被逆向（破解）。
  
-### 2. ProGuard工作原理
+## 2. ProGuard工作原理
 
 ProGuar由shrink、optimize、obfuscate和preveirfy四个步骤组成，每个步骤都是可选的，我们可以通过配置脚本来决定执行其中的哪几个步骤。
 
@@ -40,14 +42,14 @@ ProGuar由shrink、optimize、obfuscate和preveirfy四个步骤组成，每个�
 
 那么这个入口点怎么来呢？就是从ProGuard的配置文件来，只要这个配置了，那么就不会被移除。
  
-### 3.如何编写一个ProGuard文件
+## 3.如何编写一个ProGuard文件
 
 有个三步走的过程：
 - 基本混淆
 - 针对APP的量身定制
 - 针对第三方jar包的解决方案
 
-#### 3.1 基本混淆
+### 3.1 基本混淆
 
 混淆文件的基本配置信息，任何APP都要使用，可以作为模板使用，具体如下。
 
@@ -244,7 +246,7 @@ AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someFie
 
 但凡在Layout目录下的XML布局文件配置的自定义View，都不能进行混淆。为此要遍历Layout下的所有的XML布局文件，找到那些自定义View，然后确认其是否在ProGuard文件中保留。有一种思路是，在我们使用自定义View时，前面都必须加上我们的包名，比如com.a.b.customeview，我们可以遍历所有Layout下的XML布局文件，查找所有匹配com.a.b的标签即可。
  
-### 4.针对第三方jar包的解决方案
+## 4.针对第三方jar包的解决方案
 
 我们在Android项目中不可避免要使用很多第三方提供的SDK，一般而言，这些SDK是经过ProGuard混淆的，而我们所需要做的就是避免这些SDK的类和方法在我们APP被混淆。
 
@@ -273,7 +275,7 @@ AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someFie
 
 值得注意的是，不是每个第三方SDK都需要-dontwarn 指令，这取决于混淆时第三方SDK是否出现警告，需要的时候再加上。
 
-### 5 其他注意事项
+## 5 其他注意事项
 当然在使用ProGuard过程中，还有一些注意的事项，如下。
 
 1.如何确保混淆不会对项目产生影响
@@ -308,5 +310,5 @@ public class Bean{
 proguard.config=proguard.cfg
 其中，proguard.cfg是混淆文件的名称。
 
-### 小结
+## 小结
 总之ProGuard是一个比较枯燥的过程，但Android项目没有了ProGuard就真不行了，这样可以保证我们开发出的APK可以更健壮，毕竟很多核心代码质量也算是一个APK的核心竞争力吧。
