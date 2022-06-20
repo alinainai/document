@@ -1,26 +1,32 @@
-### 1. 简单使用
+### 1. 使用方式
+
+EventBus 的 github 地址
 
 [官方地址: https://github.com/greenrobot/EventBus](https://github.com/greenrobot/EventBus)
 
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/163953816-f7cfffd7-e2a2-4fc9-aa11-d88fe7102600.png">
 
-
-添加依赖
+在 gradle 中添加依赖
 
 ```groovy
 implementation("org.greenrobot:eventbus:3.3.1")
 ```
-#### 1.1 简单使用
+#### 1.1 在代码中简单使用
+
+1.定义事件 和 事件接收的方法
+
 ```java
-// 1. 定义事件 和 事件接收的方法
 public static class MessageEvent { /* Additional fields if needed */ }
 
 @Subscribe(threadMode = ThreadMode.MAIN)  
 public void onMessageEvent(MessageEvent event) {
     // Do something
 }
+```
 
-// 2. 在 Activity 或者 Fragment 中注册和反注册
+2.在 Activity 或者 Fragment 中注册和反注册
+
+```java
 @Override
 public void onStart() {
     super.onStart();
@@ -31,18 +37,20 @@ public void onStop() {
     super.onStop();
     EventBus.getDefault().unregister(this);
 }
+```
 
-// 3. 发送事件
+3.发送事件
+```java
 EventBus.getDefault().post(new MessageEvent());
 ```
 
 #### 1.2 进阶使用
 
-3.0之后的优化：使用 Subscriber Index
+EventBus3.0 之后,可以通过 Subscriber Index 使用 APT 技术来完成方法注册
 
 [Subscriber Index](https://greenrobot.org/eventbus/documentation/subscriber-index/)
 
-生成 Index
+使用方式
 
 ```groovy
 apply plugin: 'kotlin-kapt' // ensure kapt plugin is applied
@@ -93,12 +101,13 @@ public class MyEventBusIndex implements SubscriberInfoIndex {
     }
 }
 ```
-#### 两种方式怎么样使用 index
+#### 在 Eventbus 中注册 index 的两种方式
 
 Then, e.g. in your Application class, use EventBus.builder().addIndex(indexInstance) to pass an instance of the index class to EventBus.
 ```java
 EventBus eventBus = EventBus.builder().addIndex(new MyEventBusIndex()).build();
 ```
+
 Use EventBusBuilder.installDefaultEventBus() to set the EventBus with index as the instance returned by EventBus.getDefault().
 ```java
 EventBus.builder().addIndex(new MyEventBusIndex()).installDefaultEventBus();
@@ -153,9 +162,9 @@ List<SubscriberMethod> findSubscriberMethods(Class<?> subscriberClass) {
     if (subscriberMethods != null) {
         return subscriberMethods;
     }
-    // ignoreGeneratedIndex 属性表示是否忽略注解器生成的 MyEventBusIndex，默认为false，可以通过 EventBusBuilder 来设置它的值
+    // ignoreGeneratedIndex 表示是否忽略注解器生成的 MyEventBusIndex，默认为 false 表示可以通过 EventBusBuilder 来设置它的值
     if (ignoreGeneratedIndex) {
-        //通过反射的形式获取
+        //如果忽略使用 MyEventBusIndex，会通过反射的形式得到 subscriberMethods
         subscriberMethods = findUsingReflection(subscriberClass);
     } else {
         subscriberMethods = findUsingInfo(subscriberClass);
