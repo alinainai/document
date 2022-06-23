@@ -7,3 +7,8 @@ Service 是一种可在后台执行长时间运行操作而不提供界面的应
 此外，组件可通过绑定到服务与之进行交互，甚至是执行进程间通信 (IPC)。例如，服务可在后台处理网络事务、播放音乐，执行文件 I/O 或与内容提供程序进行交互。
 
 ### 1.1 三种不同的服务类型
+
+
+## 参考
+
+[服务概览](https://developer.android.com/guide/components/services?hl=zh-cn#Lifecycle)
