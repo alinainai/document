@@ -47,5 +47,15 @@ java -version
 
 ~ok，基础操作完成，试着运行一下你的项目
 
-## 2.真正的适配操作
+## 2.适配代码
+
+可以先看下官网的行为变更：[Android12:行为变更：所有应用](https://developer.android.google.cn/about/versions/12/behavior-changes-all)
+
+咱们项目目前需要适配主要是下面几个
+
+- 1.应用启动画面
+- 2.
+
+## 3.测试重点
+
 
