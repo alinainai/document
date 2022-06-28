@@ -60,8 +60,10 @@ java -version
 咱们项目目前需要适配主要是下面几个
 
 - 三方库升级
-- 应用启动画面
-- Manifest 文件中适配 exported 属性
+- 三方服务的适配追踪 客服、Firebase、神策
+- 新版应用启动画面
+- Manifest 适配 exported 属性
+- 过时的API处理
 
 ## 3.测试重点
 
