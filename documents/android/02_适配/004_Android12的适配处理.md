@@ -51,11 +51,21 @@ java -version
 
 可以先看下官网的行为变更：[Android12:行为变更：所有应用](https://developer.android.google.cn/about/versions/12/behavior-changes-all)
 
+还可以参看下面几个文章：
+
+[Android 12 保姆级适配指南](https://juejin.cn/post/7093787313095999502#heading-9)
+
+
+
 咱们项目目前需要适配主要是下面几个
 
-- 1.应用启动画面
-- 2.
+- 三方库升级
+- 应用启动画面
+- Manifest 文件中适配 exported 属性
 
 ## 3.测试重点
+
+1. 有些图片上传的页面要过一下，找一个主要界面过一下流程。
+2.
 
 
