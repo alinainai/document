@@ -47,7 +47,7 @@ java -version
 
 ~ok，基础操作完成，试着运行一下你的项目
 
-这个要在确定一下，要不要 回退到 31 版本，Android12L 和 Android12 也是有区别的
+**讨论点：这个要在确定一下，要不要 回退到 31 版本，Android12L 和 Android12 也是有区别的**
 
 ## 2.适配代码
 
@@ -65,7 +65,42 @@ java -version
 - 4.Manifest 适配 exported 属性
 - 5.过时的API处理
 
-上面几个方面可以在细分一下。
+上面几个方面可以细讲一下
+
+### 2.1 三方库升级: Okhttp、Retrofit、Rxjava(暂时放弃)、系统库
+
+讨论下升级的必要性
+
+### 2.2 三方服务的适配追踪: 客服、Firebase、神策
+
+
+客服：目前一对客服的aar包进行了 exported 适配，可以在找下官方查看版本适配
+
+Firebase：已升级新包
+
+神策：找客服对接一下。
+
+哆啦A梦：已升级为最新版本
+
+### 2.3 新版应用启动画面
+
+目前已经和雪花沟通，等待雪花最终的UI效果
+
+我的意思：
+
+分 12 和 12 以前的版本分别适配。主要方法：建立 values-v31 theme 主题分别适配
+
+### 2.4 Manifest 适配 exported 属性
+
+针对app内和第三方的 aar manifest 中有 intent-filter 的 Activity/Service/BroadcastReceiver 要设置 exported 属性。
+
+目前已做处理，处理方式如下：
+- 针对 app 内根据组件的使用情况设置 exported 属性，需要被外部调用的设置为 true，不需要被外部调用的设置为 false
+- 针对三方的 aar 可以在 app 的 manifest 使用merge属性再声明一次组件，并设置exported 属性，需要被外部调用的设置为 true，不需要被外部调用的设置为 false
+
+### 2.5 过时的API处理
+
+可以先不处理，过时不代表去掉
 
 ## 3.测试重点
 
