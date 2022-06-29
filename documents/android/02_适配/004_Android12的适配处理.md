@@ -47,6 +47,8 @@ java -version
 
 ~ok，基础操作完成，试着运行一下你的项目
 
+这个要在确定一下，要不要 回退到 31 版本，Android12L 和 Android12 也是有区别的
+
 ## 2.适配代码
 
 可以先看下官网的行为变更：[Android12:行为变更：所有应用](https://developer.android.google.cn/about/versions/12/behavior-changes-all)
@@ -57,11 +59,13 @@ java -version
 
 咱们项目目前需要适配主要是下面几个
 
-- 1.三方库升级
-- 2.三方服务的适配追踪 客服、Firebase、神策
+- 1.三方库升级: Okhttp、Retrofit、Rxjava(暂时放弃)、系统库
+- 2.三方服务的适配追踪: 客服、Firebase、神策
 - 3.新版应用启动画面
 - 4.Manifest 适配 exported 属性
 - 5.过时的API处理
+
+上面几个方面可以在细分一下。
 
 ## 3.测试重点
 
