@@ -1,8 +1,6 @@
 - 1.top, left, bottom, right 这几个坐标是view与其所在的父容器的相对位置
 - 2.API 11（Android3.0）之后，又增加了 x、y、translationX、translationY。
 
-说一下这几个值得关系 
-
 View 在平移的过程中，top 和 left 表示的是原始左上角的位置信息，其值不会发生改变，发生改变的是x、y、translationX、translationY。x、y 是 View左上角相对于父布局的坐标，translationX、translationY 是平移的距离。关系如下
 
 ```java
