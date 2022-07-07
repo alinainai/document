@@ -12,3 +12,7 @@ adb shell dumpsys activity | grep com.xxx.xxx.xx
 ```shell
 adb shell dumpsys activity | grep mFocusedActivity
 ```
+4、打印log日志
+```shell
+adb logcat -e time > /Users/lijiaxing/Downloads/log.txt
+```
