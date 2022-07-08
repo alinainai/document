@@ -3,24 +3,26 @@
 
 ## 1. 基本订阅流程
 
-在正文开始前首先我们要明确一点 RxJava 的基本流程：被观察者通过`subscribe`方法和观察者建立订阅关系，订阅关系建立的同时开始进行事件流的传递。
+在正文开始前首先我们要明确下面一点:
+
+>RxJava 的基本流程：被观察者通过`subscribe`方法和观察者建立订阅关系，订阅关系建立的同时开始进行事件流的传递。
 
 ```java
 Observable.subscribe(Observer)
 ```
 
-下面我们以`Observable.create`操作符为例来跟踪一下源码
+下面我们以`Observable.create`操作符为例来分析一下源码
 
 ```kotlin
-//1) 调用 Observable#create(ObservableOnSubscribe) 方法创建一个 Observable 对象 
+//1、调用 Observable#create(ObservableOnSubscribe) 方法创建一个 Observable 对象 
 Observable.create(ObservableOnSubscribe<String> { emitter ->
         emitter.onNext("1")
         emitter.onNext("2")
         emitter.onComplete()
     }
-}).map{
+}).map{//2、把String 转换成 Int
     it.toInt()
-}.subscribe(object : Observer<Int> {
+}.subscribe(object : Observer<Int> {//3、建立订阅关系
     override fun onSubscribe(d: Disposable) {
         System.out.print("onSubscribe\n")
     }
@@ -39,7 +41,13 @@ Observable.create(ObservableOnSubscribe<String> { emitter ->
 })
 ```
 
-看流程之前我们先简单的介绍几个主要的类
+咱们简单的分析一下上面的代码
+
+- 1.通过 `Observable#create(ObservableOnSubscribe)` 方法创建一个 Observable 对象，并产生事件"1"、"2"、complete
+- 2.通过 `map` 将`String`类型的事件转换为`Int`
+- 3.调用 `subscribe()` 和观察者建立订阅关系
+
+跟踪源码之前我们先简单的介绍几个主要的类
 
 - `ObservableSource` : 一个接口，定了`subscribe(Observer)`方法，调用该方法会建立`Observable`和`Observer`的订阅关系 
 
