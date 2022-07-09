@@ -635,5 +635,8 @@ Thread("newThread()") {
 ### 2.3 线程切换小结¶
 最后，线程切换特点可以从下图例子中体现出来：
 
+<img width="700" alt="RxJava线程转化关系图" src="https://user-images.githubusercontent.com/17560388/178108221-01d8724b-bed1-4b6d-9f6c-0f6405407a0d.png">
 
-RxJava线程转化关系图
+
+
+
