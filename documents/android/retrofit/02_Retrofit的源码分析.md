@@ -72,7 +72,7 @@ public <T> T create(final Class<T> service) {
 
 ### 2.1 先看下 loadServiceMethod 方法
 
-loadServiceMethod方法的相关代码：
+`loadServiceMethod`方法的相关代码：
 
 ```java
 private final Map<Method, ServiceMethod<?, ?>> serviceMethodCache = new ConcurrentHashMap<>();
@@ -84,6 +84,7 @@ ServiceMethod<?, ?> loadServiceMethod(Method method) {
   synchronized (serviceMethodCache) {
     result = serviceMethodCache.get(method);//取缓存
     if (result == null) {
+      //核心代码，通过 builer 创建一个 ServiceMethod 对象
       result = new ServiceMethod.Builder<>(this, method).build();
       serviceMethodCache.put(method, result);//存缓存
     }
@@ -92,24 +93,9 @@ ServiceMethod<?, ?> loadServiceMethod(Method method) {
 }
 ```
 
-在loadServiceMethod方法执行的时候，有一个取缓存的操作，若取不到则开始创建
-创建的时候会根据方法、方法注解、方法参数、方法参数注解这几个方面
-决定采用哪个CallAdapter、哪个Converter
-解析方法的注解，取出HTTP调用的方式httpMethod、是否有请求体hasBody、相对urlrelativeUrl等
-将每个参数的注解包装成为一个个ParameterHandler对象，等待调用
+先看`ServiceMethod.Builder`的构造方法，取出要调用方法的注解、参数以及参数的注解：
 
-将上一步的结果与方法的入参包装成一个OkHttpCall对象
-
-调用serviceMethod.callAdapter.adapt(okHttpCall)开始执行网络请求
-下面我们一步一步地进行分析。
-
-
-可以很明显的看出来，这里采取了缓存的设计，所以Retrofit也要单例实现才能发挥最大的作用。
-很明显，这段代码的重点就是ServiceMethod.Builder的创建以及其build方法了。
-
-先看构造器的实现，这部分代码很简单，就是取出要调用方法的注解、参数以及参数注解：
-
-
+```java
 Builder(Retrofit retrofit, Method method) {
   this.retrofit = retrofit;
   this.method = method;
@@ -117,16 +103,10 @@ Builder(Retrofit retrofit, Method method) {
   this.parameterTypes = method.getGenericParameterTypes();
   this.parameterAnnotationsArray = method.getParameterAnnotations();
 }
-在我们的例子中（tips:可以直接在aar包对应文件中打上断点）：
+```
 
-
-methodAnnotations = [@GET("rest/app/update")]
-parameterTypes = [String]
-parameterAnnotationsArray = [[@Query(encoded=false, value=versionCode)]]
-再看ServiceMethod.Builder.build方法，这部分代码很长很关键，我们一行一行代码捋一下。
-先上源代码，做一个整体解释：
-
-
+再看`ServiceMethod.Builder.build`方法的源码，
+```java
 public ServiceMethod build() {
   // 根据method的返回值类型以及方法注解返回第一个可以处理的CallAdapter
   // 此处就是RxJava2CallAdapterFactory创建的RxJava2CallAdapter
@@ -206,11 +186,12 @@ public ServiceMethod build() {
   // 创建ServiceMethod对象，内部就是一些赋值操作
   return new ServiceMethod<>(this);
 }
+```
 整体分析完了，我们先看一下CallAdapter、Converter的创建，然后再看各种注解的解析。
 
 callAdapter的选择由createCallAdapter完成：
 
-
+```java
 private CallAdapter<T, R> createCallAdapter() {
   // returnType为Observable<VersionRes>
   Type returnType = method.getGenericReturnType();
@@ -231,9 +212,10 @@ private CallAdapter<T, R> createCallAdapter() {
     throw methodError(e, "Unable to create call adapter for %s", returnType);
   }
 }
+```
 继续跟踪Retrofit.callAdapter方法：
 
-
+```java
 public CallAdapter<?, ?> callAdapter(Type returnType, Annotation[] annotations) {
   return nextCallAdapter(null, returnType, annotations);
 }
@@ -256,9 +238,10 @@ public CallAdapter<?, ?> nextCallAdapter(@Nullable CallAdapter.Factory skipPast,
   ...
   throw new IllegalArgumentException(...);
 }
+```
 RxJava2CallAdapterFactory是满足条件的，我们看看其get方法：
 
-
+```java
 @Override
 public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit retrofit) {
   // returnType为Observable<VersionRes>，因此rawType就是Observable类型
@@ -316,11 +299,12 @@ public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit
   return new RxJava2CallAdapter(responseType, scheduler, isAsync, isResult, isBody, isFlowable,
       isSingle, isMaybe, false);
 }
+```
 从上面分析可以看出，这里的callAdapter就等于RxJava2CallAdapter(VersionRes, null, false, false, true, false, false, false, false)。
 
 接下来看responseConverter的创建方法createResponseConverter()：
 
-
+```java
 private Converter<ResponseBody, T> createResponseConverter() {
   // annotations为[@GET("rest/app/update")]
   Annotation[] annotations = method.getAnnotations();
@@ -331,9 +315,10 @@ private Converter<ResponseBody, T> createResponseConverter() {
     throw methodError(e, "Unable to create converter for %s", responseType);
   }
 }
+```
 还是转到了Retrofit中：
 
-
+```java
 public <T> Converter<ResponseBody, T> responseBodyConverter(Type type, Annotation[] annotations) {
   return nextResponseBodyConverter(null, type, annotations);
 }
@@ -356,9 +341,10 @@ public <T> Converter<ResponseBody, T> nextResponseBodyConverter(
   ...
   throw new IllegalArgumentException(...);
 }
+```
 我们先看看BuiltInConverters能不能处理：
 
-
+```java
 @Override
 public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] annotations,
     Retrofit retrofit) {
@@ -372,16 +358,18 @@ public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] 
   }
   return null;
 }
+```
 我们可以看到BuiltInConverters只能处理ResponseBody类型和Void类型两种类型的返回值类型。
 所以，我们接着看第二个转换器GsonConverterFactory：
 
-
+```java
 @Override
 public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] annotations,
     Retrofit retrofit) {
   TypeAdapter<?> adapter = gson.getAdapter(TypeToken.get(type));
   return new GsonResponseBodyConverter<>(gson, adapter);
 }
+```
 这里调用了Gson的相关方法，是可以完成任务的。所以就返回了GsonResponseBodyConverter。
 
 回到ServiceMethod.Builder.build方法，接下来就是处理方法注解以及参数注解了。代码很简单，if-else判断出属于约定好的哪种注解，就设置对应的值。这里就不展开说了。
