@@ -767,7 +767,7 @@ R toResponse(ResponseBody body) throws IOException {
   }
 }
 ```    
-5. 小结
+### 5. 小结
 
 Retrofit使用了动态代理实现了我们定义的接口。
     
