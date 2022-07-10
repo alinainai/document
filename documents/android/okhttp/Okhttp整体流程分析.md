@@ -1,110 +1,53 @@
 ## 1.基本使用方式
 
-### 1.1用建造者模式初始化一个 OkHttpClient 对象
+### 1.1 用建造者模式初始化一个 OkHttpClient 对象
 
-```java
-OkHttpClient.Builder builder = new OkHttpClient.Builder();
-builder.connectTimeout(10, TimeUnit.SECONDS);
+```kotlin
 
-builder.addInterceptor(new Interceptor() {
-    @Override
-    public Response intercept(Chain chain) throws IOException {
-        Log.d(TAG, "Interceptor url:" + chain.request().url().toString());
-        return chain.proceed(chain.request());
-    }
-});
+val builder = OkHttpClient.Builder()
+builder.connectTimeout(10, TimeUnit.SECONDS)
 
-builder.addNetworkInterceptor(new Interceptor() {
-    @Override
-    public Response intercept(Chain chain) throws IOException {
-        Log.d(TAG, "NetworkInterceptor url:" + chain.request().url().toString());
-        return chain.proceed(chain.request());
-    }
-});
-
-OkHttpClient clent = builder.build();
+builder.addInterceptor(Interceptor { chain ->
+    Log.d(TAG, "Interceptor url:" + chain.request().url.toString())
+    chain.proceed(chain.request())
+})
+builder.addNetworkInterceptor(Interceptor { chain ->
+    Log.d(TAG, "NetworkInterceptor url:" + chain.request().url.toString())
+    chain.proceed(chain.request())
+//1、用建造者模式初始化一个 OkHttpClient 对象
+val client: OkHttpClient = builder.build()
 ```
 ### 1.2.再初始化一个 Request 对象
 
 ```java
-Request request = new Request.Builder()
-        .url("https://www.baidu.com")
-        .build();
+val request: Request = Request.Builder()
+    .url("https://www.baidu.com")
+    .build()
 ```
 
 ### 1.3 调用 OkHttpClient#newCall(Request) 方法生成一个 Call 对象
 
 ```java
-Call call = clent.newCall(request);
+ val call: Call = client.newCall(request)
 ```
-### 1.4 Call 调用 enqueue() 或者 execute() 方法实现请求
-```java
-call.enqueue(new Callback() {
-    @Override
-    public void onFailure(Call call, IOException e) {
-        Log.d(TAG, "onFailure: " + e.getMessage());
+### 1.4 Call 调用 enqueue(Callback) 或者 execute() 方法实现请求
+```kotlin
+// 1.enqueue(Callback) 异步请求
+call.enqueue(object : Callback {
+    override fun onFailure(call: Call, e: IOException) {
+        Log.d(TAG, "onFailure: " + e.message)
     }
-    @Override
-    public void onResponse(Call call, Response response) throws IOException {
-        Log.d(TAG, "response:" + response.body().string());
+    override fun onResponse(call: Call, response: Response) {
+        Log.d(TAG, "response:" + response.body?.string())
     }
-});
+})
+//2.execute() 同步请求       
+val response = call.execute()
 ```
-
 
 ## 2.OkHttpClient 的建造者参数
 
 `OkHttpClient` 相当于配置中心，所有的请求都会共享这些配置。比如：出错是否重试、共享连接池。
-
-```java
-public OkHttpClient() {
-  this(new Builder());
-}
-
-OkHttpClient(Builder builder) {
-  this.dispatcher = builder.dispatcher;
-  this.proxy = builder.proxy;
-  this.protocols = builder.protocols;
-  this.connectionSpecs = builder.connectionSpecs;
-  this.interceptors = Util.immutableList(builder.interceptors);
-  this.networkInterceptors = Util.immutableList(builder.networkInterceptors);
-  this.eventListenerFactory = builder.eventListenerFactory;
-  this.proxySelector = builder.proxySelector;
-  this.cookieJar = builder.cookieJar;
-  this.cache = builder.cache;
-  this.internalCache = builder.internalCache;
-  this.socketFactory = builder.socketFactory;
-
-  boolean isTLS = false;
-  for (ConnectionSpec spec : connectionSpecs) {
-    isTLS = isTLS || spec.isTls();
-  }
-
-  if (builder.sslSocketFactory != null || !isTLS) {
-    this.sslSocketFactory = builder.sslSocketFactory;
-    this.certificateChainCleaner = builder.certificateChainCleaner;
-  } else {
-    X509TrustManager trustManager = systemDefaultTrustManager();
-    this.sslSocketFactory = systemDefaultSslSocketFactory(trustManager);
-    this.certificateChainCleaner = CertificateChainCleaner.get(trustManager);
-  }
-
-  this.hostnameVerifier = builder.hostnameVerifier;
-  this.certificatePinner = builder.certificatePinner.withCertificateChainCleaner(
-      certificateChainCleaner);
-  this.proxyAuthenticator = builder.proxyAuthenticator;
-  this.authenticator = builder.authenticator;
-  this.connectionPool = builder.connectionPool;
-  this.dns = builder.dns;
-  this.followSslRedirects = builder.followSslRedirects;
-  this.followRedirects = builder.followRedirects;
-  this.retryOnConnectionFailure = builder.retryOnConnectionFailure;
-  this.connectTimeout = builder.connectTimeout;
-  this.readTimeout = builder.readTimeout;
-  this.writeTimeout = builder.writeTimeout;
-  this.pingInterval = builder.pingInterval;
-}
-```
 
 在OkHttpClient.Builder的构造器中有很多默认的值，如下注释：
 
@@ -210,7 +153,14 @@ public interface Call extends Cloneable {
 }
 ```
 
-当调用 `RealCall.execute()` 的时候，`RealCall.getResponseWithInterceptorChain()` 会被调用，它会发起⽹络请求并拿到返回的响应，装进一个 `Response` 对象并作为返回值返回;
+当调用 `RealCall.execute(Callback)` 的时候，`RealCall.getResponseWithInterceptorChain()` 会被调用，它会发起⽹络请求并拿到返回的响应，装进一个 `Response` 对象并作为返回值返回;
+
+override fun enqueue(responseCallback: Callback) {
+  check(executed.compareAndSet(false, true)) { "Already Executed" 
+  
+  callStart()
+  client.dispatcher.enqueue(AsyncCall(responseCallback))
+}
 
 `RealCall.enqueue()` 被调⽤的时候大同小异，区别在于
 `enqueue()` 会使⽤ `Dispatcher` 的线程池来把请求放在后台线程进行，但实质上使用的同样也是 `getResponseWithInterceptorChain()` 方法。
