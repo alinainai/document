@@ -112,7 +112,7 @@ Builder(Retrofit retrofit, Method method) {
 
 ```java
 public ServiceMethod build() {
-  // 根据method的返回值类型以及方法注解返回第一个可以处理的CallAdapter
+  // 1、根据method的返回值类型以及方法注解返回第一个可以处理的CallAdapter
   // 此处就是RxJava2CallAdapterFactory创建的RxJava2CallAdapter
   callAdapter = createCallAdapter();
   // 我们可以直接使用的真正的返回值类型，在例子中此处是VersionRes
@@ -122,7 +122,7 @@ public ServiceMethod build() {
         + Utils.getRawType(responseType).getName()
         + "' is not a valid response body type. Did you mean ResponseBody?");
   }
-  // 根据responseType以及方法注解返回第一个可以处理的Converter
+  // 2、根据responseType以及方法注解返回第一个可以处理的Converter
   // 由于内置的BuiltInConverters无法处理VersionRes类型的返回值，所以第二个尝试处理
   // 它做到了，因此此处为GsonConverterFactory创建的GsonResponseBodyConverter
   responseConverter = createResponseConverter();
@@ -148,7 +148,7 @@ public ServiceMethod build() {
     }
   }
 
-  // 将每个参数以及其注解封装成为一个ParameterHandler对象
+  // 3、将每个参数以及其注解封装成为一个ParameterHandler对象
   // 因为只有一个参数，所以这里把对应的结果写到代码上了
   int parameterCount = parameterAnnotationsArray.length;
   parameterHandlers = new ParameterHandler<?>[parameterCount];
@@ -187,7 +187,7 @@ public ServiceMethod build() {
     throw methodError("Multipart method must contain at least one @Part.");
   }
 
-  // 创建ServiceMethod对象，内部就是一些赋值操作
+  // 4、创建ServiceMethod对象，内部就是一些赋值操作
   return new ServiceMethod<>(this);
 }
 ```
@@ -381,19 +381,22 @@ public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] 
 
 最后是return new ServiceMethod<>(this);，这里面就是干了赋值的操作。
 
-5. serviceMethod.callAdapter.adapt¶
+## 3.serviceMethod.callAdapter.adapt
+
 loadServiceMethod完成之后，会将这个ServiceMethod与方法入参一起组成了一个OkHttpCall对象：
 
-
+```kitlin
 ServiceMethod<Object, Object> serviceMethod =
     (ServiceMethod<Object, Object>) loadServiceMethod(method);
 OkHttpCall<Object> okHttpCall = new OkHttpCall<>(serviceMethod, args);
 return serviceMethod.callAdapter.adapt(okHttpCall);
+```
+
 到目前为止，都只是做一些准备工作，还没有真正开始网络请求。那么这一步肯定就干了这件事。我们一点点往下看。
 
 我们在前面已经知道了serviceMethod.callAdapter是一个RxJava2CallAdapter对象，所以我们直接看其adapt方法：
 
-
+```java
 @Override public Object adapt(Call<R> call) {
   // isAsync在RxJava2CallAdapterFactory.create()中被赋值，为false
   Observable<Response<R>> responseObservable = isAsync
@@ -430,11 +433,12 @@ return serviceMethod.callAdapter.adapt(okHttpCall);
   }
   return observable;
 }
+```
 从上面可以看出，这里会经过两个Observable，分别是CallExecuteObservable以及BodyObservable。前者作为参数传递给了后者。
 
 我们先看看CallExecuteObservable干了什么：
 
-
+```java
 final class CallExecuteObservable<T> extends Observable<Response<T>> {
   // originalCall实际上就是OkHttpCall
   private final Call<T> originalCall;
@@ -496,11 +500,12 @@ final class CallExecuteObservable<T> extends Observable<Response<T>> {
     }
   }
 }
+```
 在上面这段代码中，call.execute()是重点，在这段代码里面完成了ServiceMethod的乱七八糟的参数的组装，最后才执行RealCall.execute，我们最后再说。
 
 接下来看看BodyObservable的相关代码：
 
-
+```java
 final class BodyObservable<T> extends Observable<T> {
   // 上面的CallExecuteObservable
   private final Observable<Response<T>> upstream;
@@ -565,12 +570,13 @@ final class BodyObservable<T> extends Observable<T> {
     }
   }
 }
+```
 小结一下，CallExecuteObservable就是用来执行网络请求的，BodyObservable会将网络请求的结果(Response<VersionRes>)转换为客户端需要的结果(VersionRes)。
 
-6. OkHttpCall.execute¶
+### 4.OkHttpCall.execute
 回想一下CallExecuteObservable的关键代码，网络请求需要有一个Request，但是在Retrofit中目前没有发现任何设置的地方，所以这部分代码肯定在OkHttpCall.execute中：
 
-
+```java
 @Override public Response<T> execute() throws IOException {
   okhttp3.Call call;
 
@@ -603,14 +609,16 @@ final class BodyObservable<T> extends Observable<T> {
 
   return parseResponse(call.execute());
 }
+```
 上面抛开一些同步处理、健康检查，其实就两行代码：
 
-
+```java
 call = rawCall = createRawCall();
 return parseResponse(call.execute())
+```
 先看createRawCall方法：
 
-
+```java
 private okhttp3.Call createRawCall() throws IOException {
   // 构造一个Request对象
   Request request = serviceMethod.toRequest(args);
@@ -622,9 +630,10 @@ private okhttp3.Call createRawCall() throws IOException {
   }
   return call;
 }
+```
 我们看看serviceMethod.toRequest(args)如何拼凑出一个Request对象：
 
-
+```java
 /** Builds an HTTP request from method arguments. */
 Request toRequest(@Nullable Object... args) throws IOException {
   // 还是用例子来说，此处RequestBuilder里面的参数依次为
@@ -654,9 +663,10 @@ Request toRequest(@Nullable Object... args) throws IOException {
 
   return requestBuilder.build();
 }
+```
 上面调用了ParameterHandler.Query.apply方法：
 
-
+```java
 // 此处value就是实例中versionCode的值，假设是10000
 @Override void apply(RequestBuilder builder, @Nullable T value) throws IOException {
   if (value == null) return; // Skip null values.
@@ -669,9 +679,10 @@ Request toRequest(@Nullable Object... args) throws IOException {
   // 最后调用了`RequestBuilder.addQueryParam`方法
   builder.addQueryParam(name, queryValue, encoded);
 }
+```
 继续跟踪一下RequestBuilder.addQueryParam方法：
 
-
+```java
 void addQueryParam(String name, @Nullable String value, boolean encoded) {
   // relativeUrl为rest/app/update
   if (relativeUrl != null) {
@@ -696,9 +707,10 @@ void addQueryParam(String name, @Nullable String value, boolean encoded) {
     urlBuilder.addQueryParameter(name, value);
   }
 }
+```
 回到上面，执行完createRawCall之后，就继续执行parseResponse(call.execute())。由于此时的call是RealCall类型了，所以也不用多说。接下来就是parseResponse方法。
 
-
+```java
 Response<T> parseResponse(okhttp3.Response rawResponse) throws IOException {
   ResponseBody rawBody = rawResponse.body();
 
@@ -734,16 +746,18 @@ Response<T> parseResponse(okhttp3.Response rawResponse) throws IOException {
     throw e;
   }
 }
+```
 该方法前面几部分比较原始，我们关注一下T body = serviceMethod.toResponse(catchingBody);，
 
-
+```java
 /** Builds a method return value from an HTTP response body. */
 R toResponse(ResponseBody body) throws IOException {
   return responseConverter.convert(body);
 }
+```
 这里面的responseConverter就是很早之前就创建好的GsonResponseBodyConverter。其convert方法如下所示：
 
-
+```java
 @Override public T convert(ResponseBody value) throws IOException {
   JsonReader jsonReader = gson.newJsonReader(value.charStream());
   try {
@@ -752,10 +766,13 @@ R toResponse(ResponseBody body) throws IOException {
     value.close();
   }
 }
-7. 小结¶
+```    
+5. 小结
 
 Retrofit使用了动态代理实现了我们定义的接口。
+    
 在实现接口方法时，Retrofit会为每一个接口方法构建了一个ServiceMethod对象，并会缓存到ConcurrentHashMap中。
+    
 在ServiceMethod构建时，会根据接口方法的注解类型、参数类型以及参数注解来拼接请求参数、确定请求类型、构建请求体等，同时会根据接口方法的注解和返回类型确定使用哪个CallAdapter包装OkHttpCall，同时根据接口方法的泛型类型参数以及方法注解确定使用哪个Converter提供请求体、响应体以及字符串转换服务。所有准备工作完成之后，调用了CallAdapter.adapt，在这里面真正开始了网络请求。
 
-过OkHttpClient实例的dispatcher().queuedCalls()和dispatcher().runningCalls()取得对应状态的Request队列，然后遍历取其tag，取消指定tag的Request。
+
