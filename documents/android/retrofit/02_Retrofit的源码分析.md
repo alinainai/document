@@ -70,6 +70,27 @@ public <T> T create(final Class<T> service) {
 }
 ```
 
+### 2.1 先看下 loadServiceMethod 方法
+
+loadServiceMethod方法的相关代码：
+
+```java
+private final Map<Method, ServiceMethod<?, ?>> serviceMethodCache = new ConcurrentHashMap<>();
+
+ServiceMethod<?, ?> loadServiceMethod(Method method) {
+  ServiceMethod<?, ?> result = serviceMethodCache.get(method);
+  if (result != null) return result;
+
+  synchronized (serviceMethodCache) {
+    result = serviceMethodCache.get(method);//取缓存
+    if (result == null) {
+      result = new ServiceMethod.Builder<>(this, method).build();
+      serviceMethodCache.put(method, result);//存缓存
+    }
+  }
+  return result;
+}
+```
 
 在loadServiceMethod方法执行的时候，有一个取缓存的操作，若取不到则开始创建
 创建的时候会根据方法、方法注解、方法参数、方法参数注解这几个方面
@@ -82,25 +103,7 @@ public <T> T create(final Class<T> service) {
 调用serviceMethod.callAdapter.adapt(okHttpCall)开始执行网络请求
 下面我们一步一步地进行分析。
 
-4. loadServiceMethod¶
-先看看loadServiceMethod方法的相关代码：
 
-
-private final Map<Method, ServiceMethod<?, ?>> serviceMethodCache = new ConcurrentHashMap<>();
-
-ServiceMethod<?, ?> loadServiceMethod(Method method) {
-  ServiceMethod<?, ?> result = serviceMethodCache.get(method);
-  if (result != null) return result;
-
-  synchronized (serviceMethodCache) {
-    result = serviceMethodCache.get(method);
-    if (result == null) {
-      result = new ServiceMethod.Builder<>(this, method).build();
-      serviceMethodCache.put(method, result);
-    }
-  }
-  return result;
-}
 可以很明显的看出来，这里采取了缓存的设计，所以Retrofit也要单例实现才能发挥最大的作用。
 很明显，这段代码的重点就是ServiceMethod.Builder的创建以及其build方法了。
 
