@@ -70,7 +70,7 @@ public <T> T create(final Class<T> service) {
 }
 ```
 
-### 2.1 先看下 loadServiceMethod 方法
+## 2. loadServiceMethod 流程
 
 `loadServiceMethod`方法的相关代码：
 
@@ -92,8 +92,11 @@ ServiceMethod<?, ?> loadServiceMethod(Method method) {
   return result;
 }
 ```
+先看下核心代码 ServiceMethod.Builder<>(this, method).build()。
 
-先看`ServiceMethod.Builder`的构造方法，取出要调用方法的注解、参数以及参数的注解：
+### 2.1 ServiceMethod.Builder
+
+`ServiceMethod.Builder`的构造方法，会取出要调用方法的注解、参数以及参数的注解：
 
 ```java
 Builder(Retrofit retrofit, Method method) {
@@ -105,7 +108,8 @@ Builder(Retrofit retrofit, Method method) {
 }
 ```
 
-再看`ServiceMethod.Builder.build`方法的源码，
+再看`ServiceMethod.Builder.build`方法
+
 ```java
 public ServiceMethod build() {
   // 根据method的返回值类型以及方法注解返回第一个可以处理的CallAdapter
@@ -187,13 +191,14 @@ public ServiceMethod build() {
   return new ServiceMethod<>(this);
 }
 ```
+
 整体分析完了，我们先看一下CallAdapter、Converter的创建，然后再看各种注解的解析。
 
-callAdapter的选择由createCallAdapter完成：
+### 2.2 callAdapter的选择由createCallAdapter完成：
 
 ```java
 private CallAdapter<T, R> createCallAdapter() {
-  // returnType为Observable<VersionRes>
+  // returnType 为 Observable<VersionRes>
   Type returnType = method.getGenericReturnType();
   if (Utils.hasUnresolvableType(returnType)) {
     throw methodError(
@@ -239,7 +244,7 @@ public CallAdapter<?, ?> nextCallAdapter(@Nullable CallAdapter.Factory skipPast,
   throw new IllegalArgumentException(...);
 }
 ```
-RxJava2CallAdapterFactory是满足条件的，我们看看其get方法：
+RxJava2CallAdapterFactory 是满足条件的，我们看看其get方法：
 
 ```java
 @Override
