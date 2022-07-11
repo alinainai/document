@@ -1,9 +1,10 @@
-### 1. Jetpack的导航组件 
+## 1. Jetpack的导航组件 
 
-使用 Navigation 实现单 Activity 多 Fragment UI架构
+他是官方提供的一个路由组件，使用它可以实现单 `Activity` 多 `Fragment` UI架构
 
-### 2. 基本使用
+## 2. 基本使用
 
+### 2.1 导包
 ```groove
 ext.nav_version = "2.4.1"
 
@@ -16,6 +17,7 @@ implementation("androidx.navigation:navigation-dynamic-features-fragment:$nav_ve
 implementation("androidx.navigation:navigation-compose:$nav_version")
 ```
 
+### 2.2 新建三个 Framgnet 用来相互跳转
 三个Framgnet
 
 ```kotlin
@@ -68,7 +70,9 @@ class MoreFragment : BaseVMFragment() {
 }
 ```
 
-在 res 中新建 navigation 文件件，新建 nav_account.xml 文件
+### 2.3 添加 navigation 的配置
+
+在 `res`目录下中新建`navigation`文件包，新建`nav_account.xml`文件
 
 ```html
 <?xml version="1.0" encoding="utf-8"?>
@@ -118,6 +122,7 @@ class MoreFragment : BaseVMFragment() {
 
 <img width="480" alt="image" src="https://user-images.githubusercontent.com/17560388/162107080-244d6b14-74d0-4cbc-b263-2fe3ba673fe8.png">
 
+### 2.4 用来承载的Activity
 ```kotlin
 class NavigationActivity : BaseVMActivity() {
     override fun layoutId(savedInstanceState: Bundle?): Int {
@@ -129,6 +134,7 @@ class NavigationActivity : BaseVMActivity() {
     }
 }
 ```
+`Activity` 的 `layout`
 ```html
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
@@ -158,7 +164,7 @@ class NavigationActivity : BaseVMActivity() {
 - app:navGraph 属性将： NavHostFragment 与导航图相关联。导航图会在此 NavHostFragment 中指定用户可以导航到的所有目的地。
 - app:defaultNavHost="true"： 属性确保您的 NavHostFragment 会拦截系统返回按钮。
 
-### 3. 界面动画
+## 3. 界面动画
 
 scale_in.xml
 
@@ -176,7 +182,6 @@ scale_in.xml
         android:toYScale="1" />
 </set>
 ```
-
 
 scale_out.xml
 
@@ -222,7 +227,7 @@ right_out.xml
 </set>
 ```
 
-动画添加方式
+### 3.1 动画添加方式
 
 ```html
 <!-- 界面切换动画，两种方式实现，还可以在代码中实现 -->
@@ -246,16 +251,17 @@ val option = navOptions {
     }
 }
 ```
-### 4.传送数据
+## 4.传送数据
 
-1.通过 Bundle() 对象,传递 key:value。上面代码有。
+- 1.通过 `Bundle()` 对象,传递 `key:value`。上面代码有。
 
-2.使用 Safe Args 传递安全的数据，不参考了，没有 bundle 方便
-
-### 5.跳转到指定 fragment
+- 2.使用 `Safe Args` 传递安全的数据，这里就不写不参考代码了，感觉没有 `bundle` 方便
 
 
-### 参考
+## 5.跳转到指定 fragment
+
+
+## 参考
 
 [Android 架构组件 Navigation 详解，构造一本Fragment的故事书！](https://juejin.cn/post/6844904068830199822#heading-13)
 
