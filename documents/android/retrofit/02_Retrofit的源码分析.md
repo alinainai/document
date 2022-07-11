@@ -112,8 +112,7 @@ Builder(Retrofit retrofit, Method method) {
 
 ```java
 public ServiceMethod build() {
-  // 1、根据method的返回值类型以及方法注解返回第一个可以处理的CallAdapter
-  // 此处就是RxJava2CallAdapterFactory创建的RxJava2CallAdapter
+  // 1、根据method的返回值类型以及方法注解返回对用的 CallAdapter，这里得到的是 RxJava2CallAdapterFactory 创建的 RxJava2CallAdapter
   callAdapter = createCallAdapter();
   // 我们可以直接使用的真正的返回值类型，在例子中此处是VersionRes
   responseType = callAdapter.responseType();
@@ -122,13 +121,11 @@ public ServiceMethod build() {
         + Utils.getRawType(responseType).getName()
         + "' is not a valid response body type. Did you mean ResponseBody?");
   }
-  // 2、根据responseType以及方法注解返回第一个可以处理的Converter
-  // 由于内置的BuiltInConverters无法处理VersionRes类型的返回值，所以第二个尝试处理
-  // 它做到了，因此此处为GsonConverterFactory创建的GsonResponseBodyConverter
+  // 2、根据 responseType 以及方法注解返回对应的 Converter
+  // 由于内置的 BuiltInConverters 无法处理 VersionRes 类型的返回值，此处返回 GsonConverterFactory 创建的 GsonResponseBodyConverter
   responseConverter = createResponseConverter();
 
-  // 根据注解的类型初始化一些参数
-  // 在实例中，httpMethod为GET,hasBody为false，relativeUrl为rest/app/update
+  // 根据注解的类型初始化一些参数，如实例中，httpMethod 为 GET,hasBody为false，relativeUrl 为 rest/app/update
   for (Annotation annotation : methodAnnotations) {
     parseMethodAnnotation(annotation);
   }
@@ -148,19 +145,17 @@ public ServiceMethod build() {
     }
   }
 
-  // 3、将每个参数以及其注解封装成为一个ParameterHandler对象
-  // 因为只有一个参数，所以这里把对应的结果写到代码上了
+  // 3、将每个参数以及其注解封装成为一个 ParameterHandler 对象
   int parameterCount = parameterAnnotationsArray.length;
   parameterHandlers = new ParameterHandler<?>[parameterCount];
   for (int p = 0; p < parameterCount; p++) {
-    // String
+  
     Type parameterType = parameterTypes[p];
     if (Utils.hasUnresolvableType(parameterType)) {
       throw parameterError(p, "Parameter type must not include a type variable or wildcard: %s",
           parameterType);
     }
 
-    // [@Query(encoded=false, value=versionCode)]
     Annotation[] parameterAnnotations = parameterAnnotationsArray[p];
     if (parameterAnnotations == null) {
       throw parameterError(p, "No Retrofit annotation found.");
@@ -194,7 +189,7 @@ public ServiceMethod build() {
 
 整体分析完了，我们先看一下CallAdapter、Converter的创建，然后再看各种注解的解析。
 
-### 2.2 callAdapter的选择由createCallAdapter完成：
+### 2.2 callAdapter 的选择由 createCallAdapter 完成：
 
 ```java
 private CallAdapter<T, R> createCallAdapter() {
@@ -244,12 +239,12 @@ public CallAdapter<?, ?> nextCallAdapter(@Nullable CallAdapter.Factory skipPast,
   throw new IllegalArgumentException(...);
 }
 ```
-RxJava2CallAdapterFactory 是满足条件的，我们看看其get方法：
+`RxJava2CallAdapterFactory` 是满足条件的，我们看看其 `get` 方法：
 
 ```java
 @Override
 public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit retrofit) {
-  // returnType为Observable<VersionRes>，因此rawType就是Observable类型
+  // returnType 为 Observable<VersionRes>，因此 rawType 就是Observable类型
   Class<?> rawType = getRawType(returnType);
 
   if (rawType == Completable.class) {
@@ -277,9 +272,9 @@ public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit
         + " as " + name + "<Foo> or " + name + "<? extends Foo>");
   }
 
-  // observableType为VersionRes类型
+  // observableType 为 VersionRes 类型
   Type observableType = getParameterUpperBound(0, (ParameterizedType) returnType);
-  // rawObservableType也为VersionRes类型
+  // rawObservableType 也为 VersionRes 类型
   Class<?> rawObservableType = getRawType(observableType);
   if (rawObservableType == Response.class) {
     if (!(observableType instanceof ParameterizedType)) {
@@ -305,9 +300,9 @@ public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit
       isSingle, isMaybe, false);
 }
 ```
-从上面分析可以看出，这里的callAdapter就等于RxJava2CallAdapter(VersionRes, null, false, false, true, false, false, false, false)。
+从上面分析可以看出，这里的 `callAdapter` 就等于 `RxJava2CallAdapter(VersionRes, null, false, false, true, false, false, false, false)`。
 
-接下来看responseConverter的创建方法createResponseConverter()：
+接下来看 `responseConverter` 的创建方法 `createResponseConverter()`：
 
 ```java
 private Converter<ResponseBody, T> createResponseConverter() {
@@ -321,7 +316,7 @@ private Converter<ResponseBody, T> createResponseConverter() {
   }
 }
 ```
-还是转到了Retrofit中：
+还是转到了`Retrofit`中：
 
 ```java
 public <T> Converter<ResponseBody, T> responseBodyConverter(Type type, Annotation[] annotations) {
@@ -333,7 +328,7 @@ public <T> Converter<ResponseBody, T> nextResponseBodyConverter(
   checkNotNull(type, "type == null");
   checkNotNull(annotations, "annotations == null");
 
-  // 依然是从0开始，依次尝试BuiltInConverters、GsonConverterFactory
+  // 依然是从0开始，依次尝试 BuiltInConverters、GsonConverterFactory
   int start = converterFactories.indexOf(skipPast) + 1;
   for (int i = start, count = converterFactories.size(); i < count; i++) {
     Converter<ResponseBody, ?> converter =
@@ -347,7 +342,7 @@ public <T> Converter<ResponseBody, T> nextResponseBodyConverter(
   throw new IllegalArgumentException(...);
 }
 ```
-我们先看看BuiltInConverters能不能处理：
+我们先看看 `BuiltInConverters` 能不能处理：
 
 ```java
 @Override
@@ -364,8 +359,8 @@ public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] 
   return null;
 }
 ```
-我们可以看到BuiltInConverters只能处理ResponseBody类型和Void类型两种类型的返回值类型。
-所以，我们接着看第二个转换器GsonConverterFactory：
+我们可以看到`BuiltInConverters`只能处理`ResponseBody`类型和`Void`类型两种类型的返回值类型。
+所以，我们接着看第二个转换器`GsonConverterFactory`：
 
 ```java
 @Override
@@ -375,15 +370,15 @@ public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] 
   return new GsonResponseBodyConverter<>(gson, adapter);
 }
 ```
-这里调用了Gson的相关方法，是可以完成任务的。所以就返回了GsonResponseBodyConverter。
+这里调用了`Gson`的相关方法，是可以完成任务的。所以就返回了`GsonResponseBodyConverter`。
 
-回到ServiceMethod.Builder.build方法，接下来就是处理方法注解以及参数注解了。代码很简单，if-else判断出属于约定好的哪种注解，就设置对应的值。这里就不展开说了。
+回到`ServiceMethod.Builder.build`方法，接下来就是处理方法注解以及参数注解了。代码很简单，`if-else`判断出属于约定好的哪种注解，就设置对应的值。这里就不展开说了。
 
-最后是return new ServiceMethod<>(this);，这里面就是干了赋值的操作。
+最后是`return new ServiceMethod<>(this);`，这里面就是干了赋值的操作。
 
 ## 3.serviceMethod.callAdapter.adapt
 
-loadServiceMethod完成之后，会将这个ServiceMethod与方法入参一起组成了一个OkHttpCall对象：
+`loadServiceMethod`完成之后，会将这个`ServiceMethod`与方法入参一起组成了一个`OkHttpCall`对象：
 
 ```kitlin
 ServiceMethod<Object, Object> serviceMethod =
@@ -394,7 +389,7 @@ return serviceMethod.callAdapter.adapt(okHttpCall);
 
 到目前为止，都只是做一些准备工作，还没有真正开始网络请求。那么这一步肯定就干了这件事。我们一点点往下看。
 
-我们在前面已经知道了serviceMethod.callAdapter是一个RxJava2CallAdapter对象，所以我们直接看其adapt方法：
+我们在前面已经知道了`serviceMethod.callAdapter`是一个`RxJava2CallAdapter`对象，所以我们直接看其`adapt`方法：
 
 ```java
 @Override public Object adapt(Call<R> call) {
@@ -407,7 +402,7 @@ return serviceMethod.callAdapter.adapt(okHttpCall);
   if (isResult) {
     observable = new ResultObservable<>(responseObservable);
   } else if (isBody) {
-    // isResult为false，isBody为true，所以走这个
+    // isResult 为 false，isBody 为 true，所以走这个
     observable = new BodyObservable<>(responseObservable);
   } else {
     observable = responseObservable;
@@ -434,9 +429,9 @@ return serviceMethod.callAdapter.adapt(okHttpCall);
   return observable;
 }
 ```
-从上面可以看出，这里会经过两个Observable，分别是CallExecuteObservable以及BodyObservable。前者作为参数传递给了后者。
+从上面可以看出，这里会经过两个`Observable`，分别是`CallExecuteObservable`以及`BodyObservable`。前者作为参数传递给了后者。
 
-我们先看看CallExecuteObservable干了什么：
+我们先看看`CallExecuteObservable`干了什么：
 
 ```java
 final class CallExecuteObservable<T> extends Observable<Response<T>> {
@@ -501,9 +496,9 @@ final class CallExecuteObservable<T> extends Observable<Response<T>> {
   }
 }
 ```
-在上面这段代码中，call.execute()是重点，在这段代码里面完成了ServiceMethod的乱七八糟的参数的组装，最后才执行RealCall.execute，我们最后再说。
+在上面这段代码中，`call.execute()`是重点，在这段代码里面完成了`ServiceMethod`的乱七八糟的参数的组装，最后才执行`RealCall.execute`，我们最后再说。
 
-接下来看看BodyObservable的相关代码：
+接下来看看`BodyObservable`的相关代码：
 
 ```java
 final class BodyObservable<T> extends Observable<T> {
@@ -571,10 +566,10 @@ final class BodyObservable<T> extends Observable<T> {
   }
 }
 ```
-小结一下，CallExecuteObservable就是用来执行网络请求的，BodyObservable会将网络请求的结果(Response<VersionRes>)转换为客户端需要的结果(VersionRes)。
+小结一下，`CallExecuteObservable`就是用来执行网络请求的，`BodyObservable`会将网络请求的结果(`Response<VersionRes>`)转换为客户端需要的结果(`VersionRes`)。
 
 ### 4.OkHttpCall.execute
-回想一下CallExecuteObservable的关键代码，网络请求需要有一个Request，但是在Retrofit中目前没有发现任何设置的地方，所以这部分代码肯定在OkHttpCall.execute中：
+回想一下`CallExecuteObservable`的关键代码，网络请求需要有一个`Request，但是在`Retrofit`中目前没有发现任何设置的地方，所以这部分代码肯定在`OkHttpCall.execute`中：
 
 ```java
 @Override public Response<T> execute() throws IOException {
@@ -616,7 +611,7 @@ final class BodyObservable<T> extends Observable<T> {
 call = rawCall = createRawCall();
 return parseResponse(call.execute())
 ```
-先看createRawCall方法：
+先看`createRawCall`方法：
 
 ```java
 private okhttp3.Call createRawCall() throws IOException {
@@ -631,7 +626,7 @@ private okhttp3.Call createRawCall() throws IOException {
   return call;
 }
 ```
-我们看看serviceMethod.toRequest(args)如何拼凑出一个Request对象：
+我们看看s`erviceMethod.toRequest(args)`如何拼凑出一个`Request`对象：
 
 ```java
 /** Builds an HTTP request from method arguments. */
@@ -664,7 +659,7 @@ Request toRequest(@Nullable Object... args) throws IOException {
   return requestBuilder.build();
 }
 ```
-上面调用了ParameterHandler.Query.apply方法：
+上面调用了`ParameterHandler.Query.apply`方法：
 
 ```java
 // 此处value就是实例中versionCode的值，假设是10000
@@ -680,7 +675,7 @@ Request toRequest(@Nullable Object... args) throws IOException {
   builder.addQueryParam(name, queryValue, encoded);
 }
 ```
-继续跟踪一下RequestBuilder.addQueryParam方法：
+继续跟踪一下`RequestBuilder.addQueryParam`方法：
 
 ```java
 void addQueryParam(String name, @Nullable String value, boolean encoded) {
@@ -708,7 +703,7 @@ void addQueryParam(String name, @Nullable String value, boolean encoded) {
   }
 }
 ```
-回到上面，执行完createRawCall之后，就继续执行parseResponse(call.execute())。由于此时的call是RealCall类型了，所以也不用多说。接下来就是parseResponse方法。
+回到上面，执行完`createRawCall`之后，就继续执行`parseResponse(call.execute())`。由于此时的`call`是`RealCall`类型了，所以也不用多说。接下来就是`parseResponse`方法。
 
 ```java
 Response<T> parseResponse(okhttp3.Response rawResponse) throws IOException {
@@ -747,7 +742,7 @@ Response<T> parseResponse(okhttp3.Response rawResponse) throws IOException {
   }
 }
 ```
-该方法前面几部分比较原始，我们关注一下T body = serviceMethod.toResponse(catchingBody);，
+该方法前面几部分比较原始，我们关注一下`T body = serviceMethod.toResponse(catchingBody)`;，
 
 ```java
 /** Builds a method return value from an HTTP response body. */
@@ -755,7 +750,7 @@ R toResponse(ResponseBody body) throws IOException {
   return responseConverter.convert(body);
 }
 ```
-这里面的responseConverter就是很早之前就创建好的GsonResponseBodyConverter。其convert方法如下所示：
+这里面的`responseConverter`就是很早之前就创建好的`GsonResponseBodyConverter`。其`convert`方法如下所示：
 
 ```java
 @Override public T convert(ResponseBody value) throws IOException {
@@ -767,12 +762,12 @@ R toResponse(ResponseBody body) throws IOException {
   }
 }
 ```    
-### 5. 小结
+## 5. 小结
 
-Retrofit使用了动态代理实现了我们定义的接口。
+`Retrofit`使用了动态代理实现了我们定义的接口。
     
-在实现接口方法时，Retrofit会为每一个接口方法构建了一个ServiceMethod对象，并会缓存到ConcurrentHashMap中。
+在实现接口方法时，`Retrofit`会为接口的每一个方法构建了一个`ServiceMethod`对象，并会缓存到`ConcurrentHashMap`中。
     
-在ServiceMethod构建时，会根据接口方法的注解类型、参数类型以及参数注解来拼接请求参数、确定请求类型、构建请求体等，同时会根据接口方法的注解和返回类型确定使用哪个CallAdapter包装OkHttpCall，同时根据接口方法的泛型类型参数以及方法注解确定使用哪个Converter提供请求体、响应体以及字符串转换服务。所有准备工作完成之后，调用了CallAdapter.adapt，在这里面真正开始了网络请求。
+在`ServiceMethod`构建时，会根据接口方法的注解类型、参数类型以及参数注解来拼接请求参数、确定请求类型、构建请求体等，同时会根据接口方法的注解和返回类型确定使用哪个`CallAdapter`包装`OkHttpCall`，同时根据接口方法的泛型类型参数以及方法注解确定使用哪个`Converter`提供请求体、响应体以及字符串转换服务。所有准备工作完成之后，调用了`CallAdapter.adapt`，在这里面真正开始了网络请求。
 
 
