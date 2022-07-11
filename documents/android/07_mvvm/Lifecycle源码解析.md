@@ -1,10 +1,11 @@
-### 1. 什么是 LifeCycle
+## 1. 什么是 LifeCycle
 
-Lifecycle 是 Jetpack 的基础的组件之一，让开发者搭建依赖于生命周期变化的业务逻辑变的更简单，用一种统一的方式来监听 Activity、Fragment、Service、甚至是 Process 的生命周期变化，且大大减少了业务代码发生内存泄漏和 NPE 的风险
+`Lifecycle` 是 `Jetpack` 的基础的组件之一，它让开发者搭建依赖于`生命周期变化`的业务逻辑变的更简单，用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险。
 
-### 2. 使用方法
+## 2. 使用方法
 
-实现 DefaultLifecycleObserver 接口，直接使用对应的 onXXX 方法
+1.通过实现`DefaultLifecycleObserver`接口，直接使用对应的 onXXX 方法
+
 ```kotlin
 class LifeCycleObserver1 : DefaultLifecycleObserver {
 
@@ -19,7 +20,7 @@ class LifeCycleObserver1 : DefaultLifecycleObserver {
     }
 }
 ```
-实现 LifecycleObserver 接口，通过注解方式实现方法的回调
+2.实现`LifecycleObserver`接口，通过注解方式实现方法的回调
 ```kotlin
 class LifeCycleObserver2 : LifecycleObserver {
 
@@ -39,9 +40,9 @@ class LifeCycleObserver2 : LifecycleObserver {
 LifecycleOwner.getLifecycle().addObserver(LifeCycleObserver1())
 LifecycleOwner.getLifecycle().addObserver(LifeCycleObserver2())
 ```
-### 3. Lifecycle 源码分析
+## 3.Lifecycle 源码分析
 
-CompatActivity 本身实现 LifecycleOwner 接口，LifecycleOwner 是单一方法接口，表示类持有 Lifecycle。
+`CompatActivity`类本身实现`LifecycleOwner`接口，`LifecycleOwner`是单一方法接口，表示类持有`Lifecycle`。
 
 ```java
 public interface LifecycleOwner {
@@ -50,9 +51,12 @@ public interface LifecycleOwner {
 }
 ```
 
-Lifecycle 是一个抽象类，用于存储有关组件（如 Activity 或 Fragment）的生命周期状态的信息，并允许其他对象观察此状态。
+`Lifecycle` 是一个抽象类，用于存储有关组件（如 `Activity` 或 `Fragment`）的`生命周期状态`的信息，并允许其他对象观察此状态。
 
-Lifecycle 使用两种枚举跟踪其关联组件的生命周期状态：事件 Event、状态 State
+`Lifecycle` 使用两种枚举来表示其关联组件的生命周期状态：
+
+- 事件 Event
+- 状态 State
 
 ```java
 public enum Event {
@@ -64,8 +68,7 @@ public enum Event {
     ON_DESTROY,   
     ON_ANY  //可以响应任意一个事件 
 }
-```
-``` java
+
 //生命周期状态. （Event是进入这种状态的事件）
 public enum State {
     DESTROYED,
@@ -80,15 +83,15 @@ public enum State {
 }
 ```
 
-Lifecycle 还有添加、移除 LifecycleObserver 功能，以及记录 State
+`Lifecycle`还有添加、移除` LifecycleObserver` ，以及记录 State 的功能
 
 <img width="437" alt="image" src="https://user-images.githubusercontent.com/17560388/163302734-c3cf855c-1c7e-49b5-a650-8c4724d8b326.png">
 
-构成 Android Activity 生命周期的状态和事件
+构成 Activity 生命周期的状态和事件
 
 <img width="500" alt="构成 Android Activity 生命周期的状态和事件" src="https://user-images.githubusercontent.com/17560388/163300843-a79fd13a-713d-4300-9077-e40fcffb8038.png">
 
-### 4. LifecycleRegistry 对象
+## 4. LifecycleRegistry 对象
 
 在 CompatActivity 中 getLifecycle() 返回一个 LifecycleRegistry 对象
 
@@ -233,7 +236,7 @@ LifecycleRegistry 事件分发的方法调用顺序 ：
 handleLifecycleEvent -> moveToState -> sync() -> backwardPass/forwardPass -> ObserverWithState#dispatchEvent
 
 
-### 参考
+## 参考
 
 [使用生命周期感知型组件处理生命周期 ](https://developer.android.com/topic/libraries/architecture/lifecycle?hl=zh-cn#implementing-lco)
 
