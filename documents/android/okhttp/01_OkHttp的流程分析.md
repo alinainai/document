@@ -305,10 +305,71 @@ override fun run() {
 ```
 通过上面的追踪我们发现`RealCall.enqueue(Callback)`最终也是调用`getResponseWithInterceptorChain()`方法获取`Response`对象
 
-## 4.getResponseWithInterceptorChain() 
+## 6.RealCall.getResponseWithInterceptorChain() 方法
 
-`getResponseWithInterceptorChain()` ⽅法做的事:把所有配置好的 `Interceptor` 放在⼀个 `List` ⾥，然后作为参数，创建⼀个 `RealInterceptorChain` 对象，并调用 `chain.proceed(request)` 来发起请求和获取响应。
+`getResponseWithInterceptorChain()` ⽅法把所有配置好的 `Interceptor` 放在⼀个 `List` ⾥，然后作为参数，创建⼀个 `RealInterceptorChain` 对象，并调用 `chain.proceed(request)` 来发起请求和获取响应。
+```kotlin
+  @Throws(IOException::class)
+  internal fun getResponseWithInterceptorChain(): Response {
+    // Build a full stack of interceptors.
+    val interceptors = mutableListOf<Interceptor>()
+    interceptors += client.interceptors
+    interceptors += RetryAndFollowUpInterceptor(client)
+    interceptors += BridgeInterceptor(client.cookieJar)
+    interceptors += CacheInterceptor(client.cache)
+    interceptors += ConnectInterceptor
+    if (!forWebSocket) {
+      interceptors += client.networkInterceptors
+    }
+    interceptors += CallServerInterceptor(forWebSocket)
 
+    // 创建⼀个 RealInterceptorChain 对象
+    val chain = RealInterceptorChain(
+        call = this,
+        interceptors = interceptors,
+        index = 0, //初始 index = 0
+        exchange = null,
+        request = originalRequest,
+        connectTimeoutMillis = client.connectTimeoutMillis,
+        readTimeoutMillis = client.readTimeoutMillis,
+        writeTimeoutMillis = client.writeTimeoutMillis
+    )
+
+    var calledNoMoreExchanges = false
+    try {
+      // 调用 chain.proceed(request) 来发起请求和获取响应
+      val response = chain.proceed(originalRequest)
+      if (isCanceled()) {
+        response.closeQuietly()
+        throw IOException("Canceled")
+      }
+      return response
+    } catch (e: IOException) {
+      calledNoMoreExchanges = true
+      throw noMoreExchanges(e) as Throwable
+    } finally {
+      if (!calledNoMoreExchanges) {
+        noMoreExchanges(null)
+      }
+    }
+  }
+```
+再看下`RealInterceptorChain.proceed(Request)`方法
+```kotlin
+  @Throws(IOException::class)
+  override fun proceed(request: Request): Response {
+    ...
+    // Call the next interceptor in the chain.
+    val next = copy(index = index + 1, request = request)
+    val interceptor = interceptors[index]
+
+    @Suppress("USELESS_ELVIS")
+    val response = interceptor.intercept(next) ?: throw NullPointerException(
+        "interceptor $interceptor returned null")
+    ...
+    return response
+  }
+```
 ## 5.RealInterceptorChain
 
 在 `RealInterceptorChain` 中，多个 Interceptor 会依次调用⾃己的intercept() ⽅法。这个方法会做三件事:
