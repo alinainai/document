@@ -372,13 +372,13 @@ override fun run() {
 ```
 ## 5.RealInterceptorChain
 
-在 `RealInterceptorChain` 中，多个 Interceptor 会依次调用⾃己的intercept() ⽅法。这个方法会做三件事:
+在 `RealInterceptorChain` 中，多个 Interceptor 会依次调用⾃己的intercept() ⽅法。
 
-1.对请求进⾏预处理
- 
-2.预处理之后，重新调用 `RealIntercepterChain.proceed()` 把请求交给下一个 `Interceptor`
+intercept()方法会做三件事:
 
-3.在下⼀个 `Interceptor` 处理完成并返回之后，拿到 `Response` 进⾏后续处理
+- 1.对请求进⾏预处理
+- 2.预处理之后，重新调用 `RealIntercepterChain.proceed()` 把请求交给下一个 `Interceptor`
+- 3.在下⼀个 `Interceptor` 处理完成并返回之后，拿到 `Response` 进⾏后续处理
 
 >当然了，最后⼀个 `Interceptor` 的任务只有⼀个:做真正的⽹络请求并拿到响应。
 
