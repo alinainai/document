@@ -1,21 +1,24 @@
-### 1. App Startup 是干什么的
+## 1. App Startup 是干什么的
 
-App Startup 提供了一个 ContentProvider 来运行所有依赖项的初始化，避免每个第三方库单独使用 ContentProvider 进行初始化，从而提高了应用的程序的启动速度。
+`App Startup` 提供了一个 `ContentProvider` 来运行所有依赖项的初始化，避免每个第三方库单独使用 `ContentProvider` 进行初始化，从而提高了应用的程序的启动速度。
 
-<img width="300" alt="类图" src="https://user-images.githubusercontent.com/17560388/162897677-0a5d544f-62bd-45fb-a73b-cc35cd44783d.png">
+<img width="200" alt="类图" src="https://user-images.githubusercontent.com/17560388/162897677-0a5d544f-62bd-45fb-a73b-cc35cd44783d.png">
 
-### 2. App Startup 自动初始化
+## 2. 自动初始化
 
-1.引入 Startup 库
+### 2.1 导包
+
+引入 Startup 库
+
 ```groove
 implementation("androidx.startup:startup-runtime:1.1.1")
 ```
-2.实现 Initializer<T> 接口
+### 2.2 实现 Initializer<T> 接口
 
 - create() 方法：主要初始化方法，并返回一个 T 的实例。
 - dependencies() 方法：返回一个该 initializer 依赖的其他 Initializer<T> 的列表，用这个方法来控制 startup 的顺序。
 
-看一下郭霖老师 LitePal 的例子
+看一下 `LitePal` 的例子
 
 ```kotlin
 class LitePalInitializer : Initializer<Unit> {
@@ -30,7 +33,7 @@ class LitePalInitializer : Initializer<Unit> {
 }
 ```  
   
-3.将自定义Initializer配置到AndroidManifest.xml当中
+### 2.3 将自定义 Initializer 配置到 AndroidManifest.xml 当中
   
 ```html
 <provider
@@ -44,9 +47,11 @@ class LitePalInitializer : Initializer<Unit> {
 </provider>
 ```
   
-### 3. App Startup 手动初始化（延迟初始化)
-  
-LitePalInitializer的meta-data当中加入了一个 tools:node="remove" 的标记
+## 3.手动初始化（延迟初始化)
+    
+如果我们不想在App启动的时候自动初始化 LitePalInitializer，可以采用手动初始化的方式去启动
+   
+在 `LitePalInitializer` 的 `meta-data` 当中加入了一个 `tools:node="remove"` 的标记
 
 ```html 
 <provider
@@ -60,13 +65,13 @@ LitePalInitializer的meta-data当中加入了一个 tools:node="remove" 的标�
 </provider>
 ```
   
-手动去初始化LitePal的代码也极其简单
+手动初始化 LitePal
 
 ```kotlin
 AppInitializer.getInstance(this).initializeComponent(LitePalInitializer::class.java)
 ```
   
-### 4. Disable automatic initialization for all components
+## 4. Disable automatic initialization for all components
   
 To disable all automatic initialization, remove the entire entry for InitializationProvider from the manifest:
 
@@ -76,11 +81,11 @@ To disable all automatic initialization, remove the entire entry for Initializat
     android:authorities="${applicationId}.androidx-startup"
     tools:node="remove" />  
 ```  
-### 5. 官方带依赖的例子
+## 5.官方带依赖的例子
 
 [App Startup 使用](https://developer.android.com/topic/libraries/app-startup)
 
-### 6. 自动初始化源码分析
+## 6.自动初始化的源码分析
     
 App Startup 在 ContentProvider 中调用了AppInitializer#discoverAndInitialize()执行自动初始化。
     
@@ -178,7 +183,7 @@ public <T> T initializeComponent(@NonNull Class<? extends Initializer<T>> compon
     return (T) result;
 }
 ```
-### 参考
+## 参考
 
 [Android 开发者>Jetpack>Startup](https://developer.android.com/jetpack/androidx/releases/startup)
   
