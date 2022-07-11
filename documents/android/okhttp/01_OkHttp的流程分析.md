@@ -162,27 +162,49 @@ class RealCall(
   private val executed = AtomicBoolean()
 ```
 
-## 4、同步请求 RealCall.enqueue()
+## 4、同步请求 RealCall.execute()
 
-`RealCall.enqueue()` 被调⽤的时候大同小异，区别在于
-`enqueue()` 会使⽤ `Dispatcher` 的线程池来把请求放在后台线程进行，但实质上使用的同样也是 `getResponseWithInterceptorChain()` 方法。
-
-
-## 5.异步请求 RealCall.execute(Callback)
-当调用 `RealCall.execute(Callback)` 的时候，`RealCall.getResponseWithInterceptorChain()` 会被调用，它会发起⽹络请求并拿到返回的响应，装进一个 `Response` 对象并作为返回值返回;
+同步请求最终会调用 RealCall.getResponseWithInterceptorChain() 方法，它会发起⽹络请求并拿到返回的响应，装进一个 `Response` 对象并作为返回值返回;
 
 ```kotlin
-// 1、RealCall.enqueue(Callback)
+override fun execute(): Response {
+  check(executed.compareAndSet(false, true)) { "Already Executed" }
+  
+  timeout.enter()
+  callStart()
+  try {
+    // 将 RealCall 添加到同步执行队列
+    client.dispatcher.executed(this)
+    // 通过该方法获取 Response 对象
+    return getResponseWithInterceptorChain()
+  } finally {
+    // 执行完成后将 RealCall 从同步执行队列中移除
+    client.dispatcher.finished(this)
+  }
+}
+```
+
+`RealCall.enqueue()` 被调⽤的时候大同小异，区别在于`enqueue()` 会使⽤ `Dispatcher` 的线程池来把请求放在后台线程进行，但实质上使用的同样也是 `getResponseWithInterceptorChain()` 方法。
+
+下面我们简单的跟踪下 RealCall.enqueue(Callback) 的源码
+
+
+## 5.异步请求 RealCall.enqueue(Callback)
+
+`AsyncCall`是一个`Runnable`对象，
+
+```kotlin
+// 1、通过 RealCall.enqueue(Callback) 方法执行异步请求
 override fun enqueue(responseCallback: Callback) {
   //...
-  //调用 OkHttpClient 的 Dispatcher.enqueue 方法
+  //调用 OkHttpClient 的 Dispatcher.enqueue(AsyncCall) 方法
   client.dispatcher.enqueue(AsyncCall(responseCallback))
 }
 
-// 2、OkHttpClient->Dispatcher.enqueue(AsyncCall)
+// 2、Dispatcher.enqueue(AsyncCall) 方法
 internal fun enqueue(call: AsyncCall) {
   synchronized(this) {
-    //将 AsyncCall 放入到 readyAsyncCalls 队列中
+    //将 AsyncCall 添加到 readyAsyncCalls 队列中
     readyAsyncCalls.add(call)
     // Mutate the AsyncCall so that it shares the AtomicInteger of an existing running call to
     // the same host.
@@ -191,10 +213,11 @@ internal fun enqueue(call: AsyncCall) {
       if (existingCall != null) call.reuseCallsPerHostFrom(existingCall)
     }
   }
+  //调用 Dispatcher.promoteAndExecute 方法 
   promoteAndExecute()
 }
 
-// 3、Dispatcher.promoteAndExecute() 方法
+// 3、Dispatcher.promoteAndExecute() 方法的主要作用是用 Dispatcher 的线程池来执行 AsyncCall
 private fun promoteAndExecute(): Boolean {
   this.assertThreadDoesntHoldLock()
   
@@ -204,9 +227,9 @@ private fun promoteAndExecute(): Boolean {
     val i = readyAsyncCalls.iterator()
     while (i.hasNext()) {
       val asyncCall = i.next()
-      // 1、如果正在运行的 AsyncCalls 的 size 不符合条件就停止循环，默认异步执行的 runningAsyncCalls 的数量为64 个，每个域名下的最大数量是5个
+      // 1、如果正在运行的 AsyncCalls 的 size 不符合条件就停止循环，默认异步执行的 runningAsyncCalls 的数量为64 个
       if (runningAsyncCalls.size >= this.maxRequests) break // Max capacity.
-      if (asyncCall.callsPerHost.get() >= this.maxRequestsPerHost) continue // Host max capacity.
+      if (asyncCall.callsPerHost.get() >= this.maxRequestsPerHost) continue // Host max capacity. 每个域名下的最大数量是5个
       i.remove()
       asyncCall.callsPerHost.incrementAndGet()
       // 将 asyncCall 添加到可运行List集合
@@ -216,7 +239,7 @@ private fun promoteAndExecute(): Boolean {
     }
     isRunning = runningCallsCount() > 0
   }
-  // 3、将 asyncCall 放到 Dispatcher 的线程池中
+  // 3、将 executableCalls中的 AsyncCall 添加到 Dispatcher 的线程池中
   for (i in 0 until executableCalls.size) {
     val asyncCall = executableCalls[i]
     asyncCall.executeOn(executorService)
@@ -235,7 +258,7 @@ fun executeOn(executorService: ExecutorService) {
   
   var success = false
   try {
-    //使用线程池执行 AsyncCall 对象，调用 AsyncCall 的 run 方法
+    //使用线程池执行 AsyncCall 对象，也就是调用 AsyncCall 的 run 方法
     executorService.execute(this)
     success = true
   } catch (e: RejectedExecutionException) {
@@ -249,13 +272,13 @@ fun executeOn(executorService: ExecutorService) {
     }
   }
 }
-// 5、AsyncCall.run() 方法调用 RealCall.getResponseWithInterceptorChain() 方法
+// 5、AsyncCall.run() 方法最终还是调用 RealCall.getResponseWithInterceptorChain() 方法
 override fun run() {
   threadName("OkHttp ${redactedUrl()}") {
     var signalledCallback = false
     timeout.enter()
     try {
-      //核心代码
+      //核心代码，通过 getResponseWithInterceptorChain() 获取 response 对象
       val response = getResponseWithInterceptorChain()
       signalledCallback = true
       responseCallback.onResponse(this@RealCall, response)
@@ -280,8 +303,7 @@ override fun run() {
   }
 }
 ```
-
-
+通过上面的追踪我们发现`RealCall.enqueue(Callback)`最终也是调用`getResponseWithInterceptorChain()`方法获取`Response`对象
 
 ## 4.getResponseWithInterceptorChain() 
 
