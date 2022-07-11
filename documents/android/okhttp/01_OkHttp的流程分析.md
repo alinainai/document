@@ -355,6 +355,9 @@ override fun run() {
   }
 ```
 再看下`RealInterceptorChain.proceed(Request)`方法
+
+## 5.RealInterceptorChain 
+
 ```kotlin
   @Throws(IOException::class)
   override fun proceed(request: Request): Response {
@@ -370,7 +373,6 @@ override fun run() {
     return response
   }
 ```
-## 5.RealInterceptorChain
 
 在 `RealInterceptorChain` 中，多个 Interceptor 会依次调用⾃己的intercept() ⽅法。
 
@@ -384,19 +386,15 @@ intercept()方法会做三件事:
 
 ## 6.从上到下，每级 `Interceptor` 做的事
 
-首先是开发者使用 `addInterceptor(Interceptor)` 所设置的，它们会按照开发者的要求，在所有其他 `Interceptor` 处理之前，进行最早的预处理⼯作，以及在收到 Response 之后，做最后的善后⼯作。如果你有统一的 `header` 要添加，可以在这⾥设置;
+- 1.首先是开发者使用 `addInterceptor(Interceptor)` 所设置的，它们会按照开发者的要求，在所有其他 `Interceptor` 处理之前，进行最早的预处理⼯作，以及在收到 Response 之后，做最后的善后⼯作。如果你有统一的 `header` 要添加，可以在这⾥设置;
+- 2.然后是 `RetryAndFollowUpInterceptor` :它负责在请求失败时的重试，以及重定向的⾃动后续请求。它的存在，可以让重试和重定向对于开发者是无感知的;
+- 3.`BridgeInterceptor`:它负责⼀些不影响开发者开发，但影响 HTTP 交互的一些额外预处理。例如，`Content-Length` 的计算和添加、`gzip` 的⽀持 (Accept-Encoding: gzip)、gzip 压缩数据的解包，都是发生在这⾥;
+- 4.`CacheInterceptor` :它负责 `Cache` 的处理。把它放在后⾯的网络交互相关 Interceptor 的前⾯的好处是，如果本地有了了可⽤的 Cache，⼀个请求可以在没有发⽣生实质⽹网络交互的情况下就返回缓存结果，⽽而完全不不需要 开发者做出任何的额外⼯工作，让 Cache 更更加⽆无感知;
+- 5.`ConnectInterceptor` :它负责建⽴连接。在这里，OkHttp 会创建出网络请求所需要的 TCP 连接(如果是 HTTP)，或者是建⽴在 TCP 连接之上 的 TLS 连接(如果是 HTTPS)，并且会创建出对应的 HttpCodec 对象 (⽤用于编码解码 HTTP 请求);
+- 6.然后是开发者使⽤ `addNetworkInterceptor(Interceptor)` 所设置的，它们的行为逻辑和使⽤ `addInterceptor(Interceptor)` 创建的一样，但由于位置不同，所以这⾥创建的 `Interceptor` 会看到每个请求和响应的数据(包括重定向以及重试的⼀些中间请求和响应)，并且看到的 是完整原始数据，⽽不是没有加 `Content-Length` 的请求数据，或者 `Body` 还没有被 `gzip` 解压的响应数据。多数情况，这个方法不需要被使⽤;
+- 7.`CallServerInterceptor` :它负责实质的请求与响应的 `I/O` 操作，即往 `Socket` ⾥写入请求数据，和从 `Socket` 里读取响应数据。
 
-然后是 `RetryAndFollowUpInterceptor` :它负责在请求失败时的重试，以及重定向的⾃动后续请求。它的存在，可以让重试和重定向对于开发者是无感知的;
-
-`BridgeInterceptor` :它负责⼀些不影响开发者开发，但影响 HTTP 交互的一些额外预处理。例如，`Content-Length` 的计算和添加、`gzip` 的⽀持 (Accept-Encoding: gzip)、gzip 压缩数据的解包，都是发生在这⾥;
-
-`CacheInterceptor` :它负责 `Cache` 的处理。把它放在后⾯的网络交互相关 Interceptor 的前⾯的好处是，如果本地有了了可⽤的 Cache，⼀个请求可以在没有发⽣生实质⽹网络交互的情况下就返回缓存结果，⽽而完全不不需要 开发者做出任何的额外⼯工作，让 Cache 更更加⽆无感知;
-
-`ConnectInterceptor` :它负责建⽴连接。在这里，OkHttp 会创建出网络请求所需要的 TCP 连接(如果是 HTTP)，或者是建⽴在 TCP 连接之上 的 TLS 连接(如果是 HTTPS)，并且会创建出对应的 HttpCodec 对象 (⽤用于编码解码 HTTP 请求);
-
-然后是开发者使⽤ `addNetworkInterceptor(Interceptor)` 所设置的，它们的行为逻辑和使⽤ `addInterceptor(Interceptor)` 创建的一样，但由于位置不同，所以这⾥创建的 `Interceptor` 会看到每个请求和响应的数据(包括重定向以及重试的⼀些中间请求和响应)，并且看到的 是完整原始数据，⽽不是没有加 `Content-Length` 的请求数据，或者 `Body` 还没有被 `gzip` 解压的响应数据。多数情况，这个方法不需要被使⽤;
-
-`CallServerInterceptor` :它负责实质的请求与响应的 I/O 操作，即 往 Socket ⾥写⼊入请求数据，和从 Socket 里读取响应数据。
+## 
 
 
 
