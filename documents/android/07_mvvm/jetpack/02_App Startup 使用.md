@@ -15,8 +15,8 @@ implementation("androidx.startup:startup-runtime:1.1.1")
 ```
 ### 2.2 实现 Initializer<T> 接口
 
-- create() 方法：主要初始化方法，并返回一个 T 的实例。
-- dependencies() 方法：返回一个该 initializer 依赖的其他 Initializer<T> 的列表，用这个方法来控制 startup 的顺序。
+- `create()` 方法：主要初始化方法，并返回一个 T 的实例。
+- `dependencies()` 方法：返回一个该 `initializer` 依赖的其他 `Initializer<T>` 的列表，用这个方法来控制 `startup` 的顺序。
 
 看一下 `LitePal` 的例子
 
@@ -49,9 +49,9 @@ class LitePalInitializer : Initializer<Unit> {
   
 ## 3.手动初始化（延迟初始化)
     
-如果我们不想在App启动的时候自动初始化 LitePalInitializer，可以采用手动初始化的方式去启动
+如果我们不想在App启动的时候自动初始化 `LitePalInitializer`，可以采用手动初始化的方式去启动
    
-在 `LitePalInitializer` 的 `meta-data` 当中加入了一个 `tools:node="remove"` 的标记
+首先要禁用自动初始化: 在 `LitePalInitializer` 的 `meta-data` 当中加入了一个 `tools:node="remove"` 的标记
 
 ```html 
 <provider
@@ -65,7 +65,7 @@ class LitePalInitializer : Initializer<Unit> {
 </provider>
 ```
   
-手动初始化 LitePal
+执行手动初始化 `LitePal` 的代码
 
 ```kotlin
 AppInitializer.getInstance(this).initializeComponent(LitePalInitializer::class.java)
