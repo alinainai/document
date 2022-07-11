@@ -335,7 +335,6 @@ protected void subscribeActual(Observer<? super T> observer) {
     if (scheduler instanceof TrampolineScheduler) {
         source.subscribe(observer);
     } else {
-        // 否则肯定是要进行线程切换的
         Scheduler.Worker w = scheduler.createWorker();
         // 将Scheduler创建的Worker传入了ObserveOnObserver
         // 这里直接调用了上游的subscribe方法，因此observeOn操作也不会影响上游线程执行环境
@@ -343,7 +342,7 @@ protected void subscribeActual(Observer<? super T> observer) {
     }
 }
 ```
-`scheduler.createWorker()`创建了一个主线程`handler`的`Worker`，这样我们到了ObserveOnObserver中，首先看看其onSubscribe方法：
+`scheduler.createWorker()`创建了一个主线程`handler`的`Worker`，这样我们到了`ObserveOnObserver`中，首先看看其`onSubscribe`方法：
 
 ```java
 @Override
@@ -383,9 +382,9 @@ public void onNext(T t) {
 
 ```java
 void schedule() {
-    // ObserveOnObserver类间接继承了AtomicInteger
+    // ObserveOnObserver 类间接继承了 AtomicInteger
     // 第一个执行该方法肯定返回0，执行后就自增为1了
-    // 也就意味着worker.schedule(this)只会执行一次
+    // 也就意味着 worker.schedule(this) 只会执行一次
     if (getAndIncrement() == 0) {
         worker.schedule(this);
     }
@@ -395,8 +394,6 @@ void schedule() {
 
 ### 2.1.1 RxAndroid
 
-这里的`worker`其实是`AndroidSchedulers.mainThread()` create 出来的
-
 RxAndroid 库总共就4个文件，其中两个文件比较重要：HandlerScheduler以及封装了该类的`AndroidSchedulers`。
 
 AndroidSchedulers提供了两个公有静态方法来切换线程：
@@ -404,14 +401,14 @@ AndroidSchedulers提供了两个公有静态方法来切换线程：
 - mainThread()指定主线程;
 - from(Looper looper)指定别的线程。
 
-这两者都是通过创建HandlerScheduler时指定Handle的Looper来实现的，AndroidSchedulers代码如下：
+`AndroidSchedulers.mainThread()` 最终会返回一个 `HandlerScheduler(new Handler(Looper.getMainLooper())`对象
 
 ```java
 /** Android-specific Schedulers. */
 public final class AndroidSchedulers {
 
     private static final class MainHolder {
-
+        // mainThread() 会返回一个 HandlerScheduler 对象
         static final Scheduler DEFAULT = new HandlerScheduler(new Handler(Looper.getMainLooper()));
     }
 
@@ -438,7 +435,12 @@ public final class AndroidSchedulers {
     }
 }
 ```
-再说说另外一个关键文件`HandlerScheduler`，该类的作用就是将`Runnable`使用指定的`Handler`来执行。该类的两个公共方法：`scheduleDirect`方法直接执行`Runnable`；或者通过`createWorker()`创建一个`HandlerWorker`对象，稍后通过该对象的`schedule`方法执行`Runnable`。
+再说说另外一个关键文件`HandlerScheduler`，该类的作用就是将`Runnable`使用指定的`Handler`来执行。
+
+该类的两个公共方法：
+- `scheduleDirect`方法直接执行`Runnable`；
+- 或者通过`createWorker()`创建一个`HandlerWorker`对象，稍后通过该对象的`schedule`方法执行`Runnable`。
+
 
 现在回到`ObserveOnObserver.schedule`方法中，这里调用了`worker.schedule(this)`方法。这里已经通过`HandlerScheduler`回到主线程了。
 
@@ -453,7 +455,7 @@ public void run() {
     }
 }
 ```
-由于outputFused在本例中为false（打断点可知），所以我们看看drainNormal()方法。
+由于`outputFused`在本例中为`false`（打断点可知），所以我们看看`drainNormal()`方法。
 ```java
 void drainNormal() {
     int missed = 1;
@@ -504,17 +506,17 @@ void drainNormal() {
     }
 }
 ```
-在上面代码中在一些关键点写了一些注释，需要注意的是，调用该方法的run方法已经被切换到主线程中执行了，这样此方法也是在主线程中执行的。
+在上面代码中在一些关键点写了一些注释，需要注意的是，调用该方法的`run`方法已经被切换到主线程中执行了，这样此方法也是在主线程中执行的。
 
-至此，observeOn工作原理已经解释完毕，我们已经知道了observeOn是如何决定了下游订阅发生的线程的：
+至此，`observeOn`工作原理已经解释完毕，我们已经知道了`observeOn`是如何决定了下游订阅发生的线程的：
 
->将Runnable抛给指定的线程池来执行，Runnable里面会调用下游observer的onNext方法。
+>将`Runnable`抛给指定的线程池来执行，`Runnable`里面会调用下游`observer`的`onNext`方法。
 
-下面看看subscribeOn。
+下面看看`subscribeOn`。
 
-### 2.2 subscribeOn
+### 2.2 subscribeOn 操作符
 
-subscribeOn切换原理和observeOn非常相似。
+`subscribeOn`切换原理和`observeOn`非常相似。
 
 在`Observable.subscribeOn`方法中，创建了一个`ObservableSubscribeOn`对象，我们看一下其`subscribeActual`方法：
 
@@ -530,9 +532,9 @@ public void subscribeActual(final Observer<? super T> s) {
     parent.setDisposable(scheduler.scheduleDirect(new SubscribeTask(parent)));
 }
 ```
-和上面分析的observeOn类似，scheduler.scheduleDirect肯定起到一个线程切换的过程，线程切换之后就会执行source.subscribe(parent)。就这样subscribe会一直向上传递到数据发射的位置，发射数据的方法的线程自然也会发生改变。
+和上面分析的`observeOn`类似，`scheduler.scheduleDirect`肯定起到一个线程切换的过程，线程切换之后就会执行`source.subscribe(parent)`。就这样`subscribe`会一直向上传递到数据发射的位置，发射数据的方法的线程自然也会发生改变。
 
-回过头来看一下scheduler.scheduleDirect干了些什么，这里的scheduler是IoScheduler，该方法是其基类Scheduler的方法：
+回过头来看一下`scheduler.scheduleDirect`干了些什么，这里的`scheduler`是`IoScheduler`，该方法是其基类`Scheduler`的方法：
 
 ```java
 @NonNull
@@ -553,7 +555,7 @@ public Disposable scheduleDirect(@NonNull Runnable run, long delay, @NonNull Tim
     return task;
 }
 ```
-我们接着看一下EventLoopWorker.schedule方法：
+我们接着看一下`EventLoopWorker.schedule`方法：
 
 ```java
 @NonNull
@@ -566,7 +568,7 @@ public Disposable schedule(@NonNull Runnable action, long delayTime, @NonNull Ti
     return threadWorker.scheduleActual(action, delayTime, unit, tasks);
 }
 ```
-这里的threadWorker实际上是一个NewThreadWorker，直接看scheduleActual方法：
+这里的`threadWorker`实际上是一个`NewThreadWorker`，直接看`scheduleActual`方法：
 
 ```java
 @NonNull
@@ -600,11 +602,11 @@ public ScheduledRunnable scheduleActual(final Runnable run, long delayTime, @Non
     return sr;
 }
 ```
-这样，开始的SubscribeTask就会在指定的io线程池中进行运行了。
+这样，开始的`SubscribeTask`就会在指定的`io线程池`中进行运行了。
 
-为什么subscribeOn()只有第一次切换有效？
+为什么`subscribeOn()`只有第一次切换有效？
 
-因为RxJava最终能影响ObservableOnSubscribe这个匿名实现接口的运行环境的只能是最后一次subscribe操作，又因为RxJava订阅的时候是从下往上订阅，所以从上往下第一个subscribeOn()就是最后运行的。
+因为RxJava最终能影响`ObservableOnSubscribe`这个匿名实现接口的运行环境的只能是最后一次`subscribe`操作，又因为`RxJava`订阅的时候是从下往上订阅，所以从上往下第一个`subscribeOn()`就是最后运行的。
 
 举个例子：
 
