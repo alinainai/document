@@ -20,7 +20,7 @@ class LifeCycleObserver1 : DefaultLifecycleObserver {
     }
 }
 ```
-2.实现`LifecycleObserver`接口，通过注解方式实现方法的回调
+2.实现`LifecycleObserver`接口，使用注解来标记回调方法
 ```kotlin
 class LifeCycleObserver2 : LifecycleObserver {
 
@@ -42,7 +42,7 @@ LifecycleOwner.getLifecycle().addObserver(LifeCycleObserver2())
 ```
 ## 3.Lifecycle 源码分析
 
-`CompatActivity`类本身实现`LifecycleOwner`接口，`LifecycleOwner`是单一方法接口，表示类持有`Lifecycle`。
+`CompatActivity`类实现了`LifecycleOwner`接口，`LifecycleOwner`接口只有一个 `Lifecycle getLifecycle()` 方法。
 
 ```java
 public interface LifecycleOwner {
@@ -51,9 +51,9 @@ public interface LifecycleOwner {
 }
 ```
 
-`Lifecycle` 是一个抽象类，用于存储有关组件（如 `Activity` 或 `Fragment`）的`生命周期状态`的信息，并允许其他对象观察此状态。
+`Lifecycle` 是一个抽象类，用于存储有关组件（如 `Activity` 或 `Fragment`）的`生命周期的状态信息`，并允许其他对象观察此状态。
 
-`Lifecycle` 使用两种枚举来表示其关联组件的生命周期状态：
+`Lifecycle` 使用两种枚举来表示其关联的组件的生命周期状态：
 
 - 事件 Event
 - 状态 State
@@ -93,7 +93,7 @@ public enum State {
 
 ## 4. LifecycleRegistry 对象
 
-在 CompatActivity 中 getLifecycle() 返回一个 LifecycleRegistry 对象
+在`CompatActivity` 中 `getLifecycle()` 返回一个 `LifecycleRegistry` 对象
 
 ```java
 public class ComponentActivity extends androidx.core.app.ComponentActivity implements LifecycleOwner{
@@ -117,7 +117,7 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
 
 可以先看下 ReportFragment 类，Activity 生命周期的回调通过该类实现：
 
-- 在 API >= 29 通过 Application.ActivityLifecycleCallbacks 的回调分发时间
+- 在 API >= 29 通过 Application.ActivityLifecycleCallbacks 的回调分发事件
 - 在 API < 29 通过 Fragment 生命周期的回调分发事件
 
 最终事件的分发通过 ReportFragment 中的静态方法 dispatch 实现，在 dispatch 方法中又调用 LifecycleRegistry#handleLifecycleEvent
