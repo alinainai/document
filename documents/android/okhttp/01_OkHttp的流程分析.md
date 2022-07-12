@@ -1,8 +1,20 @@
-## 1.基本使用方式
+## 1.基本使用
 
-### 1.1 用建造者模式初始化一个 OkHttpClient 对象
+OkHttp是一个默认有效的HTTP客户端：
+
+- HTTP/2支持允许对同一主机的所有请求共享套接字。
+- 连接池减少了请求延迟（如果HTTP/2不可用）。
+- transparent GZIP 压缩了下载大小。
+- Response缓存可以完全避免网络的重复请求。
+
+当网络故障时，OkHttp会自动重试：它将从常见的连接问题中静默地恢复。如果您的服务有多个IP地址，如果第一次连接失败，OkHttp将尝试备用地址；这对于IPv4 + IPv6以及在冗余数据中心中托管的服务是必需的。
+
+OkHttp还支持现代TLS功能（TLS 1.3，ALPN，certificate pinning）。It can be configured to fall back for broad connectivity.
+
+本章主要介绍OkHttp的实现，代码基于 [okhttp-4.9.0](https://github.com/square/okhttp/tree/parent-4.9.0)
 
 ```kotlin
+//1、用建造者模式初始化一个 OkHttpClient 对象
 val builder = OkHttpClient.Builder()
 builder.connectTimeout(10, TimeUnit.SECONDS)
 
@@ -14,23 +26,20 @@ builder.addNetworkInterceptor(Interceptor { chain ->
     Log.d(TAG, "NetworkInterceptor url:" + chain.request().url.toString())
     chain.proceed(chain.request())
 })
-//1、用建造者模式初始化一个 OkHttpClient 对象
-val client: OkHttpClient = builder.build()
-```
-### 1.2.再初始化一个 Request 对象
 
-```kotlin
+val client: OkHttpClient = builder.build()
+
+//2、初始化一个 Request 对象
 val request: Request = Request.Builder()
     .url("https://www.baidu.com")
     .build()
+
+//3、调用 OkHttpClient#newCall(Request) 方法生成一个 Call 对象
+val call: Call = client.newCall(request)
 ```
 
-### 1.3 调用 OkHttpClient#newCall(Request) 方法生成一个 Call 对象
+调用 Call.enqueue(Callback) 或者 Call.execute() 方法实现请求
 
-```java
- val call: Call = client.newCall(request)
-```
-### 1.4 Call 调用 enqueue(Callback) 或者 execute() 方法实现请求
 ```kotlin
 // 1.enqueue(Callback) 异步请求
 call.enqueue(object : Callback {
@@ -45,11 +54,18 @@ call.enqueue(object : Callback {
 val response = call.execute()
 ```
 
+使用步骤总结：
+
+- 1.使用 OkHttpClient.Builder 新建一个 OkHttpClient 对象，可以在 OkHttpClient.Builder 设置一些参数
+- 2.使用 Request.Builder 新建一个 Request 对象
+- 3.使用 OkHttpClient.newCall(Request) 生成一个 Call 对象
+- 4.调用 Call.enqueue(Callback) 或者 Call.execute() 实现网络请求。
+
 ## 2.OkHttpClient 的建造者参数
 
 `OkHttpClient` 相当于配置中心，所有的请求都会共享这些配置。比如：出错是否重试、共享连接池。
 
-在OkHttpClient.Builder的构造器中有很多默认的值，如下注释：
+在 `OkHttpClient.Builder` 的构造器中有很多默认的值：
 
 ```kotlin
   class Builder constructor() {
@@ -84,7 +100,6 @@ http，是否依然⾃动 follow。(记得，不是「是否⾃自动 follow HTT
     internal var pingInterval = 0
     internal var minWebSocketMessageToCompress = RealWebSocket.DEFAULT_MINIMUM_DEFLATE_SIZE
     internal var routeDatabase: RouteDatabase? = null
-
 ```
 
 此外，`Request`的构造也很简单，字段如下：
@@ -138,7 +153,7 @@ interface Call : Cloneable {
 }
 ```
 
-回到RealCall，看看它的构造器以及成员变量：
+在看一下 `RealCall` 类，它的构造器以及成员变量：
 
 ```kotlin
 class RealCall(
@@ -158,13 +173,13 @@ class RealCall(
   }.apply {
     timeout(client.callTimeoutMillis.toLong(), MILLISECONDS)
   }
-
+  //标记是否已经执行
   private val executed = AtomicBoolean()
 ```
 
 ## 4、同步请求 RealCall.execute()
 
-同步请求最终会调用 RealCall.getResponseWithInterceptorChain() 方法，它会发起⽹络请求并拿到返回的响应，装进一个 `Response` 对象并作为返回值返回;
+同步请求的代码如下：
 
 ```kotlin
 override fun execute(): Response {
@@ -173,42 +188,69 @@ override fun execute(): Response {
   timeout.enter()
   callStart()
   try {
-    // 将 RealCall 添加到同步执行队列
+    // 1、将 RealCall 添加到同步执行队列
     client.dispatcher.executed(this)
-    // 通过该方法获取 Response 对象
+    // 2、通过该方法获取 Response 对象
     return getResponseWithInterceptorChain()
   } finally {
-    // 执行完成后将 RealCall 从同步执行队列中移除
+    // 3、执行完成后将 RealCall 从同步执行队列中移除
     client.dispatcher.finished(this)
   }
 }
 ```
-
-`RealCall.enqueue()` 被调⽤的时候大同小异，区别在于`enqueue()` 会使⽤ `Dispatcher` 的线程池来把请求放在后台线程进行，但实质上使用的同样也是 `getResponseWithInterceptorChain()` 方法。
-
-下面我们简单的跟踪下 RealCall.enqueue(Callback) 的源码
-
+该方法最终会调用 `RealCall.getResponseWithInterceptorChain()` 方法，它会发起⽹络请求并拿到返回的响应，装进一个 `Response` 对象并作为返回值返回;
 
 ## 5.异步请求 RealCall.enqueue(Callback)
 
-`AsyncCall`是一个`Runnable`对象，
+`RealCall.enqueue()` 被调⽤的时候大同小异，区别在于`enqueue()` 会使⽤ `Dispatcher` 的线程池来把请求放在后台线程进行，但最终还是会调用 `RealCall.getResponseWithInterceptorChain()` 方法。
+
+`AsyncCall` 是一个 `Runnable` 对象，它是 `RealCall` 的内部类，部分代码如下:
 
 ```kotlin
-// 1、通过 RealCall.enqueue(Callback) 方法执行异步请求
+ internal inner class AsyncCall(
+    private val responseCallback: Callback
+  ) : Runnable {
+    @Volatile var callsPerHost = AtomicInteger(0) 
+      private set
+
+    fun reuseCallsPerHostFrom(other: AsyncCall) {// 复用
+      this.callsPerHost = other.callsPerHost
+    }
+
+    val host: String
+      get() = originalRequest.url.host
+
+    val request: Request
+        get() = originalRequest
+
+    val call: RealCall
+        get() = this@RealCall
+```
+
+接来下让我们跟踪下 `RealCall.enqueue(Callback)` 方法
+
+```kotlin
+// 通过 RealCall.enqueue(Callback) 方法执行异步请求
 override fun enqueue(responseCallback: Callback) {
-  //...
+  check(executed.compareAndSet(false, true)) { "Already Executed" }
+  callStart()
   //调用 OkHttpClient 的 Dispatcher.enqueue(AsyncCall) 方法
   client.dispatcher.enqueue(AsyncCall(responseCallback))
 }
+```
 
-// 2、Dispatcher.enqueue(AsyncCall) 方法
+该方法新建一个 `AsyncCall` 对象，并把 `responseCallback` 当做参数传入到 `AsyncCall` 中。然后使用 `client.dispatcher` 去处理 `AsyncCall` 对象。
+我们继续追踪 `Dispatcher.enqueue(AsyncCall)` 方法：
+
+```kotlin
+// Dispatcher.enqueue(AsyncCall) 方法
 internal fun enqueue(call: AsyncCall) {
   synchronized(this) {
     //将 AsyncCall 添加到 readyAsyncCalls 队列中
     readyAsyncCalls.add(call)
     // Mutate the AsyncCall so that it shares the AtomicInteger of an existing running call to
     // the same host.
-    if (!call.call.forWebSocket) {
+    if (!call.call.forWebSocket) {// 看看统一域名下有没有可以复用的 AsyncCall
       val existingCall = findExistingCallWithHost(call.host)
       if (existingCall != null) call.reuseCallsPerHostFrom(existingCall)
     }
@@ -216,8 +258,12 @@ internal fun enqueue(call: AsyncCall) {
   //调用 Dispatcher.promoteAndExecute 方法 
   promoteAndExecute()
 }
+```
 
-// 3、Dispatcher.promoteAndExecute() 方法的主要作用是用 Dispatcher 的线程池来执行 AsyncCall
+这个方法的主要功能是将 `AsyncCall` 添加到异步的预备队列中，然后调用 `Dispatcher.promoteAndExecute()` 方法。
+我们来看一下 `Dispatcher.promoteAndExecute()` 的代码:
+
+```kotlin
 private fun promoteAndExecute(): Boolean {
   this.assertThreadDoesntHoldLock()
   
@@ -247,8 +293,11 @@ private fun promoteAndExecute(): Boolean {
   
   return isRunning
 }
+```
 
-// 4、AsyncCall.executeOn(ExecutorService) 方法
+该方法的主要作用是用 `Dispatcher` 中的线程池来执行 `AsyncCall`，`AsyncCall.executeOn(ExecutorService)` 就是使用线程池来执行 `AsyncCall(Runnable的子类)`
+
+```kotlin
 /**
   * Attempt to enqueue this async call on [executorService]. This will attempt to clean up
   * if the executor has been shut down by reporting the call as failed.
@@ -272,7 +321,9 @@ fun executeOn(executorService: ExecutorService) {
     }
   }
 }
-// 5、AsyncCall.run() 方法最终还是调用 RealCall.getResponseWithInterceptorChain() 方法
+```
+继续看 AsyncCall.run() 方法，最终还是调用 RealCall.getResponseWithInterceptorChain() 方法
+```kotlin
 override fun run() {
   threadName("OkHttp ${redactedUrl()}") {
     var signalledCallback = false
@@ -303,7 +354,6 @@ override fun run() {
   }
 }
 ```
-通过上面的追踪我们发现`RealCall.enqueue(Callback)`最终也是调用`getResponseWithInterceptorChain()`方法获取`Response`对象
 
 ## 6.RealCall.getResponseWithInterceptorChain() 方法
 
