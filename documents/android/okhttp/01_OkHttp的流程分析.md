@@ -1,4 +1,4 @@
-## 1.基本使用
+## 1、基本使用
 
 OkHttp是一个默认有效的HTTP客户端：
 
@@ -61,7 +61,7 @@ val response = call.execute()
 - 3.使用 `OkHttpClient.newCall(Request)` 生成一个 `Call(RealCall)` 对象
 - 4.调用 `Call.enqueue(Callback)` 或者 `Call.execute()` 实现网络请求。
 
-## 2.OkHttpClient 的建造者参数
+## 2、OkHttpClient 的建造者参数
 
 `OkHttpClient` 相当于配置中心，所有的请求都会共享这些配置。比如：出错是否重试、共享连接池。
 
@@ -116,7 +116,7 @@ class Request internal constructor(
 
 接下来看一下 OkHttpClient 的 newCall(Request) 方法
 
-## 3.Call 和 RealCall 
+## 3、Call 和 RealCall 
 
 按照调用步骤，首先看下`OkHttpCient.newCall(Request)`方法：
 
@@ -200,7 +200,7 @@ override fun execute(): Response {
 ```
 该方法最终会调用 `RealCall.getResponseWithInterceptorChain()` 方法，它会发起⽹络请求并拿到返回的响应，装进一个 `Response` 对象并作为返回值返回;
 
-## 5.异步请求 RealCall.enqueue(Callback)
+## 5、异步请求 RealCall.enqueue(Callback) 的调用步骤
 
 `RealCall.enqueue()` 被调⽤的时候大同小异，区别在于`enqueue()` 会使⽤ `Dispatcher` 的线程池来把请求放在后台线程进行，但最终还是会调用 `RealCall.getResponseWithInterceptorChain()` 方法。
 
@@ -322,7 +322,7 @@ fun executeOn(executorService: ExecutorService) {
   }
 }
 ```
-继续看 AsyncCall.run() 方法，最终还是调用 RealCall.getResponseWithInterceptorChain() 方法
+继续看 `AsyncCall.run()` 方法，该方法最终还是会调用 `RealCall.getResponseWithInterceptorChain()` 方法
 ```kotlin
 override fun run() {
   threadName("OkHttp ${redactedUrl()}") {
@@ -355,23 +355,23 @@ override fun run() {
 }
 ```
 
-## 6.RealCall.getResponseWithInterceptorChain() 方法
+不管是同步请求还是异步请求，最终都会通过 `RealCall.getResponseWithInterceptorChain()` 来获取 `Response`，下面让我们来看下该方法的源码实现。
 
-`getResponseWithInterceptorChain()` ⽅法把所有配置好的 `Interceptor` 放在⼀个 `List` ⾥，然后作为参数，创建⼀个 `RealInterceptorChain` 对象，并调用 `chain.proceed(request)` 来发起请求和获取响应。
+## 6、RealCall.getResponseWithInterceptorChain() 方法
 ```kotlin
   @Throws(IOException::class)
   internal fun getResponseWithInterceptorChain(): Response {
     // Build a full stack of interceptors.
     val interceptors = mutableListOf<Interceptor>()
-    interceptors += client.interceptors
-    interceptors += RetryAndFollowUpInterceptor(client)
-    interceptors += BridgeInterceptor(client.cookieJar)
-    interceptors += CacheInterceptor(client.cache)
-    interceptors += ConnectInterceptor
+    interceptors += client.interceptors // 用户自定义的 interceptor
+    interceptors += RetryAndFollowUpInterceptor(client) // 重试和重定向的 interceptor
+    interceptors += BridgeInterceptor(client.cookieJar) // 重试和重定向的 interceptor
+    interceptors += CacheInterceptor(client.cache) 
+    interceptors += ConnectInterceptor // 重试和重定向的 interceptor
     if (!forWebSocket) {
       interceptors += client.networkInterceptors
     }
-    interceptors += CallServerInterceptor(forWebSocket)
+    interceptors += CallServerInterceptor(forWebSocket) // 重试和重定向的 interceptor
 
     // 创建⼀个 RealInterceptorChain 对象
     val chain = RealInterceptorChain(
@@ -404,9 +404,12 @@ override fun run() {
     }
   }
 ```
+
+`getResponseWithInterceptorChain()` ⽅法把所有配置好的 `Interceptor` 放在⼀个 `List` ⾥，然后作为参数，创建⼀个 `RealInterceptorChain` 对象，并调用 `chain.proceed(request)` 来发起请求和获取响应。
+
 再看下`RealInterceptorChain.proceed(Request)`方法
 
-## 5.RealInterceptorChain 
+## 7、RealInterceptorChain.roceed(Request) 代码实现
 
 ```kotlin
   @Throws(IOException::class)
@@ -434,7 +437,7 @@ intercept()方法会做三件事:
 
 >当然了，最后⼀个 `Interceptor` 的任务只有⼀个:做真正的⽹络请求并拿到响应。
 
-## 6.从上到下，每级 `Interceptor` 做的事
+## 8、从上到下，每级 `Interceptor` 做的事
 
 - 1.首先是开发者使用 `addInterceptor(Interceptor)` 所设置的，它们会按照开发者的要求，在所有其他 `Interceptor` 处理之前，进行最早的预处理⼯作，以及在收到 Response 之后，做最后的善后⼯作。如果你有统一的 `header` 要添加，可以在这⾥设置;
 - 2.然后是 `RetryAndFollowUpInterceptor` :它负责在请求失败时的重试，以及重定向的⾃动后续请求。它的存在，可以让重试和重定向对于开发者是无感知的;
