@@ -8,10 +8,11 @@
 首先看日常使用中最简单的一个例子：
 
 ### 1.1 Api接口的定义
+
 ```kotlin
 interface ApiService {
     @GET("rest/app/update")
-    fun checkUpdate(@Query("versionCode") versionCode: String): Observable<VersionRes>
+    fun checkUpdate(@Query("ver_code") code: String): Observable<VerRes>
 }
 ```
 
@@ -24,17 +25,15 @@ val retrofit = Retrofit.Builder()
     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
     .addConverterFactory(GsonConverterFactory.create())
     .build()
-//使用 Service 
+    
+//使用 retrofit.create(Class<T>) 创建一个 ApiService.class 对象。然后调用 ApiService.checkUpdate(version_code) 方法。
 retrofit.create(ApiService::class.java).checkUpdate(version_code)
 ```
 
-先看2个相关的类
-
-- CallAdapter<R, T>: 将一个Call从响应类型R适配成T类型的适配器。
-- Converter<F, T>:将F转换为T类型的值的转换器。
+从入口开始，先看下 `Retrofit.create(Class<T>)` 的源码
 
 ## 2. Retrofit.create 代码分析
-先上代码，部分代码说明补充在了注释中：
+
 ```java
 public <T> T create(final Class<T> service) {
   // 检查类型是不是接口，定义的接口数是否大于0
@@ -43,7 +42,6 @@ public <T> T create(final Class<T> service) {
   if (validateEagerly) {
     eagerlyValidateMethods(service);
   }
-  // 动态代理
   return (T) Proxy.newProxyInstance(service.getClassLoader(), new Class<?>[] { service },
       new InvocationHandler() {
         private final Platform platform = Platform.get();
@@ -60,19 +58,22 @@ public <T> T create(final Class<T> service) {
           if (platform.isDefaultMethod(method)) {
             return platform.invokeDefaultMethod(method, service, proxy, args);
           }
-          // 核心的三行代码
+          // 1、根据接口的 method 创建一个 ServiceMethod 对象
           ServiceMethod<Object, Object> serviceMethod =
               (ServiceMethod<Object, Object>) loadServiceMethod(method);
+          // 2、将 ServiceMethod 和 参数 封装为一个 OkHttpCall 对象
           OkHttpCall<Object> okHttpCall = new OkHttpCall<>(serviceMethod, args);
+          // 3、调用 serviceMethod.callAdapter.adapt(Call<R>) 实现网络请求和数据适配
           return serviceMethod.callAdapter.adapt(okHttpCall);
         }
       });
 }
 ```
+`Retrofit.create` 采用动态代理技术实现接口中方法的调用
 
-## 2. loadServiceMethod 流程
+## 2. loadServiceMethod(Method) 流程分析
 
-`loadServiceMethod`方法的相关代码：
+`loadServiceMethod` 返回一个 `ServiceMethod` 对象，这个方法的代码很简单。
 
 ```java
 private final Map<Method, ServiceMethod<?, ?>> serviceMethodCache = new ConcurrentHashMap<>();
@@ -92,7 +93,7 @@ ServiceMethod<?, ?> loadServiceMethod(Method method) {
   return result;
 }
 ```
-先看下核心代码 ServiceMethod.Builder<>(this, method).build()。
+核心代码是通过`ServiceMethod.Builder<>(this, method).build()`创建一个`ServiceMethod`对象
 
 ### 2.1 ServiceMethod.Builder
 
@@ -108,125 +109,61 @@ Builder(Retrofit retrofit, Method method) {
 }
 ```
 
-再看`ServiceMethod.Builder.build`方法
+再看`ServiceMethod.Builder.build`方法，去掉了一些数据校验的判断
 
 ```java
 public ServiceMethod build() {
-  // 1、根据method的返回值类型以及方法注解返回对用的 CallAdapter，这里得到的是 RxJava2CallAdapterFactory 创建的 RxJava2CallAdapter
+  // 1、根据 method 的 返回值类型 以及 注解 获取一个合适的 CallAdapter，例子中会返回一个 RxJava2CallAdapter 对象
   callAdapter = createCallAdapter();
-  // 我们可以直接使用的真正的返回值类型，在例子中此处是VersionRes
+  // 我们可以直接使用的真正的返回值类型，在例子是 VerRes
   responseType = callAdapter.responseType();
-  if (responseType == Response.class || responseType == okhttp3.Response.class) {
-    throw methodError("'"
-        + Utils.getRawType(responseType).getName()
-        + "' is not a valid response body type. Did you mean ResponseBody?");
-  }
+
   // 2、根据 responseType 以及方法注解返回对应的 Converter
   // 由于内置的 BuiltInConverters 无法处理 VersionRes 类型的返回值，此处返回 GsonConverterFactory 创建的 GsonResponseBodyConverter
   responseConverter = createResponseConverter();
 
-  // 根据注解的类型初始化一些参数，如实例中，httpMethod 为 GET,hasBody为false，relativeUrl 为 rest/app/update
+  // 根据注解的类型初始化一些参数，如实例中，httpMethod 为 GET，hasBody 为 false，relativeUrl 为 rest/app/update
   for (Annotation annotation : methodAnnotations) {
     parseMethodAnnotation(annotation);
   }
-
-  if (httpMethod == null) {
-    throw methodError("HTTP method annotation is required (e.g., @GET, @POST, etc.).");
-  }
-
-  if (!hasBody) {
-    if (isMultipart) {
-      throw methodError(
-          "Multipart can only be specified on HTTP methods with request body (e.g., @POST).");
-    }
-    if (isFormEncoded) {
-      throw methodError("FormUrlEncoded can only be specified on HTTP methods with "
-          + "request body (e.g., @POST).");
-    }
-  }
-
+  ...
   // 3、将每个参数以及其注解封装成为一个 ParameterHandler 对象
   int parameterCount = parameterAnnotationsArray.length;
   parameterHandlers = new ParameterHandler<?>[parameterCount];
   for (int p = 0; p < parameterCount; p++) {
-  
     Type parameterType = parameterTypes[p];
-    if (Utils.hasUnresolvableType(parameterType)) {
-      throw parameterError(p, "Parameter type must not include a type variable or wildcard: %s",
-          parameterType);
-    }
-
     Annotation[] parameterAnnotations = parameterAnnotationsArray[p];
-    if (parameterAnnotations == null) {
-      throw parameterError(p, "No Retrofit annotation found.");
-    }
-
-    // ParameterHandler.Query(
-    //   name = "VersionCode",
-    //   encoded = false,
-    //   valueConverter = BuiltInConverters.ToStringConverter
-    // )
     parameterHandlers[p] = parseParameter(p, parameterType, parameterAnnotations);
   }
-
-  if (relativeUrl == null && !gotUrl) {
-    throw methodError("Missing either @%s URL or @Url parameter.", httpMethod);
-  }
-  if (!isFormEncoded && !isMultipart && !hasBody && gotBody) {
-    throw methodError("Non-body HTTP method cannot contain @Body.");
-  }
-  if (isFormEncoded && !gotField) {
-    throw methodError("Form-encoded method must contain at least one @Field.");
-  }
-  if (isMultipart && !gotPart) {
-    throw methodError("Multipart method must contain at least one @Part.");
-  }
-
-  // 4、创建ServiceMethod对象，内部就是一些赋值操作
+  
+  // 4、创建 ServiceMethod 对象，内部就是一些赋值操作
   return new ServiceMethod<>(this);
 }
 ```
 
-整体分析完了，我们先看一下CallAdapter、Converter的创建，然后再看各种注解的解析。
+整体分析完了，再看一下 `CallAdapter`、`Converter`的创建，然后再看各种注解的解析。
 
 ### 2.2 callAdapter 的选择由 createCallAdapter 完成：
 
 ```java
 private CallAdapter<T, R> createCallAdapter() {
-  // returnType 为 Observable<VersionRes>
-  Type returnType = method.getGenericReturnType();
-  if (Utils.hasUnresolvableType(returnType)) {
-    throw methodError(
-        "Method return type must not include a type variable or wildcard: %s", returnType);
-  }
-  if (returnType == void.class) {
-    throw methodError("Service methods cannot return void.");
-  }
-  // annotations为[@GET("rest/app/update")]
-  Annotation[] annotations = method.getAnnotations();
+  Type returnType = method.getGenericReturnType(); // Observable<VerRes>
+  Annotation[] annotations = method.getAnnotations();// [@GET("rest/app/update")]
   try {
-    // 转到retrofit进行处理
-    //noinspection unchecked
-    return (CallAdapter<T, R>) retrofit.callAdapter(returnType, annotations);
+    return (CallAdapter<T, R>) retrofit.callAdapter(returnType, annotations); // 调用 retrofit进行处理
   } catch (RuntimeException e) { // Wide exception range because factories are user code.
     throw methodError(e, "Unable to create call adapter for %s", returnType);
   }
 }
 ```
-继续跟踪Retrofit.callAdapter方法：
+继续跟踪`Retrofit.callAdapter`方法：
 
 ```java
 public CallAdapter<?, ?> callAdapter(Type returnType, Annotation[] annotations) {
   return nextCallAdapter(null, returnType, annotations);
 }
-
-public CallAdapter<?, ?> nextCallAdapter(@Nullable CallAdapter.Factory skipPast, Type returnType,
-    Annotation[] annotations) {
-  checkNotNull(returnType, "returnType == null");
-  checkNotNull(annotations, "annotations == null");
-
-  // start = -1 + 1 = 0，也就是顺序遍历
-  // 从RxJava2CallAdapterFactory、ExecutorCallAdapterFactory中找到满足条件的
+public CallAdapter<?, ?> nextCallAdapter(@Nullable CallAdapter.Factory skipPast, Type returnType, Annotation[] annotations) {
+  // 从 RxJava2CallAdapterFactory、ExecutorCallAdapterFactory 中找到满足条件的
   int start = adapterFactories.indexOf(skipPast) + 1;
   for (int i = start, count = adapterFactories.size(); i < count; i++) {
     CallAdapter<?, ?> adapter = adapterFactories.get(i).get(returnType, annotations, this);
@@ -234,100 +171,55 @@ public CallAdapter<?, ?> nextCallAdapter(@Nullable CallAdapter.Factory skipPast,
       return adapter;
     }
   }
-
   ...
   throw new IllegalArgumentException(...);
 }
 ```
-`RxJava2CallAdapterFactory` 是满足条件的，我们看看其 `get` 方法：
+因为例子中 `ApiService#checkUpdate` 方法的返回值是 `Observable<VerRes>` 类型，所以这里 `RxJava2CallAdapterFactory` 是满足条件的，我们看看其 `get` 方法：
 
 ```java
 @Override
 public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit retrofit) {
-  // returnType 为 Observable<VersionRes>，因此 rawType 就是Observable类型
-  Class<?> rawType = getRawType(returnType);
 
-  if (rawType == Completable.class) {
-    // Completable is not parameterized (which is what the rest of this method deals with) so it
-    // can only be created with a single configuration.
-    return new RxJava2CallAdapter(Void.class, scheduler, isAsync, false, true, false, false,
-        false, true);
-  }
-
-  boolean isFlowable = rawType == Flowable.class;
-  boolean isSingle = rawType == Single.class;
-  boolean isMaybe = rawType == Maybe.class;
-  if (rawType != Observable.class && !isFlowable && !isSingle && !isMaybe) {
-    return null;
-  }
-
-  boolean isResult = false;
-  boolean isBody = false;
+  // 1.returnType 为 Observable<VersionRes>，returnType 的原生类型(rawType)就是 Observable 
+  Class<?> rawType = getRawType(returnType); 
+  
   Type responseType;
-  if (!(returnType instanceof ParameterizedType)) {
-    String name = isFlowable ? "Flowable"
-        : isSingle ? "Single"
-        : isMaybe ? "Maybe" : "Observable";
-    throw new IllegalStateException(name + " return type must be parameterized"
-        + " as " + name + "<Foo> or " + name + "<? extends Foo>");
-  }
-
-  // observableType 为 VersionRes 类型
-  Type observableType = getParameterUpperBound(0, (ParameterizedType) returnType);
-  // rawObservableType 也为 VersionRes 类型
-  Class<?> rawObservableType = getRawType(observableType);
+  
+  // observableType 为 VerRes 类型
+  Type observableType = getParameterUpperBound(0, (ParameterizedType) returnType); 
+  // rawObservableType 还是 VerRes 类型
+  Class<?> rawObservableType = getRawType(observableType); 
+  
   if (rawObservableType == Response.class) {
-    if (!(observableType instanceof ParameterizedType)) {
-      throw new IllegalStateException("Response must be parameterized"
-          + " as Response<Foo> or Response<? extends Foo>");
-    }
     responseType = getParameterUpperBound(0, (ParameterizedType) observableType);
   } else if (rawObservableType == Result.class) {
-    if (!(observableType instanceof ParameterizedType)) {
-      throw new IllegalStateException("Result must be parameterized"
-          + " as Result<Foo> or Result<? extends Foo>");
-    }
     responseType = getParameterUpperBound(0, (ParameterizedType) observableType);
     isResult = true;
   } else {
-    // 因此走这个分支，responseType就是VersionRes类型了
-    responseType = observableType;
+    // 将 responseType 赋值为 VerRes 类型
+    responseType = observableType; 
     isBody = true;
   }
 
-  // 返回了一个RxJava2CallAdapter，而不是null，也就意味着找到了满足条件的CallAdapter
+  // 最后返回一个 `RxJava2CallAdapter(VerRes, null, false, false, true, false, false, false, false)` 类型的适配器对象
   return new RxJava2CallAdapter(responseType, scheduler, isAsync, isResult, isBody, isFlowable,
       isSingle, isMaybe, false);
 }
 ```
-从上面分析可以看出，这里的 `callAdapter` 就等于 `RxJava2CallAdapter(VersionRes, null, false, false, true, false, false, false, false)`。
-
 接下来看 `responseConverter` 的创建方法 `createResponseConverter()`：
 
 ```java
 private Converter<ResponseBody, T> createResponseConverter() {
-  // annotations为[@GET("rest/app/update")]
   Annotation[] annotations = method.getAnnotations();
-  try {
-    // responseType为VersionRes
-    return retrofit.responseBodyConverter(responseType, annotations);
-  } catch (RuntimeException e) { // Wide exception range because factories are user code.
-    throw methodError(e, "Unable to create converter for %s", responseType);
-  }
+  return retrofit.responseBodyConverter(responseType, annotations);
 }
 ```
 还是转到了`Retrofit`中：
 
 ```java
-public <T> Converter<ResponseBody, T> responseBodyConverter(Type type, Annotation[] annotations) {
-  return nextResponseBodyConverter(null, type, annotations);
-}
-
-public <T> Converter<ResponseBody, T> nextResponseBodyConverter(
-    @Nullable Converter.Factory skipPast, Type type, Annotation[] annotations) {
-  checkNotNull(type, "type == null");
-  checkNotNull(annotations, "annotations == null");
-
+public <T> Converter<ResponseBody, T> nextResponseBodyConverter(@Nullable Converter.Factory skipPast, Type type, Annotation[] annotations) {
+  
   // 依然是从0开始，依次尝试 BuiltInConverters、GsonConverterFactory
   int start = converterFactories.indexOf(skipPast) + 1;
   for (int i = start, count = converterFactories.size(); i < count; i++) {
@@ -372,13 +264,14 @@ public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] 
 ```
 这里调用了`Gson`的相关方法，是可以完成任务的。所以就返回了`GsonResponseBodyConverter`。
 
-回到`ServiceMethod.Builder.build`方法，接下来就是处理方法注解以及参数注解了。代码很简单，`if-else`判断出属于约定好的哪种注解，就设置对应的值。这里就不展开说了。
+总结一下 loadServiceMethod 方法的整个流程：
 
-最后是`return new ServiceMethod<>(this);`，这里面就是干了赋值的操作。
+- 1.根据`method`的返回值类型和注解获取适配的`CallAdapter`对象
+- 2.根据`method`的返回值类型和注解获取对应的`Converter`对象
+- 3.将`method`中的所有参数及其注解封装成为一个 `ParameterHandler` 数组
+- 4.`new` 一个 `ServiceMethod` 返回
 
-## 3.serviceMethod.callAdapter.adapt
-
-`loadServiceMethod`完成之后，会将这个`ServiceMethod`与方法入参一起组成了一个`OkHttpCall`对象：
+在`loadServiceMethod`完成之后，会将这个`ServiceMethod`与方法入参一起组成了一个`OkHttpCall`对象：
 
 ```kitlin
 ServiceMethod<Object, Object> serviceMethod =
@@ -389,11 +282,13 @@ return serviceMethod.callAdapter.adapt(okHttpCall);
 
 到目前为止，都只是做一些准备工作，还没有真正开始网络请求。那么这一步肯定就干了这件事。我们一点点往下看。
 
-我们在前面已经知道了`serviceMethod.callAdapter`是一个`RxJava2CallAdapter`对象，所以我们直接看其`adapt`方法：
+## 3.serviceMethod.callAdapter.adapt 方法
+
+在前面已经知道了`serviceMethod.callAdapter`是一个`RxJava2CallAdapter`对象，所以我们直接看其`RxJava2CallAdapter.adapt(Call)`方法：
 
 ```java
 @Override public Object adapt(Call<R> call) {
-  // isAsync在RxJava2CallAdapterFactory.create()中被赋值，为false
+  // isAsync 在 RxJava2CallAdapterFactory.create() 中被赋值，为false
   Observable<Response<R>> responseObservable = isAsync
       ? new CallEnqueueObservable<>(call)
       : new CallExecuteObservable<>(call);
@@ -408,101 +303,57 @@ return serviceMethod.callAdapter.adapt(okHttpCall);
     observable = responseObservable;
   }
 
-  // scheduler默认为null
-  if (scheduler != null) {
+  if (scheduler != null) {// scheduler默认为null
     observable = observable.subscribeOn(scheduler);
   }
-
-  // 以下boolean都为false
-  if (isFlowable) {
-    return observable.toFlowable(BackpressureStrategy.LATEST);
-  }
-  if (isSingle) {
-    return observable.singleOrError();
-  }
-  if (isMaybe) {
-    return observable.singleElement();
-  }
-  if (isCompletable) {
-    return observable.ignoreElements();
-  }
+  ...
   return observable;
 }
 ```
-从上面可以看出，这里会经过两个`Observable`，分别是`CallExecuteObservable`以及`BodyObservable`。前者作为参数传递给了后者。
+从上面可以看出，这里会生成两个`Observable`，分别是 `CallExecuteObservable` 以及 `BodyObservable`。前者作为上游参数传递给了后者。
 
 我们先看看`CallExecuteObservable`干了什么：
 
 ```java
 final class CallExecuteObservable<T> extends Observable<Response<T>> {
-  // originalCall实际上就是OkHttpCall
+
   private final Call<T> originalCall;
 
   CallExecuteObservable(Call<T> originalCall) {
     this.originalCall = originalCall;
   }
 
+  // 在例子中，此处的 observer 其实是一个 BodyObservable#BodyObserver 类
   @Override protected void subscribeActual(Observer<? super Response<T>> observer) {
-    // 此处的observer是BodyObservable.BodyObserver
-    // Since Call is a one-shot type, clone it for each new observer.
+    
     Call<T> call = originalCall.clone();
-    // 注意这里，如果dispose了Observable，call同时也会被cancel
-    // 调用BodyObserver.onSubscribe
+    // 注意这里：将 call 包装成一个 CallDisposable。如果 dispose 了 Observable，call 同时也会被 cancel
     observer.onSubscribe(new CallDisposable(call));
 
     boolean terminated = false;
     try {
-      // 调用OkHttpCall.execute方法执行同步请求
+      // 核心代码：调用OkHttpCall.execute方法执行同步请求
       Response<T> response = call.execute();
       if (!call.isCanceled()) {
-        // 调用BodyObserver.onNext
         observer.onNext(response);
       }
       if (!call.isCanceled()) {
         terminated = true;
-        // 调用BodyObserver.onComplete
         observer.onComplete();
       }
     } catch (Throwable t) {
-      Exceptions.throwIfFatal(t);
-      if (terminated) {
-        RxJavaPlugins.onError(t);
-      } else if (!call.isCanceled()) {
-        try {
-          // 调用BodyObserver.onError
-          observer.onError(t);
-        } catch (Throwable inner) {
-          Exceptions.throwIfFatal(inner);
-          RxJavaPlugins.onError(new CompositeException(t, inner));
-        }
-      }
-    }
-  }
-
-  private static final class CallDisposable implements Disposable {
-    private final Call<?> call;
-
-    CallDisposable(Call<?> call) {
-      this.call = call;
-    }
-
-    @Override public void dispose() {
-      call.cancel();
-    }
-
-    @Override public boolean isDisposed() {
-      return call.isCanceled();
+      ...
     }
   }
 }
 ```
-在上面这段代码中，`call.execute()`是重点，在这段代码里面完成了`ServiceMethod`的乱七八糟的参数的组装，最后才执行`RealCall.execute`，我们最后再说。
+在上面这段代码中，`call.execute()` 是核心代码，在 `call.execute()` 方法中完成了 `ServiceMethod` 的乱七八糟的参数的组装，最后执行 `RealCall.execute`。
 
 接下来看看`BodyObservable`的相关代码：
 
 ```java
 final class BodyObservable<T> extends Observable<T> {
-  // 上面的CallExecuteObservable
+  // 上面的 CallExecuteObservable
   private final Observable<Response<T>> upstream;
 
   BodyObservable(Observable<Response<T>> upstream) {
@@ -514,7 +365,7 @@ final class BodyObservable<T> extends Observable<T> {
     upstream.subscribe(new BodyObserver<T>(observer));
   }
 
-  /** 该类的作用就是判断请求是否成功，并将成功的Response<R>转换为R，传给客户端 */
+  /** 该类的作用就是判断请求是否成功，并将成功的 Response<R> 转换为 R，传给客户端 */
   private static class BodyObserver<R> implements Observer<Response<R>> {
     private final Observer<? super R> observer;
     private boolean terminated;
@@ -544,32 +395,15 @@ final class BodyObservable<T> extends Observable<T> {
         }
       }
     }
-
-    @Override public void onComplete() {
-      if (!terminated) {
-        observer.onComplete();
-      }
-    }
-
-    @Override public void onError(Throwable throwable) {
-      if (!terminated) {
-        observer.onError(throwable);
-      } else {
-        // This should never happen! onNext handles and forwards errors automatically.
-        Throwable broken = new AssertionError(
-            "This should never happen! Report as a bug with the full stacktrace.");
-        //noinspection UnnecessaryInitCause Two-arg AssertionError constructor is 1.7+ only.
-        broken.initCause(throwable);
-        RxJavaPlugins.onError(broken);
-      }
-    }
+    ...
   }
 }
 ```
-小结一下，`CallExecuteObservable`就是用来执行网络请求的，`BodyObservable`会将网络请求的结果(`Response<VersionRes>`)转换为客户端需要的结果(`VersionRes`)。
+两个`Observable` 的作用: `CallExecuteObservable` 用来执行网络请求的，`BodyObservable` 会将网络请求的结果 `Response<VerRes>` 转换为客户端需要的结果 `VerRes`。
 
 ### 4.OkHttpCall.execute
-回想一下`CallExecuteObservable`的关键代码，网络请求需要有一个`Request，但是在`Retrofit`中目前没有发现任何设置的地方，所以这部分代码肯定在`OkHttpCall.execute`中：
+
+回看一下 `CallExecuteObservable` 的关键代码，我们知道 OkHttp 的进行网络请求需要有一个`Request`，但是在`Retrofit`中目前没有发现任何设置的地方，所以这部分代码肯定在`OkHttpCall.execute`中：
 
 ```java
 @Override public Response<T> execute() throws IOException {
@@ -578,18 +412,11 @@ final class BodyObservable<T> extends Observable<T> {
   synchronized (this) {
     if (executed) throw new IllegalStateException("Already executed.");
     executed = true;
-
-    if (creationFailure != null) {
-      if (creationFailure instanceof IOException) {
-        throw (IOException) creationFailure;
-      } else {
-        throw (RuntimeException) creationFailure;
-      }
-    }
-
+    ...
     call = rawCall;
     if (call == null) {
       try {
+        // 1. 创建一个 okhttp 的 call
         call = rawCall = createRawCall();
       } catch (IOException | RuntimeException e) {
         creationFailure = e;
@@ -601,24 +428,18 @@ final class BodyObservable<T> extends Observable<T> {
   if (canceled) {
     call.cancel();
   }
-
+  // 2.执行网络请求
   return parseResponse(call.execute());
 }
 ```
-上面抛开一些同步处理、健康检查，其实就两行代码：
-
-```java
-call = rawCall = createRawCall();
-return parseResponse(call.execute())
-```
-先看`createRawCall`方法：
+上面抛开一些同步处理、健康检查，上面的核心代码其实就两行，标志1和标注2。先看`createRawCall`方法：
 
 ```java
 private okhttp3.Call createRawCall() throws IOException {
   // 构造一个Request对象
   Request request = serviceMethod.toRequest(args);
-  // serviceMethod.callFactory是我们传入的OkHttpClient对象
-  // 这行代码就是new一个RealCall对象
+  // serviceMethod.callFactory 是我们传入的 OkHttpClient 对象
+  // 这行代码就是 new 一个 RealCall 对象
   okhttp3.Call call = serviceMethod.callFactory.newCall(request);
   if (call == null) {
     throw new NullPointerException("Call.Factory returned null.");
@@ -626,7 +447,7 @@ private okhttp3.Call createRawCall() throws IOException {
   return call;
 }
 ```
-我们看看s`erviceMethod.toRequest(args)`如何拼凑出一个`Request`对象：
+我们看看 `serviceMethod.toRequest(args)` 如何拼凑出一个 `Request`对象：
 
 ```java
 /** Builds an HTTP request from method arguments. */
@@ -662,12 +483,12 @@ Request toRequest(@Nullable Object... args) throws IOException {
 上面调用了`ParameterHandler.Query.apply`方法：
 
 ```java
-// 此处value就是实例中versionCode的值，假设是10000
+// 此处 value 就是实例中 ver_code的值，假设是370
 @Override void apply(RequestBuilder builder, @Nullable T value) throws IOException {
   if (value == null) return; // Skip null values.
 
   // valueConverter是BuiltInConverters.ToStringConverter
-  // 所以queryValue的值也是10000
+  // 所以 queryValue 的值也是 370
   String queryValue = valueConverter.convert(value);
   if (queryValue == null) return; // Skip converted but null values
 
@@ -679,10 +500,9 @@ Request toRequest(@Nullable Object... args) throws IOException {
 
 ```java
 void addQueryParam(String name, @Nullable String value, boolean encoded) {
-  // relativeUrl为rest/app/update
+  // relativeUrl 为 rest/app/update
   if (relativeUrl != null) {
     // Do a one-time combination of the built relative URL and the base URL.
-    // 接口URL的拼接，urlBuilder可以简单理解为baseUrl+relativeUrl
     urlBuilder = baseUrl.newBuilder(relativeUrl);
     if (urlBuilder == null) {
       throw new IllegalArgumentException(
@@ -697,7 +517,6 @@ void addQueryParam(String name, @Nullable String value, boolean encoded) {
   } else {
     // 不加密，走这里
     // 里面会将参数value以及参数name进行UTF-8编码，涉及到的特殊字符会进行转义
-    // urlBuilder是OkHttp3库中的，这里不做深入了解了
     //noinspection ConstantConditions Checked to be non-null by above 'if' block.
     urlBuilder.addQueryParameter(name, value);
   }
