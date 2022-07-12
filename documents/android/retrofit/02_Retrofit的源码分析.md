@@ -10,15 +10,13 @@
 ### 1.1 Api接口的定义
 
 ```kotlin
+// 1、定义一个进行网络请求的接口
 interface ApiService {
     @GET("rest/app/update")
     fun checkUpdate(@Query("ver_code") code: String): Observable<VerRes>
 }
-```
 
-### 1.2 利用Retrofit生成ApiService接口的实现
-
-```kotlin
+// 2、利用Retrofit生成ApiService接口的实现
 val retrofit = Retrofit.Builder()
     .client(okHttpClient)
     .baseUrl(apiUrl)
@@ -26,8 +24,9 @@ val retrofit = Retrofit.Builder()
     .addConverterFactory(GsonConverterFactory.create())
     .build()
     
-//使用 retrofit.create(Class<T>) 创建一个 ApiService.class 对象。然后调用 ApiService.checkUpdate(version_code) 方法。
+//3、使用 retrofit.create(Class<T>) 创建一个 ApiService.class 对象。然后调用 ApiService.checkUpdate(version_code) 方法。
 retrofit.create(ApiService::class.java).checkUpdate(version_code)
+
 ```
 
 从入口开始，先看下 `Retrofit.create(Class<T>)` 的源码
