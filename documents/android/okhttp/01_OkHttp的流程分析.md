@@ -7,7 +7,8 @@ OkHttp是一个默认有效的HTTP客户端：
 - transparent GZIP 压缩了下载大小。
 - Response缓存可以完全避免网络的重复请求。
 
-当网络故障时，OkHttp会自动重试：它将从常见的连接问题中静默地恢复。如果您的服务有多个IP地址，如果第一次连接失败，OkHttp将尝试备用地址；这对于IPv4 + IPv6以及在冗余数据中心中托管的服务是必需的。
+当网络故障时，OkHttp会自动重试：它将从常见的连接问题中静默地恢复。如果您的服务有多个IP地址，如果第一次连接失败，OkHttp将尝试备用地址；
+这对于IPv4 + IPv6以及在冗余数据中心中托管的服务是必需的。
 
 OkHttp还支持现代TLS功能（TLS 1.3，ALPN，certificate pinning）。It can be configured to fall back for broad connectivity.
 
@@ -358,6 +359,9 @@ override fun run() {
 不管是同步请求还是异步请求，最终都会通过 `RealCall.getResponseWithInterceptorChain()` 来获取 `Response`，下面让我们来看下该方法的源码实现。
 
 ## 6、RealCall.getResponseWithInterceptorChain() 方法
+
+`getResponseWithInterceptorChain()` ⽅法把所有配置好的 `Interceptor` 放在⼀个 `List` ⾥，然后作为参数，创建⼀个 `RealInterceptorChain` 对象，并调用 `chain.proceed(request)` 来发起请求和获取响应。
+
 ```kotlin
   @Throws(IOException::class)
   internal fun getResponseWithInterceptorChain(): Response {
@@ -365,13 +369,13 @@ override fun run() {
     val interceptors = mutableListOf<Interceptor>()
     interceptors += client.interceptors // 用户自定义的 interceptor
     interceptors += RetryAndFollowUpInterceptor(client) // 重试和重定向的 interceptor
-    interceptors += BridgeInterceptor(client.cookieJar) // 重试和重定向的 interceptor
+    interceptors += BridgeInterceptor(client.cookieJar) 
     interceptors += CacheInterceptor(client.cache) 
-    interceptors += ConnectInterceptor // 重试和重定向的 interceptor
+    interceptors += ConnectInterceptor 
     if (!forWebSocket) {
       interceptors += client.networkInterceptors
     }
-    interceptors += CallServerInterceptor(forWebSocket) // 重试和重定向的 interceptor
+    interceptors += CallServerInterceptor(forWebSocket) 
 
     // 创建⼀个 RealInterceptorChain 对象
     val chain = RealInterceptorChain(
@@ -404,9 +408,6 @@ override fun run() {
     }
   }
 ```
-
-`getResponseWithInterceptorChain()` ⽅法把所有配置好的 `Interceptor` 放在⼀个 `List` ⾥，然后作为参数，创建⼀个 `RealInterceptorChain` 对象，并调用 `chain.proceed(request)` 来发起请求和获取响应。
-
 再看下`RealInterceptorChain.proceed(Request)`方法
 
 ## 7、RealInterceptorChain.roceed(Request) 代码实现
