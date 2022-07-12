@@ -56,10 +56,10 @@ val response = call.execute()
 
 使用步骤总结：
 
-- 1.使用 OkHttpClient.Builder 新建一个 OkHttpClient 对象，可以在 OkHttpClient.Builder 设置一些参数
-- 2.使用 Request.Builder 新建一个 Request 对象
-- 3.使用 OkHttpClient.newCall(Request) 生成一个 Call 对象
-- 4.调用 Call.enqueue(Callback) 或者 Call.execute() 实现网络请求。
+- 1.使用 `OkHttpClient.Builder` 新建一个 `OkHttpClient` 对象，可以在 `OkHttpClient.Builder` 中设置一些参数
+- 2.使用 `Request.Builder` 新建一个 `Request` 对象
+- 3.使用 `OkHttpClient.newCall(Request)` 生成一个 `Call(RealCall)` 对象
+- 4.调用 `Call.enqueue(Callback)` 或者 `Call.execute()` 实现网络请求。
 
 ## 2.OkHttpClient 的建造者参数
 
