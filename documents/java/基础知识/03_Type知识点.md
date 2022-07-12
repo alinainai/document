@@ -139,12 +139,12 @@ public interface ParameterizedType extends Type
 Returns an array of Type objects representing the actual type arguments to this type.
 Note that in some cases, the returned array be empty. This can occur if this type represents a non-parameterized type nested within a parameterized type.
 
-简单来说就是获得<>里的类型参数的类型，可能有多个类型参数，例如 Map<K, V>，也可能没有类型参数
+简单来说就是获得<>里的类型参数的类型，可能有多个类型参数，例如 `Map<K, V>`，也可能没有类型参数
 
 - `Type getOwnerType()`
 
 Returns a Type object representing the type that this type is a member of.
-For example, if this type is O<T>.I<S>, return a representation of O<T>.
+For example, if this type is `O<T>.I<S>`, return a representation of `O<T>`.
 If this type is a top-level type, null is returned.
 
 - `Type getRawType()`
