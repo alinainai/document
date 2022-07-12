@@ -52,7 +52,7 @@ class Class<T> implements Serializable, GenericDeclaration, Type, AnnotatedEleme
 
 `type variables`：类型变量类型，对应 `TypeVariable<D>`
 
-- 即参数化类型 `ParameterizedType` 中的 `E、Kv 等类型变量，表示泛指任何类
+- 即参数化类型 `ParameterizedType` 中的 `E、K` 等类型变量，表示泛指任何类
 - 实现类 `sun.reflect.generics.reflectiveObjects.TypeVariableImpl`
 
 ### 2.5 泛型数组类型
