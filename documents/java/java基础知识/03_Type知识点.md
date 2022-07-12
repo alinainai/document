@@ -147,7 +147,7 @@ Returns a Type object representing the type that this type is a member of.
 For example, if this type is O<T>.I<S>, return a representation of O<T>.
 If this type is a top-level type, null is returned.
 
-- `Type getRawType()v
+- `Type getRawType()`
 
 Returns the Type object representing the class or interface that declared this type
 返回声明此 `Type` 的类或接口，简单来说就是返回`<>`前面那个类型，例如`Map<K ,V>`返回的是`Map`
