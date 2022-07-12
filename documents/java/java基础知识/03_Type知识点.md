@@ -1,10 +1,10 @@
 ## 1、Type 类型
 
-Type 是 Java 语言中所有类型的公共父接口，其从 JDK5 开始引入，引入的目的主要是为了支持泛型。
+`Type` 是 `Java` 语言中所有类型的公共父接口，其从 `JDK5` 开始引入，引入的目的主要是为了支持泛型。
 
-没有泛型的之前，Java 只有所谓的原始类型(raw types)。此时，所有的原始类型都通过字节码类 Class 进行抽象。Class 类的一个具体对象(例如 String.class)就代表一个指定的原始类型。
+没有泛型的之前，`Java` 只有所谓的原始类型(`raw types`)。此时，所有的原始类型都通过字节码类 `Class` 进行抽象。`Class` 类的一个具体对象(例如 `String.class`)就代表一个指定的原始类型。
 
-泛型的出现扩充了数据类型的概念，从只有原始类型(raw types)扩充了参数化类型、类型变量类型、泛型数组类型和通配符类型。他们都是 Type 的子接口。
+泛型的出现扩充了数据类型的概念，从只有原始类型(`raw types`)扩充了`参数化类型、类型变量类型、泛型数组类型和通配符类型`。他们都是 `Type` 的子接口。
 
 ```java
 // Type is the common superinterface for all types in the Java programming language.
@@ -17,55 +17,56 @@ public interface Type {
     }
 }
 ```
-Class 也是 Type 的一个实现类
+`Class` 也是 `Type` 的一个实现类
 ```java
 class Class<T> implements Serializable, GenericDeclaration, Type, AnnotatedElement
 ```
 
-- 所有已知子接口：GenericArrayType, ParameterizedType, TypeVariable<D>, WildcardType
-- 所有已知实现类：Class
+- 所有已知子接口：`GenericArrayType, ParameterizedType, TypeVariable<D>, WildcardType`
+- 所有已知实现类：`Class`
   
 ## 2、Java 中的所有类型
   
 ### 2.1 原始类型   
 
-raw type：原始类型，对应 Class
+`raw type`：原始类型，对应 `Class`
 
-即我们通常说的引用类型，包括普通的类，例如 String.class、List.class
-也包括数组(Array.class)、接口(Cloneable.class)、注解(Annotation.class)、枚举(Enum.class)等
+- 即我们通常说的引用类型，包括普通的类，例如 `String.class、List.class`
+- 也包括`数组(Array.class)`、`接口(Cloneable.class)`、`注解(Annotation.class)`、`枚举(Enum.class)`等
  
 ### 2.2 基本类型 
 
-primitive types：基本类型，对应 Class
+`primitive types`：基本类型，对应 `Class`
   
-- 包括 Built-in 内置类型，例如 int.class、char.class、void.class
-- 也包括 Wrappers 内置类型包装类型，例如 Integer.class、Boolean.class、Void.class
+- 包括 `Built-in` 内置类型，例如 `int.class、char.class、void.class`
+- 也包括 `Wrappers` 内置类型包装类型，例如 `Integer.class、Boolean.class、Void.class`
 
 ### 2.3 参数化类型 
   
-parameterized types：参数化类型，对应 ParameterizedType
+`parameterized types`：参数化类型，对应 `ParameterizedType`
   
-带有类型参数的类型，即常说的泛型，例如 List<T>、Map<Integer, String>、List<? extends Number>
-实现类 sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
+- 带有类型参数的类型，即常说的泛型，例如 `List<T>、Map<Integer, String>、List<? extends Number>`
+- 实现类 `sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl`
 
 ### 2.4 类型变量类型
 
-type variables：类型变量类型，对应 TypeVariable<D>
+`type variables`：类型变量类型，对应 `TypeVariable<D>`
 
-即参数化类型 ParameterizedType 中的 E、K 等类型变量，表示泛指任何类
-实现类 sun.reflect.generics.reflectiveObjects.TypeVariableImpl
+- 即参数化类型 `ParameterizedType` 中的 `E、Kv 等类型变量，表示泛指任何类
+- 实现类 `sun.reflect.generics.reflectiveObjects.TypeVariableImpl`
 
 ### 2.5 泛型数组类型
 
-array types：泛型数组类型，对应 GenericArrayType
+`array types`：泛型数组类型，对应 `GenericArrayType`
 
-元素类型是参数化类型或者类型变量的泛型数组类型，例如 T[]
-实现类 sun.reflect.generics.reflectiveObjects.GenericArrayTypeImpl
+- 元素类型是`参数化类型`或者`类型变量的泛型数组类型`，例如 `T[]`
+- 实现类 `sun.reflect.generics.reflectiveObjects.GenericArrayTypeImpl`
 
->Type 接口的另一个子接口 WildcardType 代表通配符表达式类型，或泛型表达式类型，比如?、? super T、? extends T，他并不是 Java 类型中的一种。
+>`Type` 接口的另一个子接口 `WildcardType` 代表通配符表达式类型，或泛型表达式类型，比如`?`、`? super T`、`? extends Tv，他并不是 `Java` 类型中的一种。
 
 ## 3、综合测试代码
-highlighter- code-theme-dark JavaScript
+
+```java
 public class Test {
     public static void main(String[] args) throws NoSuchMethodException {
         new Test().showType();
@@ -84,7 +85,7 @@ public class Test {
                     System.out.println(i + getTypeInfo(types[i]));
                 }
             } else {
-                System.out.println("  " + getTypeInfo(type));
+                System.out.println(" " + getTypeInfo(type));
             }
         }
     }
@@ -97,51 +98,63 @@ public class Test {
         for (Class<?> clazzType : interfaces) {
             typeInterface.append(clazzType.getSimpleName()).append(",");
         }
-        return "【" + typeName + "】    【" + clazz.getSimpleName() + "】    【" + typeInterface + "】";
+        return "[" + typeName + "]    [" + clazz.getSimpleName() + "]    [" + typeInterface + "]";
     }
     
     public <T> void testType(int i, Boolean b, List<String> a1, List<ArrayList<String>> a2, List<T> a3, //
                              List<? extends Number> a4, List<ArrayList<String>[]> a5, Map<Boolean, Integer> a6) {
     }
 }
+```
+
 运行结果
 
-highlighter- code-theme-dark XML
-  【int】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
-  【java.lang.Boolean】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
-0【java.lang.String】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
-0【java.util.ArrayList<java.lang.String>】    【ParameterizedTypeImpl】    【ParameterizedType,】
-0【T】    【TypeVariableImpl】    【TypeVariable,】
-0【? extends java.lang.Number】    【WildcardTypeImpl】    【WildcardType,】
-0【java.util.ArrayList<java.lang.String>[]】    【GenericArrayTypeImpl】    【GenericArrayType,】
-0【java.lang.Boolean】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
-1【java.lang.Integer】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
-Type 的子接口
-ParameterizedType 参数化类型
-ParameterizedType 表示参数化类型，带有类型参数的类型，即常说的泛型，如：List<T>、Map<Integer, String>、List<? extends Number>。
+```shell
+  [int]    [Class]    [Serializable,GenericDeclaration,Type,AnnotatedElement,OfField,Constable,]
+  [java.lang.Boolean]    [Class]    [Serializable,GenericDeclaration,Type,AnnotatedElement,OfField,Constable,]
+0 [java.lang.String]    [Class]    [Serializable,GenericDeclaration,Type,AnnotatedElement,OfField,Constable,]
+0 [java.util.ArrayList]    [ParameterizedTypeImpl]    [ParameterizedType,]
+0 [T]    [TypeVariableImpl]    [TypeVariable,]
+0 [? extends java.lang.Number]    [WildcardTypeImpl]    [WildcardType,]
+0 [java.util.ArrayList[]]    [GenericArrayTypeImpl]    [GenericArrayType,]
+0 [java.lang.Boolean]    [Class]    [Serializable,GenericDeclaration,Type,AnnotatedElement,OfField,Constable,]
+1 [java.lang.Integer]    [Class]    [Serializable,GenericDeclaration,Type,AnnotatedElement,OfField,Constable,]
 
-highlighter- code-theme-dark Java
-// ParameterizedType represents a parameterized type 参数化类型 such as Collection<String>.
+```
+
+## 4、Type 的子接口
+
+### 4.1 `ParameterizedType` 参数化类型
+
+`ParameterizedType` 表示参数化类型，带有类型参数的类型，即常说的泛型，如：`List<T>、Map<Integer, String>、List<? extends Number>`。
+
+```java
+// ParameterizedType represents a parameterized type such as Collection<String>.
 public interface ParameterizedType extends Type
+```
 方法
 
-Type[] getActualTypeArguments()
+- `Type[] getActualTypeArguments()`
+
 Returns an array of Type objects representing the actual type arguments to this type.
 Note that in some cases, the returned array be empty. This can occur if this type represents a non-parameterized type nested within a parameterized type.
-简单来说就是获得<>里的类型参数的类型，可能有多个类型参数，例如Map<K, V>，也可能没有类型参数
 
-Type getOwnerType()
+简单来说就是获得<>里的类型参数的类型，可能有多个类型参数，例如 Map<K, V>，也可能没有类型参数
+
+- `Type getOwnerType()`
+
 Returns a Type object representing the type that this type is a member of.
 For example, if this type is O<T>.I<S>, return a representation of O<T>.
 If this type is a top-level type, null is returned.
 
-Type getRawType()
+- `Type getRawType()v
+
 Returns the Type object representing the class or interface that declared this type
-返回声明此 Type 的类或接口，简单来说就是返回<>前面那个类型，例如Map<K ,V>返回的是Map
+返回声明此 `Type` 的类或接口，简单来说就是返回`<>`前面那个类型，例如`Map<K ,V>`返回的是`Map`
 
 测试代码
 
-highlighter- code-theme-dark Java
+```java
 private void testParameterizedType() throws NoSuchMethodException {
     Method method = Test.class.getMethod("testType", Map.Entry.class);
     ParameterizedType parameterizedType = (ParameterizedType) method.getGenericParameterTypes()[0];
@@ -157,34 +170,38 @@ private void testParameterizedType() throws NoSuchMethodException {
 
 public <T> void testType(Map.Entry<String, T> mapEntry) {
 }
-highlighter- code-theme-dark Bash
+```
+```shell
 getOwnerType  【java.util.Map】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
 getRawType  【java.util.Map$Entry】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
 【java.lang.String】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
 【T】    【TypeVariableImpl】    【TypeVariable,】
-TypeVariable 类型变量类型
-TypeVariable 表示类型变量类型，如参数化类型中的 E、K 等类型变量，表示泛指任何类。
+```
+### 4.2 TypeVariable 类型变量类型
 
-highlighter- code-theme-dark JavaScript
+`TypeVariable` 表示类型变量类型，如参数化类型中的 `E、K` 等类型变量，表示泛指任何类。
+
+```java
 // TypeVariable is the common superinterface for type variables of kinds 各种类型变量
 public interface TypeVariable<D extends GenericDeclaration> extends Type
 
 // Type Parameters D: the type of generic declaration 泛型声明的类型 that declared the underlying type variable 基础类型变量.
+```
 方法
 
-Type[] getBounds()
+- `Type[] getBounds()`
 Returns an array of Type objects representing the upper bound(s) of this type variable.
 Note that if no upper bound is explicitly declared, the upper bound is Object.
 
-D getGenericDeclaration() 。
+- `D getGenericDeclaration()` 。
 Returns the GenericDeclaration object representing the generic declaration declared this type variable 声明此类型变量的泛型声明
 
-String getName()
+- `String getName()`
 Returns the name of this type variable, as it occurs in the source code.
 
 测试代码
 
-highlighter- code-theme-dark Java
+```java
 private void testTypeVariable() throws NoSuchMethodException {
     Method method = Test.class.getMethod("testType");
     TypeVariable<?>[] typeVariables = method.getTypeParameters(); //返回泛型声明的 TypeVariable 数组
@@ -204,25 +221,30 @@ private void testTypeVariable() throws NoSuchMethodException {
 
 public <T extends List<String>, U extends Integer, Int> void testType() {
 }
-highlighter- code-theme-dark XML
+```
+```shell
 【T】    【TypeVariableImpl】    【TypeVariable,】
     【java.util.List<java.lang.String>】    【ParameterizedTypeImpl】    【ParameterizedType,】
 【U】    【TypeVariableImpl】    【TypeVariable,】
     【java.lang.Integer】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
 【Int】    【TypeVariableImpl】    【TypeVariable,】
     【java.lang.Object】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
-GenericArrayType 泛型数组类型
-GenericArrayType 表示泛型数组类型，比如 T[]。注意，这不是我们说的一般数组，而是表示一种【元素类型是参数化类型或者类型变量】的数组类型。
+ ```  
+ 
+### 4.3 GenericArrayType 泛型数组类型
+ 
+`GenericArrayType` 表示泛型数组类型，比如 `T[]`。注意，这不是我们说的一般数组，而是表示一种【元素类型是参数化类型或者类型变量】的数组类型。
 
-highlighter- code-theme-dark Java
+```java
 // GenericArrayType represents an array type 数组类型 whose component type 组件(元素)类型 is either a parameterized type 参数化类型 or a type variable 类型变量.
 public interface GenericArrayType extends Type{
     // Returns a Type object representing the **component type** of this array
     Type  getGenericComponentType(); // 获取泛型数组中元素的类型
 }
+```
 测试代码
 
-highlighter- code-theme-dark Java
+```java
 private void testGenericArrayType() throws NoSuchMethodException {
     Method method = Test.class.getMethod("testType", Object[].class, String[].class, List.class);
     Type[] types = method.getGenericParameterTypes(); //按照方法参数声明顺序返回参数的 Type 数组
@@ -238,28 +260,35 @@ private void testGenericArrayType() throws NoSuchMethodException {
 // 只有第一个参数是【泛型数组】类型
 public <T> void testType(T[] a1, String[] a2, List<T> a3) {
 }
-highlighter- code-theme-dark XML
+```
+    
+```shell
 【T[]】    【GenericArrayTypeImpl】    【GenericArrayType,】
     【T】    【TypeVariableImpl】    【TypeVariable,】
 【java.lang.String[]】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
 【java.util.List<T>】    【ParameterizedTypeImpl】    【ParameterizedType,】
-WildcardType 通配符类型
-WildcardType 代表通配符类型，或泛型表达式类型，比如?、? super T、? extends T，他并不是 Java 类型中的一种。
+```
+    
+### 4.4 WildcardType 通配符类型
+    
+`WildcardType` 代表通配符类型，或泛型表达式类型，比如`?`、`? super T`、`? extends T`，他并不是 `Java` 类型中的一种。
 
-highlighter- code-theme-dark Java
+```java
 // WildcardType represents a wildcard type expression 通配符类型表达式, such as ?, ? extends Number, or ? super Integer.
 public interface WildcardType extends Type
+```
 方法
 
-Type[] getUpperBounds()
+- `Type[] getUpperBounds()`
+    
 Returns an array of Type objects representing the upper bound(s) of this type variable.
 Note that if no upper bound is explicitly declared 明确声明, the upper bound is Object.
 
-Type[] getLowerBounds()
+- `Type[] getLowerBounds()`
 Returns an array of Type objects representing the lower bound(s) of this type variable.
 Note that if no lower bound is explicitly declared, the lower bound is the type of null. In this case, a zero length array is returned.
 
-highlighter- code-theme-dark kotlin
+```java
 private void testWildcardType() throws NoSuchMethodException {
     Method method = Test.class.getMethod("testType", List.class, List.class, List.class, List.class);
     Type[] types = method.getGenericParameterTypes(); //按照方法参数声明顺序返回参数的 Type 数组
@@ -283,7 +312,9 @@ private void testWildcardType() throws NoSuchMethodException {
 
 public <T> void testType(List<T> a1, List<?> a2, List<? extends T> a3, List<? super Integer> a4) {
 }
-highlighter- code-theme-dark JavaScript
+```
+
+```java
 非通配符类型【T】    【TypeVariableImpl】    【TypeVariable,】
 是通配符类型【?】    【WildcardTypeImpl】    【WildcardType,】
   upperType【java.lang.Object】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
@@ -292,3 +323,4 @@ highlighter- code-theme-dark JavaScript
 是通配符类型【? super java.lang.Integer】    【WildcardTypeImpl】    【WildcardType,】
   upperType【java.lang.Object】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
   lowerType【java.lang.Integer】    【Class】    【Serializable,GenericDeclaration,Type,AnnotatedElement,】
+```
