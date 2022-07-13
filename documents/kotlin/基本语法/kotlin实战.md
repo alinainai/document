@@ -23,9 +23,7 @@ Java 的写法
 
 ```java
 enum Sex {
-
     MAN(1), WOMAN(2);
-
     Sex(int type) {}
 }
 ```
@@ -37,7 +35,9 @@ enum class Sex (var type: Int) {
     MAN(1), WOMAN(2)
 }
 ```
-### 4. 当子类需要实现双接口默认方法时，需要在类中重写方法否则编译不过
+### 4. 双接口问题
+
+当子类需要实现双接口默认方法时，需要在类中重写方法否则编译不过
 
 ```kotlin
 interface Focus {
@@ -54,9 +54,9 @@ class Button: Click, Focus {
     }
 }
 ```
-### 5. Sealed 类的作用
+### 5. sealed 关键字的作用
 
-先看一段代码不适用 Sealed 类的代码
+处理 `when` 关键字时，如果父类不加 `sealed` 修饰，需要加一个 `else->` 去处理额外分支的代码（虽然事实上没有额外分支，但是编译器并不知道）
 
 ```kotlin
 interface Expr
@@ -72,14 +72,14 @@ fun eval(e:Expr):Int{
     }
 }
 ```
-使用 Sealed 优化
+使用 `sealed` 优化后，可以放心的去掉 `else->` 分支的代码。
+
+`sealed`的特点:
+- 1.在 `when` 表达式中处理所有 `sealed` 类的子类 ，不再需要提供默认分支。
+- 2.`sealed` 默认隐含 `open` 修饰符。
+- 3.在 `when` 中使用 `sealed` 类并且添加一个新的子类的时候，有返回值的 `when` 表达式会导致编译失败，它会告诉你哪里的代码必须要修改。
 
 ```kotlin
-/**
- * 1.在 when 表达式中处理所有 sealed 类的子类 ，不再需要提供默认分支。
- * 2. sealed 默认隐含 open 修饰符。
- * 3.在 when 中使用 sealed 类并且添加一个新的子类的时候，有返回值的 when 表达式会导致编译失败，它会告诉你哪里的代码必须要修改。
- */
 sealed class Expr{
     class Num(val value:Int):Expr()
     class Sum(val left:Num,val right:Num):Expr()
@@ -93,7 +93,8 @@ fun eval(e:Expr):Int{
 ```
 ### 6. 内联函数
 
-内联最适用于参数为函数类型的函数
+内联最适用于`参数为函数类型`的函数
+
 ```kotlin
 class Demo {
     fun test() {
@@ -119,7 +120,7 @@ public final class Demo {
 }
 ```
 
-不加 inline 反编译，会导致多生成一个内部类，这个是 lambda 函数多出来的类
+不加 `inline`关键字，反编译后会导致多生成一个内部类，这个是 `lambda` 函数多出来的类
 
 ```kotlin
 /* compiled from: Demo.kt */
@@ -150,7 +151,7 @@ final class Demo$test$1 extends Lambda implements Function0<Unit> {
 }
 ```
 
-假设一个 inline 函数上面有多个 lambda 参数，某个 lambda 参数不需要内联可以用 noinline 修饰
+假设一个 `inline` 函数上面有多个 `lambda` 参数，某个 `lambda` 参数不需要内联可以用 `noinline` 修饰
 
 ```kotlin
 private inline fun showToast(function1: () -> Unit, noinline function2: () -> Unit, message: String) {
@@ -159,9 +160,10 @@ private inline fun showToast(function1: () -> Unit, noinline function2: () -> Un
     ToastUtils.show(message)
 }
 ```
-crossinline 内联加强
+`crossinline` 内联加强
 
-如果内联函数内部还使用 lambda 表达式，需要在 内联函数的参数加上 crossinline，否则编译不通过。但是传入 foo 的 lambda 表达式不能添加 return 语句。
+如果内联函数内部还使用 `lambda` 表达式，需要在 内联函数的参数加上 `crossinline`，否则编译不通过。但是传入 `foo` 的 `lambda` 表达式不能添加 `return` 语句。
+
 ```kotlin
 inline fun foo(crossinline f: () -> Unit) {
     bar { f() }
