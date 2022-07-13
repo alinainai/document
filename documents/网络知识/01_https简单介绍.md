@@ -1,8 +1,8 @@
-### 现代密码学
+## 1、现代密码学
 - 可以加密任何二进制数据
 - 非对称加密的出现使得密码学有了更⼴泛的⽤途:数字签名
 
-### 对称加密
+## 2、对称加密
 >加密和解密使用同一个密钥，使用加密算法配合上密钥来加密，解密时使⽤加密过程的完全逆过程配合密钥来进行解密。
 
 **常见算法:** 
@@ -21,11 +21,9 @@
 
 **反破解**
 
-⼀一种优秀的对称加密算法的标准是，让破解者找不不到⽐比穷举法(暴暴⼒力力破解法)更更有 效的破解⼿手段，并且穷举法的破解时间⾜足够⻓长(例例如数千年年)。
+⼀种优秀的对称加密算法的标准是，让破解者找不不到⽐比穷举法(暴暴⼒力力破解法)更更有 效的破解⼿手段，并且穷举法的破解时间⾜足够⻓长(例例如数千年年)。
 
- 
-
-### 非对称加密
+## 3、非对称加密
 
 >使⽤公钥对数据进⾏加密得到密文;使⽤私钥对数据进行解密得到原数据
 
@@ -41,23 +39,24 @@ RSA(可⽤于加密和签名)、DSA(仅⽤于签名，但速度更快)
 - 缺点：计算量比较大，加密和解密速度相比对称加密慢很多
 
 
-### 签名与验证（一张图）
+## 4、签名与验证
+
 签名和验证可以看做是非对称加密的逆运算。
 
-![image](https://user-images.githubusercontent.com/17560388/118090283-f5fb9180-b3fb-11eb-8ef9-8f5e4f1bf193.png)
+<img width="600" alt="签名和验证" src="https://user-images.githubusercontent.com/17560388/118090283-f5fb9180-b3fb-11eb-8ef9-8f5e4f1bf193.png">
 
-### Https简单说明
+## 5、Https简单说明
 
-HTTP over TLS, or HTTP over SSL
-TLS:Transport Layer Security
-SSL:Secure Sockets Layer
+什么是 `Https` 可以简单的理解为给`Http`加个安全壳，这个壳就是 SSL(Secure Sockets Layer)/TLS(Transport Layer Security)
+
+本质是在 Http(应用层协议) 和 TCP(传输层) 协议中间加一层 SSL/TLS
 
 **HTTPS 和 HTTP 的区别**
 
->HTTP  明文传输，安全性较差。页面响应速度比 HTTPS 快，80端口。
->HTTPS 加密的，安全性较好。需要申请 CA ，443端口。
+- HTTP  明文传输，安全性较差。页面响应速度比 HTTPS 快，80端口。
+- HTTPS 加密的，安全性较好。需要申请 CA ，443端口。
 
-### SSL / TLS 握手过程图
+## 6、Https的握手过程图
 
 ![image](https://user-images.githubusercontent.com/17560388/118090564-4c68d000-b3fc-11eb-857c-597809441305.png)
 
@@ -65,7 +64,9 @@ SSL:Secure Sockets Layer
 客户端通过发送"client hello"消息向服务器发起握手请求，该消息包含了客户端所支持的 TLS 版本和密码组合以供服务器进行选择，还有一个"client random"随机字符串。
 
 ### 2."server hello"消息
-服务器发送"server hello"消息对客户端进行回应，该消息包含了数字证书，服务器选择的密码组合和"server random"随机字符串。
+服务器发送"server hello"消息对客户端进行回应，该消息包含了:
+- 服务器选择的密码组合和`server random"随机字符串
+- 数字证书
 
 ### 3.验证
 客户端对服务器发来的证书进行验证，确保对方的合法身份，验证过程可以细化为以下几个步骤：
@@ -75,17 +76,17 @@ SSL:Secure Sockets Layer
 - 检查证书的有效期
 - 检查证书的撤回状态 (撤回代表证书已失效)
 
-#### 4."premaster secret"字符串
+### 4.客户端发送 premaster secret
 客户端向服务器发送另一个随机字符串"premaster secret (预主密钥)"，这个字符串是经过服务器的公钥加密过的，只有对应的私钥才能解密。
-#### 5.使用私钥
+### 5.服务端使用私钥解密 premaster secret
 服务器使用私钥解密"premaster secret"。
-#### 6.生成共享密钥
-客户端和服务器均使用 client random，server random 和 premaster secret，并通过相同的算法生成相同的共享密钥 KEY。
-#### 7.客户端就绪
-客户端发送经过共享密钥 KEY加密过的"finished"信号。
-#### 8.服务器就绪
-服务器发送经过共享密钥 KEY加密过的"finished"信号。
-#### 9.达成安全通信
+### 6.生成共享密
+客户端和服务器均使用 `client random`，`server random` 和 `premaster secret`，并通过相同的算法生成相同的`共享密钥 KEY`。
+### 7.客户端就绪
+客户端发送经过 `共享密钥 KEY`加密过的 `finished` 信号。
+### 8.服务器就绪
+服务器发送经过`共享密钥 KEY`加密过的 `finished` 信号。
+### 9.达成安全通信
 握手完成，双方使用对称加密进行安全通信。
 
 
