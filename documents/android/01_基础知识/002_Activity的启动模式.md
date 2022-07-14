@@ -1,16 +1,16 @@
-## 1. 在 Manifest 设置 Activity 的启动模式
+## 1. 在 Manifest 设置启动模式
 
 ### 1.1 standard 默认的启动模式
 
-默认启动模式，每次激活 Activity 时都会创建 Activity 实例，并放入任务栈中。Activity A 启动了 Activity B (standard), 则 B 运行在 A 所在的栈中（即发送 intent 的 task 栈的顶部）。
+默认启动模式，每次激活 `Activity` 时都会创建 `Activity` 实例，并放入任务栈中。`Activity A` 启动了 `Activity B (standard)`, 则 B 运行在 A 所在的栈中（即发送 intent 的 task 栈的顶部）。
 
-注意：用 ApplicationContext 去启动 standard 模式的 Activity 时，要设置 FLAG_ACTIVITY_NEW_TASK flag。
+>注意：用 ApplicationContext 去启动 standard 模式的 Activity 时，要设置 FLAG_ACTIVITY_NEW_TASK flag。
 
 适用场景：一般大多数 Activity
 
 ### 1.2 singleTop 栈顶复用
 
-如果在当前任务的栈顶正好存在该 Activity 的实例，就重用该实例，会调用实例的 onNewIntent()。
+如果在当前任务的栈顶正好存在该 `Activity 的实例`，就重用该实例，会调用实例的 onNewIntent()。
 
 适用场景：阅读页面，视频播放页面。
 
@@ -40,17 +40,20 @@ singleInstance 不要用于中间页面，如果用于中间页面，跳转会�
 
 应用场景：来电界面、Launcher 页面
 
-## 2. 设置flag 
+## 2. 通过 flag 配置启动模式 
 
-通过 flag 方式设置启动模式优先级要高于 Manifest 中配置。
+1.通过 flag 方式设置启动模式优先级要高于 Manifest 中配置。
 
-无法通过设置 flag 设置 singleInstance 模式。
+2.无法通过设置 flag 设置 singleInstance 模式。
 
-FLAG_ACTIVITY_NEW_TASK : 如果 taskAffinity 一样则与标准模式一样新启动一个 Activity；如果不一样则新建一个 task 放该 Activity。
+3.FLAG_ACTIVITY_NEW_TASK : 
 
-FLAG_ACTIVITY_SINGLE_TOP : 与 SingleTop 效果一致。
+- 如果 taskAffinity 一样则与标准模式一样新启动一个 Activity；
+- 如果不一样则新建一个 task 放该 Activity。
 
-FLAG_ACTIVITY_CLEAR_TOP : 销毁目标 Activity 和它之上的所有 Activity，重新创建目标 Activity，配合 FLAG_ACTIVITY_SINGLE_TOP 使用时可以实现 SingleTask 的效果。
+4.FLAG_ACTIVITY_SINGLE_TOP : 与 SingleTop 效果一致。
+
+5.FLAG_ACTIVITY_CLEAR_TOP : 销毁目标 Activity 和它之上的所有 Activity，重新创建目标 Activity，配合 FLAG_ACTIVITY_SINGLE_TOP 使用时可以实现 SingleTask 的效果。
 
 ## 3. 设置 taskAffinity
 
