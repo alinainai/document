@@ -1,6 +1,6 @@
 
 
-- 1. 对于Serializable，类只需要实现 `Serializable` 接口，并提供一个序列化版本 `id(serialVersionUID)` 即可。
+- 1.对于Serializable，类只需要实现 `Serializable` 接口，并提供一个序列化版本 `id(serialVersionUID)` 即可。
 
 - 2.而Parcelable则需要实现 `writeToParcel`、`describeContents` 函数以及静态的 `CREATOR` 变量**，实际上就是将如何打包和解包的工作自己来定义，而序列化的这些操作完全由底层实现。
 
