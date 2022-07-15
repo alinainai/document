@@ -36,11 +36,8 @@ void.class = Void.TYPE;
 
 ```java
 class Initable {
-  
   static final int staticFinal = 47; //编译期静态常量
- 
   static final int staticFinal2 = ClassInitialization.rand.nextInt(1000); //非编期静态常量
-    
   static {
     System.out.println("Initializing Initable");
   }
@@ -48,7 +45,6 @@ class Initable {
 
 class Initable2 {
   static int staticNonFinal = 147; //静态成员变量
-  
   static {
     System.out.println("Initializing Initable2");
   }
@@ -56,31 +52,22 @@ class Initable2 {
 
 class Initable3 {
   static int staticNonFinal = 74;//静态成员变量
-  
   static {
     System.out.println("Initializing Initable3");
   }
 }
 
-public static void main(String[] args) throws Exception {
+Class initable = Initable.class;
+System.out.println(Initable.staticFinal); //不触发类初始化
+System.out.println(Initable.staticFinal2); //会触发类初始化
 
-  Class initable = Initable.class;
-  System.out.println("After creating Initable ref");
-  
-  System.out.println(Initable.staticFinal); //不触发类初始化
-  
-  System.out.println(Initable.staticFinal2); //会触发类初始化
-  
-  System.out.println(Initable2.staticNonFinal); //会触发类初始化
-  
-  Class initable3 = Class.forName("Initable3"); //forName方法获取Class对象
-  System.out.println("After creating Initable3 ref");
-  System.out.println(Initable3.staticNonFinal); //会触发类初始化
-}
+System.out.println(Initable2.staticNonFinal); //会触发类初始化
+
+Class initable3 = Class.forName("Initable3"); //forName方法获取Class对象
+System.out.println(Initable3.staticNonFinal); //会触发类初始化
 ```
 执行结果：
 ```shell
-After creating Initable ref
 47
 Initializing Initable
 258
@@ -89,7 +76,6 @@ Initializing Initable2
 147
 
 Initializing Initable3
-After creating Initable3 ref
 74
 ```
 从输出结果来看，可以发现
@@ -102,13 +88,11 @@ After creating Initable3 ref
 
 >反射机制是在运行状态中，对于任意一个类，都能够知道这个类的所有属性和方法；
 
-Class 类与 java.lang.reflect 类库一起对反射技术进行了全力的支持。
+`Class` 类与 `java.lang.reflect` 类库一起对反射技术进行了全力的支持。
 
-在反射包中，我们常用的类主要有
-
-- `Constructor` 类表示的是 `Class` 对象所表示的类的构造方法，利用它可以在运行时动态创建对象;
-- `Field` 表示 `Class` 对象所表示的类的成员变量，通过它可以在运行时动态修改成员变量的属性值(包含private);
-- `Method` 表示 `Class` 对象所表示的类的成员方法，通过它可以动态调用对象的方法(包含private).
+- `Constructor` 类: `Class` 对象所表示的类的构造方法，利用它可以在运行时动态创建对象;
+- `Field` 类: `Class` 对象所表示的类的成员变量，通过它可以在运行时动态修改成员变量的属性值(包含private);
+- `Method`类: `Class` 对象所表示的类的成员方法，通过它可以动态调用对象的方法(包含private).
 
 ### 3.1 Constructor类及其用法
 
@@ -128,7 +112,7 @@ Constructor 位于 java.lang.reflect 中，反映的是 Class 对象所表示的
 ```java
 Class<?> clazz = null;
 clazz = Class.forName("reflect.User");
-User user = (User) clazz.newInstance(); //第一种方法，实例化默认构造方法，User类必须有无参构造函数,否则将抛异常
+User user = (User) clazz.newInstance(); //默认构造方法，User类必须有无参构造函数,否则将抛异常
 user.setAge(20);
 user.setName("Rollen");// User [age=20, name=Rollen]
 
@@ -184,11 +168,11 @@ cs3.getName() // reflect.User
 cs3.toGenericString() //private reflect.User(int,java.lang.String)
 ```
 
-#### 4.2 Field类及其用法
+### 3.2 Field类及其用法
 
-Field 提供有关类或接口的单个字段的信息，以及对它的动态访问权限。
+`Field` 提供有关类或接口的单个字段的信息，以及对它的动态访问权限。
 
-Class 类与 Field 对象相关方法如下：
+`Class` 类的 `Field` 相关方法如下：
 
 |方法返回值	|方法名称|	方法说明|
 |:--------:| :-------------|:-------------|
@@ -311,25 +295,16 @@ class Circle extends Shape{
 在通过getMethods方法获取Method对象时，会把父类的方法也获取到，如上的输出结果，把Object类的方法都打印出来了。而getDeclaredMethod/getDeclaredMethods方法都只能获取当前类的方法。我们在使用时根据情况选择即可。下面将演示通过Method对象调用指定类的方法：
 ```java
 Class clazz = Class.forName("reflect.Circle");
-//创建对象
 Circle circle = (Circle) clazz.newInstance();
+Method method = clazz.getMethod("draw",int.class,String.class); // 获取指定参数的方法对象Method
+method.invoke(circle,15,"圈圈");// 通过Method对象的invoke(Object obj,Object... args)方法调用
 
-//获取指定参数的方法对象Method
-Method method = clazz.getMethod("draw",int.class,String.class);
-
-//通过Method对象的invoke(Object obj,Object... args)方法调用
-method.invoke(circle,15,"圈圈");
-
-//对私有无参方法的操作
-Method method1 = clazz.getDeclaredMethod("drawCircle");
-//修改私有方法的访问标识
-method1.setAccessible(true);
+Method method1 = clazz.getDeclaredMethod("drawCircle"); //对私有无参方法的操作
+method1.setAccessible(true); //修改私有方法的访问标识
 method1.invoke(circle);
 
-//对有返回值得方法操作
-Method method2 =clazz.getDeclaredMethod("getAllCount");
+Method method2 =clazz.getDeclaredMethod("getAllCount");//对有返回值得方法操作
 Integer count = (Integer) method2.invoke(circle);
-System.out.println("count:"+count);
 ```
 输出结果：
 ```shell
@@ -337,7 +312,7 @@ draw 圈圈,count=15
 drawCircle
 count:100
 ```
-在上述代码中调用方法，使用了Method类的invoke(Object obj,Object... args)第一个参数代表调用的对象，第二个参数传递的调用方法的参数。这样就完成了类方法的动态调用。
+`Method`类的`invoke(Object obj,Object... args)`第一个参数代表调用的对象，第二个参数传递的调用方法的参数。这样就完成了类方法的动态调用。
 
 |方法返回值	|方法名称	|方法说明|
 |:--------:| :-------------:|:-------------|
@@ -350,21 +325,11 @@ count:100
 |boolean|	isVarArgs()	|判断方法是否带可变参数，如果将此方法声明为带有可变数量的参数，则返回 true；否则，返回 false。|
 |String	|toGenericString()	|返回描述此 Method 的字符串，包括类型参数。|
   
-getReturnType方法/getGenericReturnType方法都是获取Method对象表示的方法的返回类型，只不过前者返回的Class类型后者返回的Type(前面已分析过)，Type就是一个接口而已，在Java8中新增一个默认的方法实现，返回的就参数类型信息
-```java
-public interface Type {
-    //1.8新增
-    default String getTypeName() {
-        return toString();
-    }
-}
-```
-而getParameterTypes/getGenericParameterTypes也是同样的道理，都是获取Method对象所表示的方法的参数类型，其他方法与前面的Field和Constructor是类似的。
+`getReturnType方法/getGenericReturnType`方法都是获取`Method`对象表示的方法的返回类型，只不过前者返回的`Class`类型后者返回的`Type`，
+`getParameterTypes/getGenericParameterTypes`也是同样的道理，都是获取`Method`对象所表示的方法的`参数类型`，其他方法与前面的`Field`和`Constructor`是类似的。
 
-
-
-### 5. 反射包中的Array类
-在Java的java.lang.reflect包中存在着一个可以动态操作数组的类，Array，它提供了动态创建和访问 Java 数组的方法。Array 允许在执行 get 或 set 操作进行取值和赋值。在Class类中与数组关联的方法是：
+## 3、 反射包中的Array类
+在Java的`java.lang.reflect`包中存在着一个可以动态操作数组的类，`Array`。它提供了动态创建和访问数组的方法。`Array` 允许在执行 `get` 或 `set `操作进行取值和赋值。在`Class`类中与数组关联的方法是：
 
 |方法返回值	|方法名称|	方法说明|
 |:--------:| :-------------:|:-------------|
@@ -383,47 +348,23 @@ java.lang.reflect.Array中的常用静态方法如下：
 
 下面通过一个简单例子来演示这些方法
 ```java
-public class ReflectArray {
+int[] array = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+Class<?> clazz = array.getClass().getComponentType(); //获取数组类型的Class 即int.class
+Object newArr = Array.newInstance(clazz, 15); //创建一个具有指定的组件类型和长度的新数组，第一个参数:数组的类型,第二个参数:数组的长度
+int co = Array.getLength(array); //获取原数组的长度
 
-    public static void main(String[] args) throws ClassNotFoundException {
-        int[] array = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-        //获取数组类型的Class 即int.class
-        Class<?> clazz = array.getClass().getComponentType();
-        //创建一个具有指定的组件类型和长度的新数组。
-        //第一个参数:数组的类型,第二个参数:数组的长度
-        Object newArr = Array.newInstance(clazz, 15);
-        //获取原数组的长度
-        int co = Array.getLength(array);
-        //赋值原数组到新数组
-        System.arraycopy(array, 0, newArr, 0, co);
-        for (int i:(int[]) newArr) {
-            System.out.print(i+",");
-        }
+System.arraycopy(array, 0, newArr, 0, co);//赋值原数组到新数组，newArr: 1,2,3,4,5,6,7,8,9,0,0,0,0,0,0,
 
-        //创建了一个长度为10 的字符串数组，
-        //接着把索引位置为6 的元素设为"hello world!"，然后再读取索引位置为6 的元素的值
-        Class clazz2 = Class.forName("java.lang.String");
-
-        //创建一个长度为10的字符串数组，在Java中数组也可以作为Object对象
-        Object array2 = Array.newInstance(clazz2, 10);
-
-        //把字符串数组对象的索引位置为6的元素设置为"hello"
-        Array.set(array2, 6, "hello world!");
-
-        //获得字符串数组对象的索引位置为5的元素的值
-        String str = (String)Array.get(array2, 6);
-        System.out.println();
-        System.out.println(str);//hello
-    }
-   
-}
+Class clazz2 = Class.forName("java.lang.String");
+Object array2 = Array.newInstance(clazz2, 10);
+Array.set(array2, 6, "hello world!"); // 把字符串数组对象的索引位置为 6 的元素设置为"hello world!"
+String str = (String)Array.get(array2, 6);// 获得字符串数组对象的索引位置为 6 的元素的值
 ```
-输出结果：
-```shell
-1,2,3,4,5,6,7,8,9,0,0,0,0,0,0,
-hello world!
-```
-通过上述代码演示，确实可以利用Array类和反射相结合动态创建数组，也可以在运行时动态获取和设置数组中元素的值，其实除了上的set/get外Array还专门为8种基本数据类型提供特有的方法，如setInt/getInt、setBoolean/getBoolean，其他依次类推，需要使用是可以查看API文档即可。除了上述动态修改数组长度或者动态创建数组或动态获取值或设置值外，可以利用泛型动态创建泛型数组如下：
+
+通过上述代码演示，确实可以利用Array类和反射相结合动态创建数组，也可以在运行时动态获取和设置数组中元素的值，其实除了上的set/get外Array还专门为8种基本数据类型提供特有的方法，如setInt/getInt、setBoolean/getBoolean，其他依次类推，需要使用是可以查看API文档即可。
+
+除了上述动态修改数组长度或者动态创建数组或动态获取值或设置值外，可以利用泛型动态创建泛型数组如下：
+
 ```java
 /**
   * 接收一个泛型数组，然后创建一个长度与接收的数组长度一样的泛型数组，
@@ -453,16 +394,21 @@ hello world!
  }
 ```
 毕竟我们无法直接创建泛型数组，有了Array的动态创建数组的方式这个问题也就迎刃而解了。
+
 ```java
 //无效语句，编译不通
 T[] a = new T[];
 ```
-ok~，到这反射中几个重要并且常用的类我们都基本介绍完了，但更重要是，我们应该认识到反射机制并没有什么神奇之处。当通过反射与一个未知类型的对象打交道时，JVM只会简单地检查这个对象，判断该对象属于那种类型，同时也应该知道，在使用反射机制创建对象前，必须确保已加载了这个类的Class对象，当然这点完全不必由我们操作，毕竟只能JVM加载，但必须确保该类的”.class”文件已存在并且JVM能够正确找到。关于Class类的方法在前面我们只是分析了主要的一些方法，其实Class类的API方法挺多的，建议查看一下API文档，浏览一遍，有个印象也是不错的选择，这里仅列出前面没有介绍过又可能用到的API：
-```java
-/** 
-  *    修饰符、父类、实现的接口、注解相关 
-  */
 
+ok~，到这反射中几个重要并且常用的类我们都基本介绍完了，但更重要是，我们应该认识到反射机制并没有什么神奇之处。
+
+## 4、补充
+
+当通过反射与一个未知类型的对象打交道时，JVM只会简单地检查这个对象，判断该对象属于那种类型，同时也应该知道，在使用反射机制创建对象前，必须确保已加载了这个类的Class对象，当然这点完全不必由我们操作，毕竟只能JVM加载，但必须确保该类的”.class”文件已存在并且JVM能够正确找到。关于Class类的方法在前面我们只是分析了主要的一些方法，其实Class类的API方法挺多的，建议查看一下API文档，浏览一遍，有个印象也是不错的选择，这里仅列出前面没有介绍过又可能用到的API：
+
+### 4.1 修饰符、父类、实现的接口、注解相关 
+
+```java
 //获取修饰符，返回值可通过Modifier类进行解读
 public native int getModifiers();
 //获取父类，如果为Object，父类为null
@@ -476,10 +422,11 @@ public Annotation[] getAnnotations();
 //获取或检查指定类型的注解，包括继承得到的
 public <A extends Annotation> A getAnnotation(Class<A> annotationClass);
 public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass);
+```
 
-/** 
-  *   内部类相关
-  */
+### 4.2 内部类相关
+
+```java
 //获取所有的public的内部类和接口，包括从父类继承得到的
 public Class<?>[] getClasses();
 //获取自己声明的所有的内部类和接口
@@ -490,10 +437,11 @@ public Class<?> getDeclaringClass();
 public Class<?> getEnclosingClass();
 //如果当前Class为本地类或匿名内部类，返回包含它的方法
 public Method getEnclosingMethod();
+```
 
-/** 
-  *    Class对象类型判断相关
-  */
+### 4.3 Class对象类型判断相关
+
+```java
 //是否是数组
 public native boolean isArray();  
 //是否是基本类型
@@ -511,4 +459,4 @@ public boolean isMemberClass();
 //是否是本地类
 public boolean isLocalClass(); 
 ```
-完结。 
+ 
