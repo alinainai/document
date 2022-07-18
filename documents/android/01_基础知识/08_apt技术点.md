@@ -180,7 +180,7 @@ host.mTextView = (android.widget.TextView)(((android.app.Activity)host).findView
 
 }
 ```
-## 2.3 apt-library 工具类
+### 2.3 apt-library 工具类
 
 在Module的build.gradle中添加依赖
 ```groove
