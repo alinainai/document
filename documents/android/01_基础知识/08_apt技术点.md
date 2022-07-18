@@ -45,7 +45,7 @@ dependencies {
 ```
 2、创建 BindViewProcessor
 ```java
-@AutoService(Processor.class)
+@AutoService(Processor.class) // 通过 auto-service 中的 @AutoService 可以自动生成 META-INF/services/javax.annotation.processing.Processor (注解的注册文件)
 public class BindViewProcessor extends AbstractProcessor {
 
     private Messager mMessager;
@@ -112,7 +112,8 @@ public class BindViewProcessor extends AbstractProcessor {
 ```
 通过`roundEnvironment.getElementsAnnotatedWith(BindView.class`)得到所有注解`elements`，然后将`elements`的信息保存到`mProxyMap`中，最后通过`mProxyMap`创建对应的`Java`文件，其中`mProxyMap`是`ClassCreatorProxy`的`Map`集合。
 
-3、`ClassCreatorProxy`是创建`Java代码`的代理类，如下：
+3、`ClassCreatorProxy`工具类
+`ClassCreatorProxy` 是创建`Java代码`的代理类，如下：
 ```java
 public class ClassCreatorProxy {
     private final String mBindingClassName;
@@ -136,7 +137,7 @@ public class ClassCreatorProxy {
     public String generateJavaCode() {
         StringBuilder builder = new StringBuilder();
         builder.append("package ").append(mPackageName).append(";\n\n");
-        builder.append("import com.example.gavin.apt_library.*;\n");
+        builder.append("import com.gas.library.*;\n");
         builder.append('\n');
         builder.append("public class ").append(mBindingClassName);
         builder.append(" {\n");
@@ -171,154 +172,91 @@ public class ClassCreatorProxy {
 上面的代码主要就是从`Elements、TypeElement`得到想要的一些信息，如`package name`、`Activity名`、`变量类型`、`id`等，通过`StringBuilder`一点一点拼出`Java`代码，每个对象分别代表一个对应的`.java`文件。
 
 4、生成的 java 代码
-
+```java
 public class MainActivity_ViewBinding {
-    public void bind(com.example.gavin.apttest.MainActivity host) {
-        host.mButton = (android.widget.Button) (((android.app.Activity) host).findViewById(2131165218));
-        host.mTextView = (android.widget.TextView) (((android.app.Activity) host).findViewById(2131165321));
-    }
+public void bind(com.gas.aptdemo.MainActivity host ) {
+host.mTextView = (android.widget.TextView)(((android.app.Activity)host).findViewById( 2131231106));
+  }
+
 }
-
-## 3、更好的方案
-通过javapoet可以更加简单得生成这样的Java代码。(后面会说到）
-
-介绍下依赖库auto-service
-在使用注解处理器需要先声明，步骤：
-1、需要在 processors 库的 main 目录下新建 resources 资源文件夹；
-2、在 resources文件夹下建立 META-INF/services 目录文件夹；
-3、在 META-INF/services 目录文件夹下创建 javax.annotation.processing.Processor 文件；
-4、在 javax.annotation.processing.Processor 文件写入注解处理器的全称，包括包路径；）
-这样声明下来也太麻烦了？这就是用引入auto-service的原因。
-通过auto-service中的@AutoService可以自动生成AutoService注解处理器是Google开发的，用来生成 META-INF/services/javax.annotation.processing.Processor 文件的
-
-3、apt-library 工具类
-
-在BindViewProcessor中创建了对应的xxxActivity_ViewBinding.java，我们改怎么调用？当然是反射啦！！！
+```
+## 2.3 apt-library 工具类
 
 在Module的build.gradle中添加依赖
-
+```groove
 dependencies {
     implementation project(':apt-annotation')
 }
+```
 创建注解工具类BindViewTools
-
+```java
 public class BindViewTools {
-
-    public static void bind(Activity activity) {
-
-        Class clazz = activity.getClass();
-        try {
-            Class bindViewClass = Class.forName(clazz.getName() + "_ViewBinding");
-            Method method = bindViewClass.getMethod("bind", activity.getClass());
-            method.invoke(bindViewClass.newInstance(), activity);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        }
-    }
+   public static void bind(Activity activity) {
+      Class<? extends Activity> clazz = activity.getClass();
+      try {
+         Class<?> bindViewClass = Class.forName(clazz.getName() + "_ViewBinding");
+         Method method = bindViewClass.getMethod("bind", activity.getClass());
+         method.invoke(bindViewClass.newInstance(), activity);
+      } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+         e.printStackTrace();
+      }
+   }
 }
-apt-library的部分就比较简单了，通过反射找到对应的ViewBinding类，然后调用其中的bind()方法完成View的绑定。
+```
+apt-library 的部分就比较简单了，通过反射找到对应的ViewBinding类，然后调用其中的 bind() 方法完成 View 的绑定。
 
-到目前为止，所有相关的代码都写完了，终于可以拿出来溜溜了
-
-
-
-4、app
-依赖
-在Module的 build.gradle中（Gradle>=2.2）
-
+### 2.4 app 中的代码
+```groove
 dependencies {
     implementation project(':apt-annotation')
     implementation project(':apt-library')
-    annotationProcessor project(':apt-processor')
+    kapt project(':apt-processor')
 }
-Android Gradle 插件 2.2 版本的发布，Android Gradle 插件提供了名为 annotationProcessor的功能来完全代替 android-apt
+```
+在MainActivity中，在View的前面加上 BindView 注解，把 id 传入即可
+```kotlin
+class MainActivity : AppCompatActivity() {
 
-（若Gradle<2.2）
-在Project的 build.gradle中：
+    @BindView(R.id.textView)
+    lateinit var mTextView: TextView
 
-buildscript {
-    dependencies {
-        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'  
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        BindViewTools.bind(this)
+        mTextView.text = "aptdemo"
     }
 }
-在Module的buile.gradle中：
+```
 
-apply plugin: 'com.android.application'
-apply plugin: 'com.neenbedankt.android-apt'
-dependencies {
-    apt project(':apt-processor')
-}
-使用
-在MainActivity中，在View的前面加上BindView注解，把id传入即可
+代码分支 [main](https://github.com/alinainai/AptDemo/tree/main)
 
-public class MainActivity extends AppCompatActivity {
+## 3、通过javapoet生成代码
 
-    @BindView(R.id.tv)
-    TextView mTextView;
-    @BindView(R.id.btn)
-    Button mButton;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        BindViewTools.bind(this);
-        mTextView.setText("bind TextView success");
-        mButton.setText("bind Button success");
-    }
-}
-运行的结果想必大家都知道了，不够为了证明这个BindView的功能完成了，我还是把图贴出来
-结果
-生成的代码
-上面的功能一直在完成一件事情，那就是生成Java代码，那么生成的代码在哪？
-在app/build/generated/source/apt中可以找到生成的Java文件
-目录
-
-对应的代码（之前已经贴过了）：
-public class MainActivity_ViewBinding {
-    public void bind(com.example.gavin.apttest.MainActivity host) {
-        host.mButton = (android.widget.Button) (((android.app.Activity) host).findViewById(2131165218));
-        host.mTextView = (android.widget.TextView) (((android.app.Activity) host).findViewById(2131165321));
-    }
-}
-通过javapoet生成代码
 上面在ClassCreatorProxy中，通过StringBuilder来生成对应的Java代码。这种做法是比较麻烦的，还有一种更优雅的方式，那就是javapoet。
 
 先添加依赖
-
+```groove
 dependencies {
     implementation 'com.squareup:javapoet:1.10.0'
 }
+```
+
 然后在ClassCreatorProxy中
 
+```java
 public class ClassCreatorProxy {
-    //省略部分代码...
-
-    /**
-     * 创建Java代码
-     * @return
-     */
-    public TypeSpec generateJavaCode2() {
+    //...
+    public TypeSpec generateJavaCode() {
         TypeSpec bindingClass = TypeSpec.classBuilder(mBindingClassName)
                 .addModifiers(Modifier.PUBLIC)
-                .addMethod(generateMethods2())
+                .addMethod(generateMethods())
                 .build();
         return bindingClass;
 
     }
 
-    /**
-     * 加入Method
-     */
-    private MethodSpec generateMethods2() {
+    private MethodSpec generateMethods() {
         ClassName host = ClassName.bestGuess(mTypeElement.getQualifiedName().toString());
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("bind")
                 .addModifiers(Modifier.PUBLIC)
@@ -334,21 +272,20 @@ public class ClassCreatorProxy {
         return methodBuilder.build();
     }
 
-
     public String getPackageName() {
         return mPackageName;
     }
 }
-
-最后在 BindViewProcessor中
-
+```
+最后在 `BindViewProcessor` 中做如下改动
+```java
     @Override
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
         //省略部分代码...
         //通过javapoet生成
         for (String key : mProxyMap.keySet()) {
             ClassCreatorProxy proxyInfo = mProxyMap.get(key);
-            JavaFile javaFile = JavaFile.builder(proxyInfo.getPackageName(), proxyInfo.generateJavaCode2()).build();
+            JavaFile javaFile = JavaFile.builder(proxyInfo.getPackageName(), proxyInfo.generateJavaCode()).build();
             try {
                 //　生成文件
                 javaFile.writeTo(processingEnv.getFiler());
@@ -359,26 +296,14 @@ public class ClassCreatorProxy {
         mMessager.printMessage(Diagnostic.Kind.NOTE, "process finish ...");
         return true;
     }
-相比用StringBuilder拼Java代码，明显简洁和很多。最后生成的代码跟之前是一样的，就不贴出来了。
+```
+相比用StringBuilder拼Java代码，明显简洁和很多
 
-javapoet详细用法
-
-Tips
-1、如果是ElementType.METHOD类型的注解，解析Element时使用ExecutableElement，而不是Symbol.MethodSymbol，否则编译运行的时候没问题，打包的时候会报错。别问我时为什么知道的...
-
-2、gradle升级到3.4.0以后，AutoService要这么用
-
-
-implementation 'com.google.auto.service:auto-service:1.0-rc2'
-annotationProcessor  'com.google.auto.service:auto-service:1.0-rc2' 
-
-作者：带心情去旅行
-链接：https://www.jianshu.com/p/7af58e8e3e18
-来源：简书
-著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
-
+代码分支 [main_poet](https://github.com/alinainai/AptDemo/tree/main_poet)
 
 ## 参考
 
 [【Android】APT](https://www.jianshu.com/p/7af58e8e3e18)
+
+[Android APT 系列 （三）：APT 技术探究](https://juejin.cn/post/6978500975770206239)
 
