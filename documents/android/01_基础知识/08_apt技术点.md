@@ -16,14 +16,15 @@
 ```java
 创建 项目 AptDemo (app) 
 创建 Java library Modul "apt-annotation" (实现自定义注解 @BindView)
-创建 Java library Module "apt-processor" (注解处理器，根据`apt-annotation`中的注解，在编译期生成`xxxActivity_ViewBinding.java`代码) 依赖 apt-annotation 
-创建 Android library Module "apt-library" (工具类，调用`xxxActivity_ViewBinding.java`中的方法，实现`View`的绑定) 依赖 apt-annotation、auto-service 
+创建 Java library Module "apt-processor" (注解处理器，根据`apt-annotation`中的注解，在编译期生成`xxxActivity_ViewBinding.java`代码) 并添加依赖 apt-annotation 
+创建 Android library Module "apt-library" (工具类，调用`xxxActivity_ViewBinding.java`中的方法，实现`View`的绑定) 并添加依赖 apt-annotation、auto-service 
 ```
 
-### 2.2 实现
-1、apt-annotation（自定义注解）
 
-创建注解类`BindView`
+### 2.2 定义 @BindView 注解
+
+在 apt-annotation 类库中定义注解类`@BindView`
+
 ```java
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
@@ -31,29 +32,29 @@ public @interface BindView {
     int value(); //对应View的id
 }
 ```
-2、apt-processor（注解处理器）
 
-在`Module`中添加依赖
+### 2.2 实现 apt-processor 类库中的代码
 
+1、首先添加添加依赖
+```groove
 dependencies {
     implementation 'com.google.auto.service:auto-service:1.0-rc2' 
-    // Gradle 5.0后需要再加下面这行
-    // annotationProcessor  'com.google.auto.service:auto-service:1.0-rc2' 
+    annotationProcessor  'com.google.auto.service:auto-service:1.0-rc2' 
     implementation project(':apt-annotation')
 }
-
-创建BindViewProcessor
+```
+2、创建 BindViewProcessor
 ```java
 @AutoService(Processor.class)
 public class BindViewProcessor extends AbstractProcessor {
 
     private Messager mMessager;
     private Elements mElementUtils;
-    private Map<String, ClassCreatorProxy> mProxyMap = new HashMap<>();
+    private final Map<String, ClassCreatorProxy> mProxyMap = new HashMap<>();
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
-        super.init(processingEnv);
+        super.init(processingEnv);// ProcessingEnviroment 提供了很多有用的工具类 Elements, Types 和 Filer
         mMessager = processingEnv.getMessager();
         mElementUtils = processingEnv.getElementUtils();
     }
@@ -61,40 +62,22 @@ public class BindViewProcessor extends AbstractProcessor {
     @Override
     public Set<String> getSupportedAnnotationTypes() {
         HashSet<String> supportTypes = new LinkedHashSet<>();
+        //指定这个注解处理器是注册给哪个注解的，这里说明是注解BindView
         supportTypes.add(BindView.class.getCanonicalName());
         return supportTypes;
     }
 
     @Override
     public SourceVersion getSupportedSourceVersion() {
-        return SourceVersion.latestSupported();
+        return SourceVersion.latestSupported(); // 指定使用的Java版本，通常这里返回 SourceVersion.latestSupported()
     }
 
     @Override
-    public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnv) {
-        //根据注解生成Java文件
-        return false;
-    }
-}
-```
-init：初始化。可以得到ProcessingEnviroment，ProcessingEnviroment提供很多有用的工具类Elements, Types 和 Filer
-getSupportedAnnotationTypes：指定这个注解处理器是注册给哪个注解的，这里说明是注解BindView
-getSupportedSourceVersion：指定使用的Java版本，通常这里返回 SourceVersion.latestSupported()
-process：可以在这里写扫描、评估和处理注解的代码，生成Java文件（process中的代码下面详细说明）
-```java
-@AutoService(Processor.class)
-public class BindViewProcessor extends AbstractProcessor {
-
-    private Messager mMessager;
-    private Elements mElementUtils;
-    private Map<String, ClassCreatorProxy> mProxyMap = new HashMap<>();
-
-    @Override
-    public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {//扫描、评估和处理注解的代码，生成Java文件
         mMessager.printMessage(Diagnostic.Kind.NOTE, "processing...");
         mProxyMap.clear();
         //得到所有的注解
-        Set<? extends Element> elements = roundEnvironment.getElementsAnnotatedWith(BindView.class);
+        Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(BindView.class);
         for (Element element : elements) {
             VariableElement variableElement = (VariableElement) element;
             TypeElement classElement = (TypeElement) variableElement.getEnclosingElement();
@@ -122,21 +105,20 @@ public class BindViewProcessor extends AbstractProcessor {
                 mMessager.printMessage(Diagnostic.Kind.NOTE, " --> create " + proxyInfo.getProxyClassFullName() + "error");
             }
         }
-
         mMessager.printMessage(Diagnostic.Kind.NOTE, "process finish ...");
         return true;
     }
 }
 ```
-通过roundEnvironment.getElementsAnnotatedWith(BindView.class)得到所有注解elements，然后将elements的信息保存到mProxyMap中，最后通过mProxyMap创建对应的Java文件，其中mProxyMap是ClassCreatorProxy的Map集合。
+通过`roundEnvironment.getElementsAnnotatedWith(BindView.class`)得到所有注解`elements`，然后将`elements`的信息保存到`mProxyMap`中，最后通过`mProxyMap`创建对应的`Java`文件，其中`mProxyMap`是`ClassCreatorProxy`的`Map`集合。
 
-ClassCreatorProxy是创建Java代码的代理类，如下：
+3、`ClassCreatorProxy`是创建`Java代码`的代理类，如下：
 ```java
 public class ClassCreatorProxy {
-    private String mBindingClassName;
-    private String mPackageName;
-    private TypeElement mTypeElement;
-    private Map<Integer, VariableElement> mVariableElementMap = new HashMap<>();
+    private final String mBindingClassName;
+    private final String mPackageName;
+    private final TypeElement mTypeElement;
+    private final Map<Integer, VariableElement> mVariableElementMap = new HashMap<>();
 
     public ClassCreatorProxy(Elements elementUtils, TypeElement classElement) {
         this.mTypeElement = classElement;
@@ -151,10 +133,6 @@ public class ClassCreatorProxy {
         mVariableElementMap.put(id, element);
     }
 
-    /**
-     * 创建Java代码
-     * @return
-     */
     public String generateJavaCode() {
         StringBuilder builder = new StringBuilder();
         builder.append("package ").append(mPackageName).append(";\n\n");
@@ -169,10 +147,6 @@ public class ClassCreatorProxy {
         return builder.toString();
     }
 
-    /**
-     * 加入Method
-     * @param builder
-     */
     private void generateMethods(StringBuilder builder) {
         builder.append("public void bind(" + mTypeElement.getQualifiedName() + " host ) {\n");
         for (int id : mVariableElementMap.keySet()) {
@@ -185,20 +159,18 @@ public class ClassCreatorProxy {
         builder.append("  }\n");
     }
 
-    public String getProxyClassFullName()
-    {
+    public String getProxyClassFullName() {
         return mPackageName + "." + mBindingClassName;
     }
 
-    public TypeElement getTypeElement()
-    {
+    public TypeElement getTypeElement() {
         return mTypeElement;
     }
 }
 ```
-上面的代码主要就是从Elements、TypeElement得到想要的一些信息，如package name、Activity名、变量类型、id等，通过StringBuilder一点一点拼出Java代码，每个对象分别代表一个对应的.java文件。
+上面的代码主要就是从`Elements、TypeElement`得到想要的一些信息，如`package name`、`Activity名`、`变量类型`、`id`等，通过`StringBuilder`一点一点拼出`Java`代码，每个对象分别代表一个对应的`.java`文件。
 
-看下生成的代码（不大整齐，被我格式化了）
+4、生成的 java 代码
 
 public class MainActivity_ViewBinding {
     public void bind(com.example.gavin.apttest.MainActivity host) {
@@ -206,10 +178,8 @@ public class MainActivity_ViewBinding {
         host.mTextView = (android.widget.TextView) (((android.app.Activity) host).findViewById(2131165321));
     }
 }
-缺陷
-通过StringBuilder的方式一点一点来拼写Java代码，不但繁琐还容易写错~~
 
-更好的方案
+## 3、更好的方案
 通过javapoet可以更加简单得生成这样的Java代码。(后面会说到）
 
 介绍下依赖库auto-service
@@ -222,7 +192,6 @@ public class MainActivity_ViewBinding {
 通过auto-service中的@AutoService可以自动生成AutoService注解处理器是Google开发的，用来生成 META-INF/services/javax.annotation.processing.Processor 文件的
 
 3、apt-library 工具类
-完成了Processor的部分，基本快大功告成了。
 
 在BindViewProcessor中创建了对应的xxxActivity_ViewBinding.java，我们改怎么调用？当然是反射啦！！！
 
