@@ -1,54 +1,44 @@
 ## 1、什么是 APT
 
-APT（Annotation Processing Tool），注解处理器。是一种处理注解的工具，确切的说它是javac的一个工具，它用来在编译时扫描和处理注解。
-注解处理器以Java代码(或者编译过的字节码)作为输入，生成.java文件作为输出。
+`APT（Annotation Processing Tool）`，注解处理器。是一种处理注解的工具，确切的说它是`javac`的一个工具，它用来在编译时扫描和处理注解。
+注解处理器以`Java`代码(或者编译过的字节码)作为输入，生成`.java`文件作为输出。
 
-简单来说就是在编译期，通过注解生成.java文件。
+简单来说就是在编译期，通过注解生成`.java`文件。
 
 ## 2、实现
 
-下面我们通过一个简单的例子（类似于ButterKnife中的@BindView）来看下 APT 是怎么使用的。
+下面我们通过实现一个简单的例子（类似于`ButterKnife`中的`@BindView`）来看下 APT 是怎么使用的。
 
 ### 2.1 创建项目
 
+首先我们创建一个 `android` 项目，结构如下
+
 ```java
-创建项目 APTDemo 
+创建项目 APTDemo (app) 
 创建Java library Module命名为 apt-annotation
 创建Java library Module命名为 apt-processor 依赖 apt-annotation
 创建Android library Module 命名为apt-library依赖 apt-annotation、auto-service
 ```
+包说明：
 
+- `apt-annotation`：自定义注解，存放`@BindView`
+- `apt-processor`：注解处理器，根据`apt-annotation`中的注解，在编译期生成`xxxActivity_ViewBinding.java`代码
+- `apt-library`：工具类，调用`xxxActivity_ViewBinding.java`中的方法，实现`View`的绑定。
 
-
-
-
-apt-annotation：自定义注解，存放@BindView
-apt-processor：注解处理器，根据apt-annotation中的注解，在编译期生成xxxActivity_ViewBinding.java代码
-apt-library：工具类，调用xxxActivity_ViewBinding.java中的方法，实现View的绑定。
-
+### 2.2 实现
 1、apt-annotation（自定义注解）
-创建注解类BindView
 
+创建注解类`BindView`
+```java
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface BindView {
-    int value();
+    int value(); //对应View的id
 }
-@Retention(RetentionPolicy.CLASS)：表示编译时注解
-@Target(ElementType.FIELD)：表示注解范围为类成员（构造方法、方法、成员变量）
-
-@Retention： 定义被保留的时间长短
-RetentionPoicy.SOURCE、RetentionPoicy.CLASS、RetentionPoicy.RUNTIME
-@Target： 定义所修饰的对象范围
-TYPE、FIELD、METHOD、PARAMETER、CONSTRUCTOR、LOCAL_VARIABLE等
-详细内容
-
-这里定义了运行时注解BindView，其中value()用于获取对应View的id。
-
+```
 2、apt-processor（注解处理器）
-(重点部分)
 
-在Module中添加依赖
+在`Module`中添加依赖
 
 dependencies {
     implementation 'com.google.auto.service:auto-service:1.0-rc2' 
@@ -56,10 +46,9 @@ dependencies {
     // annotationProcessor  'com.google.auto.service:auto-service:1.0-rc2' 
     implementation project(':apt-annotation')
 }
-Android Studio升级到3.0以后，Gradle也随之升级到3.0。implementation替代了之前的compile
 
 创建BindViewProcessor
-
+```java
 @AutoService(Processor.class)
 public class BindViewProcessor extends AbstractProcessor {
 
@@ -92,10 +81,12 @@ public class BindViewProcessor extends AbstractProcessor {
         return false;
     }
 }
+```
 init：初始化。可以得到ProcessingEnviroment，ProcessingEnviroment提供很多有用的工具类Elements, Types 和 Filer
 getSupportedAnnotationTypes：指定这个注解处理器是注册给哪个注解的，这里说明是注解BindView
-getSupportedSourceVersion：指定使用的Java版本，通常这里返回SourceVersion.latestSupported()
+getSupportedSourceVersion：指定使用的Java版本，通常这里返回 SourceVersion.latestSupported()
 process：可以在这里写扫描、评估和处理注解的代码，生成Java文件（process中的代码下面详细说明）
+```java
 @AutoService(Processor.class)
 public class BindViewProcessor extends AbstractProcessor {
 
@@ -141,10 +132,11 @@ public class BindViewProcessor extends AbstractProcessor {
         return true;
     }
 }
+```
 通过roundEnvironment.getElementsAnnotatedWith(BindView.class)得到所有注解elements，然后将elements的信息保存到mProxyMap中，最后通过mProxyMap创建对应的Java文件，其中mProxyMap是ClassCreatorProxy的Map集合。
 
 ClassCreatorProxy是创建Java代码的代理类，如下：
-
+```java
 public class ClassCreatorProxy {
     private String mBindingClassName;
     private String mPackageName;
@@ -208,11 +200,10 @@ public class ClassCreatorProxy {
         return mTypeElement;
     }
 }
+```
 上面的代码主要就是从Elements、TypeElement得到想要的一些信息，如package name、Activity名、变量类型、id等，通过StringBuilder一点一点拼出Java代码，每个对象分别代表一个对应的.java文件。
 
-
-没想到吧！Java代码还可以这样写~~
-提前看下生成的代码（不大整齐，被我格式化了）
+看下生成的代码（不大整齐，被我格式化了）
 
 public class MainActivity_ViewBinding {
     public void bind(com.example.gavin.apttest.MainActivity host) {
