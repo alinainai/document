@@ -16,8 +16,9 @@
 ```java
 创建 项目 AptDemo (app) 
 创建 Java library Modul "apt-annotation" (实现自定义注解 @BindView)
-创建 Java library Module "apt-processor" (注解处理器，根据`apt-annotation`中的注解，在编译期生成`xxxActivity_ViewBinding.java`代码) 并添加依赖 apt-annotation 
-创建 Android library Module "apt-library" (工具类，调用`xxxActivity_ViewBinding.java`中的方法，实现`View`的绑定) 并添加依赖 apt-annotation、auto-service 
+创建 Java library Module "apt-processor" (注解处理器，根据`apt-annotation`中的注解，在编译期生成`xxxActivity_ViewBinding.java`代码) 并依赖 apt-annotation 
+创建 Android library Module "apt-library" (工具类，调用`xxxActivity_ViewBinding.java`中的 bind 方法，实现`View`的绑定) 并依赖 apt-annotation 
+app 添加 apt-annotation、apt-processor、apt-library 依赖
 ```
 
 
