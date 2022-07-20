@@ -1,4 +1,4 @@
-## 1、定义
+## 1、Transform 的定义
 
 ### 1.1 什么是 Transform？
 
@@ -6,9 +6,9 @@ Transform API 是 Android Gradle Plugin 1.5 就引入的特性，主要用于在
 
 使用 Transform 的常见的应用场景有：
 
-埋点统计： 在页面展现和退出等生命周期中插入埋点统计代码，以统计页面展现数据；
-耗时监控： 在指定方法的前后插入耗时计算，以观察方法执行时间；
-方法替换： 将方法调用替换为调用另一个方法。
+- 埋点统计： 在页面展现和退出等生命周期中插入埋点统计代码，以统计页面展现数据；
+- 耗时监控： 在指定方法的前后插入耗时计算，以观察方法执行时间；
+- 方法替换： 将方法调用替换为调用另一个方法。
 
 ### 1.2 Transform 的基本原理
 
@@ -25,19 +25,18 @@ Transform API 是 Android Gradle Plugin 1.5 就引入的特性，主要用于在
 //com.android.build.api.transform.java
 public abstract class Transform {
 
-    // 该名称用于组成 Task 的名称 格式为 transform[InputTypes]With[name]For[Configuration]
+    // 该名称用于组成 Task 的名称，格式为 transform[InputTypes]With[name]For[Configuration]
     public abstract String getName();
 
     // （孵化中）用于过滤 Variant，返回 false 表示该 Variant 不执行 Transform
     public boolean applyToVariant(VariantInfo variant) {
         return true;
     }
-
-    // 需要处理的数据类型，有两种枚举类型
-    // DefaultContentType.
+    
+    // 指定需要处理的数据类型
     public abstract Set<ContentType> getInputTypes();
 
-    // 指定输出内容类型，默认取 getInputTypes() 的值
+    // 指定输出内容类型，默认是 getInputTypes() 的值
     public Set<ContentType> getOutputTypes() {
         return getInputTypes();
     }
@@ -78,7 +77,6 @@ ContentType 是一个枚举类接口，表示输入或输出内容的类型，�
 - 1、Set<ContentType> getInputTypes()： 指定输入内容类型，允许通过 Set 集合设置输入多种类型；
 - 2、Set<ContentType> getOutputTypes()： 指定输出内容类型，默认取 getInputTypes() 的值，允许通过 Set 集合设置输出多种类型。
   
-ExtendedContentType.java
 ```java
 // 加强类型，自定义 Transform 无法使用
 public enum ExtendedContentType implements ContentType {
@@ -89,9 +87,7 @@ public enum ExtendedContentType implements ContentType {
     DEX_ARCHIVE(0x40000), // Dex Archive
     ;
 }
-```
-QualifiedContent.java
-```java
+// QualifiedContent.java
 enum DefaultContentType implements ContentType {
     CLASSES(0x01), // Java 字节码，包括 Jar 文件和由源码编译产生的
     RESOURCES(0x02); // Java 资源
@@ -99,44 +95,29 @@ enum DefaultContentType implements ContentType {
 ```
 
 在 TransformManager 中，预定义了一部分内容类型集合，常用的是 CONTENT_CLASS 操作 Class。
-
-TransformManager.java
-
+    
 ```java
 public static final Set<ContentType> CONTENT_CLASS = ImmutableSet.of(CLASSES);
 public static final Set<ContentType> CONTENT_JARS = ImmutableSet.of(CLASSES, RESOURCES);
 public static final Set<ContentType> CONTENT_RESOURCES = ImmutableSet.of(RESOURCES);
 ```
 ### 1.5 ScopeType 作用域
-ScopeType 也是一个枚举类接口，表示输入内容的范畴。在 AGP 中定义了 InternalScope 和 Scope 两个枚举类。但是，我们在自定义 Transform 只能使用 Scope 中定义的枚举，其它类型仅供 AGP 内置的 Transform 使用。
-
-Transform 需要在两个位置定义输入内容范围：
+ScopeType 也是一个枚举类接口，表示输入内容的范畴。
 
 - 1、Set<ScopeType> getScopes() 消费型输入内容范畴： 此范围的内容会被消费，因此当前 Transform 必须将修改后的内容复制到 Transform 的中间目录中，否则无法将内容传递到下一个 Transform 处理；
 - 2、Set<ScopeType> getReferencedScopes() 指定引用型输入内容范畴： 默认是空集合，此范围的内容不会被消费，因此不需要复制传递到下一个 Transform，也不允许修改。
-InternalScope.java
-```java
-// 内部使用的作用域，自定义 Transform 无法使用
-public enum InternalScope implements QualifiedContent.ScopeType {
-    MAIN_SPLIT(0x10000),
-    LOCAL_DEPS(0x20000),
-    FEATURES(0x40000),
-    ;
-}
-```
+
 QualifiedContent.java
+    
 ```java
-enum Scope implements ScopeType {
-    PROJECT(0x01), // 当前模块    
-    SUB_PROJECTS(0x04), // 子模块
-    EXTERNAL_LIBRARIES(0x10), // 外部依赖，包括当前模块和子模块本地依赖和远程依赖的 JAR/AAR
-    TESTED_CODE(0x20), // 当前变体所测试的代码（包括依赖项）
-    PROVIDED_ONLY(0x40), // 本地依赖和远程依赖的 JAR/AAR（provided-only）
-}
+PROJECT(0x01), // 当前模块    
+SUB_PROJECTS(0x04), // 子模块
+EXTERNAL_LIBRARIES(0x10), // 外部依赖，包括当前模块和子模块本地依赖和远程依赖的 JAR/AAR
+TESTED_CODE(0x20), // 当前变体所测试的代码（包括依赖项）
+PROVIDED_ONLY(0x40), // 本地依赖和远程依赖的 JAR/AAR（provided-only）
 ```
 在 TransformManager 中，预定义了一部分作用域集合，常用的是 SCOPE_FULL_PROJECT 所有模块。需要注意，Library 模块注册的 Transform 只能使用 Scope.PROJECT。
 
-TransformManager.java
 ```java
 public static final Set<ScopeType> PROJECT_ONLY = ImmutableSet.of(Scope.PROJECT);
 public static final Set<ScopeType> SCOPE_FULL_PROJECT = ImmutableSet.of(Scope.PROJECT, Scope.SUB_PROJECTS, Scope.EXTERNAL_LIBRARIES);
@@ -145,46 +126,34 @@ public static final Set<ScopeType> SCOPE_FULL_PROJECT = ImmutableSet.of(Scope.PR
   
 transform() 是实现 Transform 的核心方法，方法的参数是 TransformInvocation，它提供了所有与输入输出相关的信息：
 
+```java
 public interface TransformInvocation {
-
     Context getContext();
-    
     Collection<TransformInput> getInputs(); // 获取 TransformInput 对象，它是消费型输入内容，对应于 Transform#getScopes() 定义的范围；
-  
-    Collection<TransformInput> getReferencedInputs();  //  获取 TransformInput 对象，它是引用型输入内容，对应于 Transform#getReferenceScope() 定义的内容范围；
-
+    Collection<TransformInput> getReferencedInputs();  // 获取 TransformInput 对象，它是引用型输入内容，对应于 Transform#getReferenceScope() 定义的内容范围；
     Collection<SecondaryInput> getSecondaryInputs(); // 额外输入内容
-
-    TransformOutputProvider getOutputProvider(); // 输出信息， TransformOutputProvider 是对输出文件的抽象。
-
+    TransformOutputProvider getOutputProvider(); // 获取输出信息，TransformOutputProvider 是对输出文件的抽象。
     boolean isIncremental(); // 当前 Transform 任务是否增量构建；
 }
-
+```
 输入内容 TransformInput 由两部分组成：
 
-DirectoryInput 集合： 以源码方式参与构建的输入文件，包括完整的源码目录结构及其中的源码文件；
-JarInput 集合： 以 Jar 和 aar 依赖方式参与构建的输入文件，包含本地依赖和远程依赖。
+- DirectoryInput 集合： 以源码方式参与构建的输入文件，包括完整的源码目录结构及其中的源码文件；
+- JarInput 集合： 以 Jar 和 aar 依赖方式参与构建的输入文件，包含本地依赖和远程依赖。
   
 输入内容信息 TransformOutputProvider 有两个功能：
 
-deleteAll()： 当 Transform 运行在非增量构建模式时，需要删除上一次构建产生的所有中间文件，可以直接调用 deleteAll() 完成；
-getContentLocation()： 获得指定范围+类型的输出目标路径。
-  
-TransformOutputProvider.java
-
+- deleteAll()： 当 Transform 运行在非增量构建模式时，需要删除上一次构建产生的所有中间文件，可以直接调用 deleteAll() 完成；
+- getContentLocation()： 获得指定范围+类型的输出目标路径。
+```java
 public interface TransformOutputProvider {
-
-    // 删除所有中间文件
-    void deleteAll()
-
+    void deleteAll() // 删除所有中间文件
     // 获取指定范围+类型的目标路径
-    File getContentLocation(String name,
-    Set<QualifiedContent.ContentType> types,
-    Set<? super QualifiedContent.Scope> scopes,
-    Format format);
+    File getContentLocation(String name, Set<QualifiedContent.ContentType> types, Set<? super QualifiedContent.Scope> scopes, Format format);
 }
+```
 获取输入内容对应的输出路径：
-
+```kotlin
 for (input in transformInvocation.inputs) {
     for (jarInput in input.jarInputs) {
         // 输出路径
@@ -196,249 +165,35 @@ for (input in transformInvocation.inputs) {
         )
     }
 }
-1.7 Transform 增量模式
+```
+### 1.7 Transform 增量模式
+
 任何构建系统都会尽量避免重复执行相同工作，Transform 也不例外。虽然增量构建并不是必须的，但作为一个合格的 Transform 实现应该具备增量能力。
 
 1、增量模式标记位： Transform API 有两个增量标志位，不要混淆：
 
-Transform#isIncremental()： Transform 增量构建的使能开关，返回 true 才有可能触发增量构建；
-TransformInvocation#isIncremental()： 当次 TransformTask 是否增量执行，返回 true 表示正在增量模式。
-2、Task 增量模式与 Transform 增量模式的区别： Task 增量模式与 Transform 增量模式的区别在于，Task 增量执行时会跳过整个 Task 的动作列表，而 Transform 增量执行依然会执行 TransformTask，但输入内容会增加变更内容信息。
+- Transform#isIncremental()： Transform 增量构建的使能开关，返回 true 才有可能触发增量构建；
+- TransformInvocation#isIncremental()： 当次 TransformTask 是否增量执行，返回 true 表示正在增量模式。
 
-3、增量模式的输入： 增量模式下的所有输入都是带状态的，需要根据这些状态来做不同的处理，不需要每次所有流程都重新来一遍。比如新增的输入就需要处理，而未修改的输入就不需要处理。Transform 定义了四个输入文件状态：
-
-com.android.build.api.transform.Status.java
-
+增量模式下的所有输入都是带状态的，Transform 定义了四个输入文件状态：
+```kotlin
 public enum Status {
-
-    // 未修改，不需要处理，也不需要复制操作
-    NOTCHANGED,
-    
-    // 新增，正常处理并复制给下一个任务
-    ADDED,
-    
-    // 已修改，正常处理并复制给下一个任务
-    CHANGED,
-        
-    // 已删除，需同步移除 OutputProvider 指定的目标文件
-    REMOVED;
+    NOTCHANGED, // 未修改，不需要处理，也不需要复制操作
+    ADDED, // 新增，正常处理并复制给下一个任务
+    CHANGED, // 已修改，正常处理并复制给下一个任务
+    REMOVED; // 已删除，需同步移除 OutputProvider 指定的目标文件
 }
-1.8 注册 Transform
-在 BaseExtension 中维护了一个 Transform 列表，自定义 Transform 需要注册才能生效，而且还支持额外设置 TransformTask 的依赖。
+```
+## 2、抽象出一个通用 Transform 模板
 
-BaseExtension.kt
+整个 Transform 的核心过程是有固定套路，模板流程图如下：
 
-abstract class BaseExtension {
-    private val _transforms: MutableList<Transform> = mutableListOf()
-    private val _transformDependencies: MutableList<List<Any>> = mutableListOf()
-    ...
+<img width="600" alt="Transform的核心过程" src="https://user-images.githubusercontent.com/17560388/179890215-5cc7e596-c21d-47df-9d65-3ba1322f705a.png">
 
-    fun registerTransform(transform: Transform, vararg dependencies: Any) {
-        _transforms.add(transform)
-        _transformDependencies.add(listOf(dependencies))
-    }
-}
-注册 Transform：
+我们把整个流程图做成一个抽象模板类，子类需要重写 provideFunction() 方法，从输入流读取 Class 文件，修改完字节码后再写入到输出流。其他的一切方法都交给 BaseTransform 去完成
 
-// 获取 Android 扩展
-val androidExtension = project.extensions.getByType(BaseExtension::class.java)
-// 注册 Transform，支持额外增加依赖
-androidExtension.registerTransform(ToastTransform(project)/* 支持增加依赖*/)
-提示： 为了提高编译效率，可以判断 Variant 为 release 类型才注册 Transform，也可以通过重写 Transform#applyToVariant() 来决定是否执行 Transform。
-
-2. Transform 核心源码分析
-这一节我们来分析 Transform 相关核心源码，这里我们引用的是 Android Gradle Plugin 7.1.0 版本的源码。
-
-2.1 Transform 与 Task 的关系
-Project 的构建逻辑由一系列 Task 的组成，每个 Task 负责完成一个基本的工作，例如 Javac 编译 Task。Transform 也是依靠 Task 执行的，在配置阶段，Gradle 会为注册的 Transform 创建对应的 Task。
-
-提示： 说 “创建” 可能不太严谨，TransformManager 使用 register 懒创建的方式注册 Task，其实还没有创建 Task 实例。我们不要复杂化了，就说创建吧。
-
-而 Task 的依赖关系是通过 TransformTask 的输入输出关系隐式确定的，TransformManager 通过 TransformStream 链接各个 TransformTask 的输入输出，进而控制 Transform 的依赖关系顺序。
-
-LibraryTaskManager.java
-
-@Override
-protected void doCreateTasksForVariant(ComponentInfo<LibraryVariantBuilderImpl, LibraryVariantImpl> variantInfo) {
-    ...
-    // ----- External Transforms -----
-    // apply all the external transforms.
-    List<Transform> customTransforms = extension.getTransforms();
-    List<List<Object>> customTransformsDependencies = extension.getTransformsDependencies();
-
-    final IssueReporter issueReporter = libraryVariant.getServices().getIssueReporter();
-
-    for (int i = 0, count = customTransforms.size(); i < count; i++) {
-        Transform transform = customTransforms.get(i);
-
-        // Check the transform only applies to supported scopes for libraries:
-        // We cannot transform scopes that are not packaged in the library
-        // itself.
-        Sets.SetView<? super Scope> difference = Sets.difference(transform.getScopes(), TransformManager.PROJECT_ONLY);
-        if (!difference.isEmpty()) {
-            String scopes = difference.toString();
-            issueReporter.reportError(
-                    Type.GENERIC,
-                    String.format(
-                            "Transforms with scopes '%s' cannot be applied to library projects.",
-                            scopes));
-        }
-
-        List<Object> deps = customTransformsDependencies.get(i);
-        transformManager.addTransform(
-                taskFactory,
-                libraryVariant,
-                transform,
-                null,
-                task -> {
-                    // （3.2节提到的额外依赖）
-                    // 在注册 Transform 时，可以额外增加依赖
-                    if (!deps.isEmpty()) {
-                        task.dependsOn(deps);
-                    }
-                },
-                taskProvider -> {
-                    // if the task is a no-op then we make assemble task
-                    // depend on it.
-                    if (transform.getScopes().isEmpty()) {
-                        TaskFactoryUtils.dependsOn(
-                                libraryVariant.getTaskContainer().getAssembleTask(),
-                                taskProvider);
-                    }
-                });
-    }
-
-    // Create jar with library classes used for publishing to runtime elements.
-    taskFactory.register(new BundleLibraryClassesJar.CreationAction(
-            libraryVariant, AndroidArtifacts.PublishedConfigType.RUNTIME_ELEMENTS));
-    ...
-}
-网上很多朋友提到 “自定义 Transform 的执行时机早于系统内置 Transform”，但从 AGP 7.1.0 源码看，并不存在系统 Transform。猜测是新版本 AGP 将这部分 “系统内置 Transform” 修改为由 Task 直接实现，毕竟 从 AGP 7.0 开始 Transform 标记为过时了。
-
-2.2 Transform 的创建过程
-1、注册 Transform： 注册 Transform 仅是将对象注册到 BaseExtension 中的列表中。TransformManager 会通过 Task 的输入输出隐式建立 Transform 的依赖顺序，另外还支持在注册时添加额外的依赖。
-BaseExtension.kt
-
-abstract class BaseExtension {
-    private val _transforms: MutableList<Transform> = mutableListOf()
-    private val _transformDependencies: MutableList<List<Any>> = mutableListOf()
-    ...
-
-    fun registerTransform(transform: Transform, vararg dependencies: Any) {
-        _transforms.add(transform)
-        _transformDependencies.add(listOf(dependencies))
-    }
-}
-2、创建 TransformTask 的执行链： TransformTask 属于 Android 构建构成的一部分，所有 Android Task 的创建入口都从 BasePlugin#createAndroidTasks() 开始。其中会为所有 Variant 变体创建相关的 Task，经过一系列调用后，会通过抽象方法 TaskManager#doCreateTaskForVariant() 分派到 ApplicationTaskManager 和 LibraryTaskManager 两个子类中，以区分 App 模块和 Library 模块。
-调用链概要：
-
-BasePlugin#createAndroidTasks()
--> TaskManager#createTasks()->遍历所有变体
--> for {
-    TaskManager#createTasksForVariant(variant)
-    -> abstract TaskManager#doCreateTasksForVariant(variant)
-    // App
-    -> ApplicationTaskManager#doCreateTasksForVariant(variant)
-    -> ApplicationTaskManager#createCommonTask(variant)
-    -> ApplicationTaskManager#createCompileTask(variant)
-    -> TaskManager#createPostCompilationTasks(config)
-    -> for { Transform#addTransform(transform) }
-    // Library
-    -> LibraryTaskManager#doCreateTasksForVariant(variant)
-    -> for { Transform#addTransform(transform) }
-}
-2.3 TransformTask 的命名格式
-Transform#getName() 会用于构造 Task Name，命名格式为 transform[InputTypes]With[name]For[Configuration]，例如 transformClassed。这块源码体现在 TransformManager 中创建 Task 的位置：
-
-TransformManager.java
-
-// 创建 Transform Task
-public <T extends Transform> Optional<TaskProvider<TransformTask>> addTransform(...) {
-    ...
-    // TaskName = 前缀 + Configuration
-    String taskName = creationConfig.computeTaskName(getTaskNamePrefix(transform), "");
-    ...
-}
-
-// TaskName 前缀
-static String getTaskNamePrefix(Transform transform) {
-    StringBuilder sb = new StringBuilder(100);
-    sb.append("transform");
-    sb.append(transform
-        .getInputTypes()
-        .stream()
-        .map(inputType -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, inputType.name()))
-        .sorted() // Keep the order stable.
-        .collect(Collectors.joining("And")));
-    sb.append("With");
-    StringHelper.appendCapitalized(sb, transform.getName());
-    sb.append("For");
-
-    return sb.toString();
-}
-2.4 TransformTask 的输入输出
-TransformTask 通过 @Input 和 @OutputDirectory 等注解，将 Transform API 关联到 Task 的输入输出上：
-
-TransformTask.java
-
-public abstract class TransformTask extends StreamBasedTask {
-        
-    ...
-        
-    @Input
-    public Set<QualifiedContent.ContentType> getInputTypes() {
-        return transform.getInputTypes();
-    }
-
-    @OutputDirectory
-    @Optional
-    public abstract DirectoryProperty getOutputDirectory();
-}
-2.5 执行 transform() 方法
-每个 Task 内部都保持了一个 Action 列表 actions，执行 Task 就是按顺序执行这个列表，对于自定义 Task，可以通过 @TaskAction 注解添加默认 Action。
-
-TransformTask.java
-
-@TaskAction
-void transform(final IncrementalTaskInputs incrementalTaskInputs) {
-    ...
-    transform.transform(new TransformInvocationBuilder(context)
-      .addInputs(consumedInputs.getValue())
-      .addReferencedInputs(referencedInputs.getValue())
-      .addSecondaryInputs(changedSecondaryInputs.getValue())
-      .addOutputProvider(outputStream != null
-          ? outputStream.asOutput()
-          : null)
-      .setIncrementalMode(isIncremental.getValue())
-      .build());
-    ...
-}
-2.6 Library 模块限制
-Library 模块仅只支持使用 Scope.PROJECT 作用域：
-
-LibraryTaskManager.java
-
-// Check the transform only applies to supported scopes for libraries:
-// We cannot transform scopes that are not packaged in the library
-// itself.
-Sets.SetView<? super Scope> difference = Sets.difference(transform.getScopes(), TransformManager.PROJECT_ONLY);
-if (!difference.isEmpty()) {
-    String scopes = difference.toString();
-    issueReporter.reportError(Type.GENERIC, String.format("Transforms with scopes '%s' cannot be applied to library projects.",scopes));
-}
-3. 自定义 Transform 模板
-上一节我们探讨了 Transform 的基本工作机制，第 3 节和第 4 节我们来实现一个 Transform Demo。Transform 的核心代码在 transform() 方法中，我们要做的就是遍历输入文件，再把修改后的文件复制到目标路径中，对于 JarInputs 还有一次解压和压缩。更进一步，再考虑增量编译的情况。
-
-因此，整个 Transform 的核心过程是有固定套路，模板流程图如下：
-
-
-—— 图片引用自 https://rebooters.github.io/2020/01/04/Gradle-Transform-ASM-探索/
-
-我们把整个流程图做成一个抽象模板类，子类需要重写 provideFunction() 方法，从输入流读取 Class 文件，修改完字节码后再写入到输出流。甚至不需要考虑 Trasform 的输入文件遍历、加解压、增量等，舒服！
-
-BaseCustomTransform.kt
-
-abstract class BaseCustomTransform(private val debug: Boolean) : Transform() {
+```kotlin
+abstract class BaseTransform(private val debug: Boolean) : Transform() {
 
     abstract fun provideFunction(): ((InputStream, OutputStream) -> Unit)?
 
@@ -590,15 +345,12 @@ abstract class BaseCustomTransform(private val debug: Boolean) : Transform() {
         }
     }
 }
-4. Hello Transform 示例
-现在，我手把手带你基于 BaseCustomTransform 实现一个 Transform Demo。示例代码我已经上传到 Github · DemoHall · HelloTransform。有用请给个免费的 Star 支持下。
+```
+## 3、具体应用
 
-Demo 效果很简单：
+### 3.1 初始化代码框架
 
-实现一个 Transform，在编译时在 Activity#onCreate() 方法末尾织入一个 Toast 语句；
-仅通过自定义注解 @Hello 修饰的 Activity#onCreate() 方法会生效。
-4.1 步骤 1：初始化代码框架
-首先，我们先搭建工程的整体框架，再来编写核心的 Transform 逻辑。我们选择自定义 Gradle 插件来承载 Transform 的逻辑，可维护性更好。关于自定义 Gradle 插件的步骤具体见上一篇文章《手把手带你自定义 Gradle 插件》，此处不展开。
+我们通过自定义 Gradle 插件来承载 Transform 的逻辑，可维护性更好。
 
 提示： 提醒一下，并不是说一定要由 Gradle 插件来承载，你直接在 .gradle 文件中实现也是 OK 的。
 
@@ -614,17 +366,16 @@ class ToastPlugin : Plugin<Project> {
         androidExtension.registerTransform(ToastTransform(project)/* 支持增加依赖*/)
     }
 }
-4.2 步骤 2：拷贝 Transform 模板类
-将我们实现的 BaseCustomTransform 模板类复制到工程下，再实现一个子类：
+### 4.2 实现一个具体的 BaseTransform 子类
+
+将我们实现的 BaseTransform 模板类复制到工程下，再实现一个子类：
 
 ToastTransform.kt
 
 internal class ToastTransform(val project: Project) : BaseCustomTransform(true) {
 
-    // Transform 名
     override fun getName() = "ToastTransform"
 
-    // 是否支持增量构建
     override fun isIncremental() = true
 
     /**
@@ -715,53 +466,14 @@ BUILD SUCCESSFUL in 3m 18s
 33 actionable tasks: 33 executed
 
 Build Analyzer results available
-5. Transform 的未来
-从 AGP 7.0 开始，Transform API 已经被废弃了。是的，就是卷，而且这次直接是降维打击。以前 Transform 是 AGP 的特性，现在 Gradle 也来整 Transform，不过换了个名字，叫 —— TransformAction。
 
-那么，我们还有必要学 AGP Transform API 吗？如果你现在涉足字节码插桩这块，你建议你还是学以下：
 
-1、社区沉淀： AGP Transform API 发展多年，目前社区中已经沉淀下非常多优秀的开源组件和博客，这些资源对你非常有帮助。而 TransformAction 的社区沉淀还非常单薄；
-2、技术思维： 虽然换了一套 API，但背后的思路 / 套路是相似的。理解 AGP Transform 的工作机制，对你理解 Gradle TransformAction 有事半功倍的效果。
-例如，以下是 Gradle 官方文档的演示代码，是不是套路差不多？
 
-abstract class CountLoc implements TransformAction<TransformParameters.None> {
+## 参考
 
-    @Inject                                                             
-    abstract InputChanges getInputChanges()
+[Android Gradle Transform 详解](https://www.jianshu.com/p/cf90c557b866)
 
-    @PathSensitive(PathSensitivity.RELATIVE)
-    @InputArtifact
-    abstract Provider<FileSystemLocation> getInput()
-
-    @Override
-    void transform(TransformOutputs outputs) {
-        def outputDir = outputs.dir("${input.get().asFile.name}.loc")
-        println("Running transform on ${input.get().asFile.name}, incremental: ${inputChanges.incremental}")
-        inputChanges.getFileChanges(input).forEach { change ->          
-            def changedFile = change.file
-            if (change.fileType != FileType.FILE) {
-                return
-            }
-            def outputLocation = new File(outputDir, "${change.normalizedPath}.loc")
-            switch (change.changeType) {
-                case ADDED:
-                case MODIFIED:
-                    println("Processing file ${changedFile.name}")
-                    outputLocation.parentFile.mkdirs()
-
-                    outputLocation.text = changedFile.readLines().size()
-
-                case REMOVED:
-                    println("Removing leftover output file ${outputLocation.name}")
-                    outputLocation.delete()
-
-            }
-        }
-    }
-}
-6. 总结
-本文的示例代码已上传到 https://github.com/pengxurui/DemoHall，请 Star 支持。关注我，带你了解更多，我们下次见。
-
+[其实 Gradle Transform 就是个纸老虎 —— Gradle 系列(4)](https://www.jianshu.com/p/067675243777)
 
 
 
