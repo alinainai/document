@@ -129,6 +129,8 @@ plugins {
     id 'com.gas.gradleplugin'
 }
 ```
+这样在执行 `app build` 过程的时候可以看到 `Hello CustomPlugin` 的日志
+
 ## 参考
 
 - [Developing Custom Gradle Plugins](https://docs.gradle.org/current/userguide/custom_plugins.html)
