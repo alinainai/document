@@ -131,6 +131,8 @@ plugins {
 ```
 这样在执行 `app build` 过程的时候可以看到 `Hello CustomPlugin` 的日志
 
+### 3.gradle插件的拓展
+
 ## 参考
 
 - [Developing Custom Gradle Plugins](https://docs.gradle.org/current/userguide/custom_plugins.html)
