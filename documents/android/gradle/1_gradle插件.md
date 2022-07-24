@@ -73,9 +73,9 @@ publishing {
     }
 }
 ```
-注意一下 url = "$rootDir/maven-repo" ,这个是 gradle 插件发布的地址，demo 会将 gradle 插件发布到根目录的 maven-repo 文件夹中
+注意一下 `url = "$rootDir/maven-repo"` ,这个是 `gradle 插件` 发布的地址，`demo` 会将 `gradle 插件`发布到根目录的` maven-repo` 文件夹中
 
-### 2.3 实现一个 CustomPlugin
+### 2.3 实现 CustomPlugin
 
 ```kotlin
 import org.gradle.api.Plugin
@@ -85,6 +85,48 @@ class CustomPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         println("Hello CustomPlugin")
     }
+}
+```
+
+在项目的 `gradle task` 列表中执行 `pulish` task 将插件发布到本地。如果 `gradle task` 列表中没有 task 任务，可以先执行一下 `File -> Sync Project with Gradle Files`
+
+### 2.4 在 app 添加依赖
+
+在 setting.gradle 中添加 maven 本地仓库
+```groovy
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+        maven {
+            url = uri("$rootDir/maven-repo")
+        }
+
+    }
+}
+```
+在项目的 build.gradle 中添加 classpath 的依赖
+```groovy
+buildscript {
+    dependencies {
+        classpath "com.gas.gradleplugin:custom:1.1"
+    }
+}
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    id 'com.android.application' version '7.2.1' apply false
+    id 'com.android.library' version '7.2.1' apply false
+    id 'org.jetbrains.kotlin.android' version '1.6.10' apply false
+    id 'org.jetbrains.kotlin.jvm' version '1.6.10' apply false
+}
+```
+在 app 的 build.gradle 中添加插件的依赖
+```groovy
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.gas.gradleplugin'
 }
 ```
 ## 参考
