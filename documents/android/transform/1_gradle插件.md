@@ -11,13 +11,69 @@ android官方提供了很多可用的 gradle 插件，比如:
 - apply plugin: 'com.android.library'
 
 ## 2、实现一个 Gradle 插件
-新建一个 `Java or Kotlin Library` 
 
-POM（Project Object Model）项目对象模型，包含：
-- groupId	组织 / 公司的名称	com.github.bumptech.glide
-- artifactId	组件的名称	glide
-- version	组件的版本	4.11.0
-- packaging	打包的格式	aar/jar
+本文 demo 基于 gradle 7.3.3 开发
+
+### 2.1 新建一个 `anndroid` 项目 `TransformDemo` 
+### 2.2 新建一个 `Java or Kotlin Library` 名字任意，如 `gradleplugin` 
+并配置 gradleplugin 的 build.gradle 
+
+```groove
+plugins {
+    id 'java-library'
+    id 'java-gradle-plugin'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'com.gradle.plugin-publish' version '0.21.0'
+    id 'maven-publish'
+    id 'groovy'
+    //dokka 生成 Java 文档的库
+}
+
+dependencies {
+    implementation localGroovy() // Groovy DSL
+    implementation gradleApi()  // Gradle DSL
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    group = 'Publications'
+    description = 'Create jar of sources.'
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+gradlePlugin {
+    plugins {
+        simplePlugin {
+            id = 'com.gas.gradleplugin'
+            implementationClass = 'com.gas.gradleplugin.CustomPlugin'
+        }
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.gas.gradleplugin' // 组织/公司的名称，如 com.github.bumptech.glide
+            artifactId = 'custom' // 组件的名称如，glide
+            version = '1.1'
+            from components.java
+            // 上传source，可以看到方法的注释
+            artifact sourcesJar
+        }
+    }
+    repositories {
+        maven {
+            url = "$rootDir/maven-repo"
+        }
+    }
+}
+```
+
 
 ## 参考
 
