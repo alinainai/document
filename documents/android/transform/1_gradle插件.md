@@ -18,10 +18,10 @@
 ### 2.2 新建一个 `Java or Kotlin Library` 名字任意，如 `gradleplugin` 
 并配置 gradleplugin 的 build.gradle 
 
-```groove
+```groovy
 plugins {
     id 'java-library'
-    id 'java-gradle-plugin'
+    id 'java-gradle-plugin' // 根据 gradlePlugin 中的配置自动生成插件的配置文件
     id 'org.jetbrains.kotlin.jvm'
     id 'com.gradle.plugin-publish' version '0.21.0'
     id 'maven-publish'
@@ -50,7 +50,7 @@ gradlePlugin {
     plugins {
         simplePlugin {
             id = 'com.gas.gradleplugin'
-            implementationClass = 'com.gas.gradleplugin.CustomPlugin'
+            implementationClass = 'com.gas.gradleplugin.CustomPlugin' // 自定义的 Plugin<Project> 
         }
     }
 }
@@ -73,10 +73,20 @@ publishing {
     }
 }
 ```
-注意一下 url = "$rootDir/maven-repo" ,这个是 gradle 插件发布的地址，这里咱们将 gradle 插件发布到本地
+注意一下 url = "$rootDir/maven-repo" ,这个是 gradle 插件发布的地址，demo 会将 gradle 插件发布到根目录的 maven-repo 文件夹中
 
-### 2.3 
+### 2.3 实现一个 CustomPlugin
 
+```kotlin
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+
+class CustomPlugin : Plugin<Project> {
+    override fun apply(project: Project) {
+        println("Hello CustomPlugin")
+    }
+}
+```
 ## 参考
 
 - [Developing Custom Gradle Plugins](https://docs.gradle.org/current/userguide/custom_plugins.html)
