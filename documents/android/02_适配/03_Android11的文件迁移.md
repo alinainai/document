@@ -1,51 +1,57 @@
-## 1. Android_Q 的分区存储
+## 1、 Android_Q 的分区存储
 
-在Android使用 fuse 文件系统开始，Android针对外置存储支持了独立的沙箱存储空间，一般通过Context.getExternalFilesDir() Api 获取，该空间内的数据为应用独有，并且不需要申请任何权限即可使用。
-但是当时并没有限制应用读写非沙箱内的数据。从Android Q开始，出于数据隐私问题，Android 希望禁止应用程序操作非沙箱内的数据。为了过度，Android提供了requestLegacyExternalStorage机制，来帮助应用使用原来的机制继续读写存储卡。
-Android 应用程序即使获取了读写存储卡权限也不能读写非沙盒路径下的数据。除非Android 应用程序获得读写存储卡权限的情况下，必须在 AndroidManifest.xml 的 application 标签下声明 requestLegacyExternalStorage=true，才可以访问非沙盒路径下的数据。
-targetSdkVersion < 29 的应用程序默认带有requestLegacyExternalStorage=true属性。
+从 `Android` 使用 `fuse` 文件系统开始，`Android`系统就针对外置存储支持了独立的沙箱存储空间，一般通过 `Context.getExternalFilesDir()` 获取，该空间内的数据为应用独有，并且不需要申请任何权限即可使用。但是当时并没有限制应用读写非沙箱内的数据。
 
-## 2. Androd 11 无效的 requestLegacyExternalStorage=true
+从`Android Q`开始，出于数据隐私问题，`Android` 希望禁止应用程序操作非沙箱内的数据。为了过度，Android提供了 `requestLegacyExternalStorage` 机制，来帮助应用使用原来的机制继续读写存储卡。
 
-当targetSdk 升级到 30 之后，requestLegacyExternalStorage=true 无效，所以必须适配。
+`Android` 应用程序即使获取了读写存储卡权限也不能读写非沙盒路径下的数据。除非 `Android` 应用程序获得读写存储卡权限的情况下，必须在 AndroidManifest.xml 的 application 标签下声明 `requestLegacyExternalStorage=true`，才可以访问非沙盒路径下的数据。
 
-## 3. 文件迁移的策略
+`targetSdkVersion < 29` 的应用程序默认带有 `requestLegacyExternalStorage=true` 属性。
+
+## 2、 `Androd 11` 无效的 `requestLegacyExternalStorage=true`
+
+当 `targetSdk` 升级到 `30` 之后，`requestLegacyExternalStorage=true` 无效，所以必须适配。
+
+## 3、 文件迁移的策略
 
 在数据迁移的时候，有个很重要的前提是，app能够访问旧存储模型。我们看看什么情况能访问旧存储模型，得分几种情况讨论：
 
-targetSdkVersion 28的app安装在Android 9（28）的手机上，手机系统升级到Android10或11，app正常访问旧存储模型。这种情况和把targetSDKVersion 28的app安装到Android10或11系统手机上一样的情况。
+`targetSdkVersion 28` 的 `app` 安装在`Android 9（28）`的手机上，手机系统升级到`Android10或11`，app正常访问旧存储模型。这种情况和把`targetSDKVersion 28`的app安装到Android10或11系统手机上一样的情况。
 
-* target 28在Android 9上，app target升级到30，覆盖安装，旧存储模型访问正常；
-* target 28在Android10上，app target升级到30，覆盖安装，旧存储模型访问正常。
-* requestLegacyExternalStorage设置成true，在 Android 10上新安装的target 30 app，也可以正常访问旧存储模型。
-* target28在Android11上，app target升级到30，覆盖安装，==旧存储模型不能访问了==，需要preserveLegacyExternalStorage设置成true。
+* `target 28`在`Android 9`上，`app target`升级到`30`，覆盖安装，旧存储模型访问正常；
+* `target 28`在A`ndroid10`上，`app target`升级到`30`，覆盖安装，旧存储模型访问正常。
+* `requestLegacyExternalStorage`设置成`true`，在 `Android 10`上新安装的`target 30 app`，也可以正常访问旧存储模型。
+* `target28` 在`Android11` 上，`app target`升级到30，覆盖安装，==旧存储模型不能访问了==，需要`preserveLegacyExternalStorage`设置成true。
 
-怎么进行数据迁移最好呢？targetSDKVersion 28的时候，先大规模的升级一次，此app就包含数据迁移功能，同时共享媒体的方式也按照分区存储模型的规范来，这样不论什么版本系统的用户，都能完成数据迁移，同时进行共享媒体的方式也正确。但是，有部分用户就是不升级我们的app，可是我们app以后也得发版，而且target也得升级，假如有一部分用户没升级，等升级的时候，我们的app的target已经是30了，这些用户的系统如果是小于29的，可以正常迁移，如果这些用户的系统版本是29或者30，target30的app在29的系统上正常迁移，target30的app在30系统上，preserveLegacyExternalStorage设置成true，正常迁移。
+## 4、怎么进行数据迁移最好呢？
 
-所以我们的数据迁移方案就是，做好数据迁移功能和共享媒体功能，requestLegacyExternalStorage 和 preserveLegacyExternalStorage 都设置成 true，target 升级不升级都没问题。不过前提是compileSdkVersion 得是 30
+`targetSDKVersion 28`的时候，先大规模的升级一次，此`app`就包含数据迁移功能，同时共享媒体的方式也按照分区存储模型的规范来，这样不论什么版本系统的用户，都能完成数据迁移，同时进行共享媒体的方式也正确。但是，有部分用户就是不升级我们的app，可是我们app以后也得发版，而且target也得升级，假如有一部分用户没升级，等升级的时候，我们的app的target已经是30了，这些用户的系统如果是小于29的，可以正常迁移，如果这些用户的系统版本是29或者30，target30的app在29的系统上正常迁移，target30的app在30系统上，preserveLegacyExternalStorage设置成true，正常迁移。
 
-## 4. 实战
+所以我们的数据迁移方案就是，做好数据迁移功能和共享媒体功能，`requestLegacyExternalStorage` 和 `preserveLegacyExternalStorage` 都设置成 true，`target` 升级不升级都没问题。不过前提是`compileSdkVersion` 得是 30
 
-在 8.0 及以上的系统，采用 Files.move 进行数据迁移，8.0 以下的系统采用 File.rename 进行数据迁移。Files 的 move 方法既可以作用于文件也可以作用于文件夹。
+## 5. 实战
+
+在 `8.0 及以上的系统`，采用 `Files.move` 进行数据迁移，`8.0 以下的系统`采用 `File.rename` 进行数据迁移。Files 的 `move` 方法既可以作用于文件也可以作用于文件夹。
 
 我们项目中需要 move 的是文件夹，首先看看对move文件夹的定义：Empty directories can be moved. If the directory is not empty, the move is allowed when the directory can be moved without moving the contents of that directory. On UNIX systems, moving a directory within the same partition generally consists of renaming the directory. In that situation, this method works even when the directory contains files. 从定义中，我们知道在UNIX系统（linux源自UNIX）上同一个partition上，即便被move的文件夹中有内容，也是可以 move 的，实际就是重命名了一下。
 
 我们的需求：在分区存储模型下，SD卡的公共区域是禁止app使用的，为了保证我们app之前下载到SD的视频在分区存储模型下还能被app识别，所以，在app还是采用旧存储模型的时候，我们需要把这些视频迁移到app在 SD卡 的私有目录下。这两个目录都在SD卡上，属于同一个partition。说明一下，targetSDKVersion 29 或 30 的 app 在 Android 10和 Android 11上，也是有办法让app采用旧存储模型的；
 
-### 4.1 共享数据迁移 
+### 5.1 共享数据迁移 
 
-把之前保存的需要分享的视频从app自建的目录迁移到分区存储模型下 app 也能访问到 Movies 目录，这样做的目的是在分区存储模型下，自己和别的app还是访问到这些视频。
+把之前保存的需要分享的视频从`app自建的目录`迁移到`分区存储模型`下 app 也能访问到 Movies 目录，这样做的目的是在分区存储模型下，自己和别的app还是访问到这些视频。
 
-从/storage/emulated/0/shvdownload/video/VideoGallery 迁移到 /storage/emulated/0/Movies/SHVideo
+从`/storage/emulated/0/shvdownload/video/VideoGallery` 迁移到 `/storage/emulated/0/Movies/SHVideo`
 
 VideoGallery目录中有文件，SHVideo目录不存在，move可以成功。app在分区存储模型下，在任何版本系统上上述迁移都正常。
 
-### 4.2 私有数据迁移
+### 5.2 私有数据迁移
 
-从 /storage/emulated/0/xxx/data 迁移到 /storage/emulated/0/Android/data/包名/files/data
+从 `/storage/emulated/0/xxx/data` 迁移到 `/storage/emulated/0/Android/data/包名/files/data`
 
-xxx/data 目录中有文件，files/data目录不存在，在Android 10及以下的系统上，可以move成功；
-在Android 11的系统上 ，move失败了，报 DirectoryNotEmptyException。== 猜测可能是Android 11对 Android/data 目录有了限制吧！如果，在Android 11上还需要进行这种迁移的话，可以采用遍历文件夹输入输出流拷贝的方式。
+`xxx/data` 目录中有文件，`files/data`目录不存在，在`Android 10`及以下的系统上，可以`move`成功；
+
+在`Android 11`的系统上 ，`move`失败了，报 `DirectoryNotEmptyException`。== 猜测可能是Android 11对 Android/data 目录有了限制吧！如果，在Android 11上还需要进行这种迁移的话，可以采用遍历文件夹输入输出流拷贝的方式。
 
 ```shell
 java.nio.file.DirectoryNotEmptyException: /storage/emulated/0/xxx/data
@@ -103,7 +109,7 @@ private boolean moveData(File source, File target) {
         return isSuccess;
     } 
 ```
-## 5. requestLegacyExternalStorage和preserveLegacyExternalStorage的理解
+## 5、 `requestLegacyExternalStorage`和`preserveLegacyExternalStorage`的理解
 
 requestLegacyExternalStorage是 Android10 引入的，preserveLegacyExternalStorage 是 Android11 引入的。
 
