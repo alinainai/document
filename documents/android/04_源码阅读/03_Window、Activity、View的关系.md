@@ -1,6 +1,6 @@
-### Activity 的 setContentView
+## 1、Activity 的 setContentView
 
-<img src="https://user-images.githubusercontent.com/17560388/132340891-b304f0cd-c5f4-497c-98df-cd70ca4b6d65.png" alt="图片替换文本" width="600"  align="bottom" />
+<img src="https://user-images.githubusercontent.com/17560388/132340891-b304f0cd-c5f4-497c-98df-cd70ca4b6d65.png" alt="Activity 的 setContentView" width="600" />
 
 Activity 将操作交给 Window 来处理。getWindow 返回的是 Activity 中的全局变量 mWindow，它是 Window 窗口类型。
 
