@@ -4,7 +4,7 @@
 
 另一方面，ViewRootImpl 在添加 View 之前，又需要调用 requestLayout 方法，执行完整的 View 树的渲染操作
 
-### 屏幕绘制
+## 屏幕绘制
 
 #### ViewRootImpl requestLayout 流程
 
