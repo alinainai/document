@@ -1,7 +1,9 @@
 
-### 1.编译阶段
+## 1.编译阶段 
 
-#### 1.1 Resources 资源文件
+从源码编译生成apk的过程
+
+### 1.1 Resources 资源文件
 
 资源文件包括项目中 res 目录下的各种 XML 文件、动画、drawable 图片、音视频等。
 
@@ -15,7 +17,7 @@ AAPT 负责编译项这些资源文件，XML文件编译成二进制文件，所
 
 <img src="https://user-images.githubusercontent.com/17560388/123922090-45048280-d9ba-11eb-96c5-8950ffe21730.png" alt="图片替换文本" width="600"  align="bottom" />
 
-#### 1.2 源码
+### 1.2 源码
 
 源码首先会通过 javac 编译为 .class 字节码文件，然后这些 .class 文件连同依赖的三方库中的 .class 文件一同被 dx 工具优化为 .dex 文件。
 
@@ -25,7 +27,7 @@ AAPT 负责编译项这些资源文件，XML文件编译成二进制文件，所
 
 <img src="https://user-images.githubusercontent.com/17560388/123921565-b98af180-d9b9-11eb-812a-7ed0bacff8cc.png" alt="图片替换文本" width="400"  align="bottom" />
 
-### 2.打包阶段
+## 2.打包阶段
 
 最后使用工具 APK Builder 将经过编译之后的 resource 和 .dex 文件一起打包到 apk 中，实际上被打包到 apk 中的还有一些其他资源，比如 AndroidManifest.xml 清单文件和三方库中使用的动态库 .so 文件。
 
@@ -51,18 +53,15 @@ apk 创建好之后，还不能直接使用。需要使用工具 jarsigner 对�
 
 <img src="https://user-images.githubusercontent.com/17560388/124059705-1b9d3280-da5e-11eb-874d-151b900b8daa.png" alt="图片替换文本" width="300"  align="bottom" />
 
-
 整个编译打包流程可以用下图来描述：
-
 
 <img src="https://user-images.githubusercontent.com/17560388/124059745-2f489900-da5e-11eb-9f6e-116ac03c5c4e.png" alt="图片替换文本" width="400"  align="bottom" />
 
-### 3.PMS安装过程概览
+## 3、PMS安装过程概览
 
 当我们点击某一个 App 安装包进行安装时，首先会弹出一个系统界面指示我们进行安装操作。这个界面是 Android Framework 中预置的一个 Activity—PackageInstallerActivity.java。
 
 当点击安装后，PackageInstallerActivity 最终会将所安装的 apk 信息通过 PackageInstallerSession 传给 PMS，具体方法在 commitLocked 方法中，如下所示：
-
 
 <img src="https://user-images.githubusercontent.com/17560388/132199632-b1cb233d-fc75-4bec-830d-619818f585ec.png" alt="图片替换文本" width="600"  align="bottom" />
 
@@ -73,7 +72,7 @@ apk 创建好之后，还不能直接使用。需要使用工具 jarsigner 对�
 - 拷贝安装包；
 - 装载代码。
 
-#### 3.1 拷贝安装包
+### 3.1 拷贝安装包
 
 从 installStage 方法开始看起，代码如下：
 
@@ -136,7 +135,7 @@ mPendingInstalls 是一个等待队列，里面保存所有需要安装的 apk �
 
 最终安装包在 data/app 目录下以 base.apk 的方式保存，至此安装包拷贝工作就已经完成。
 
-#### 3.2 装载代码
+### 3.2 装载代码
 
 代码拷贝结束之后，就开始进入真正的安装步骤。
 
@@ -164,7 +163,6 @@ installPackageLI 是 apk 安装阶段的核心代码，方法实现很长，部�
 - 图中 2 处对 apk 中的签名信息进行验证操作。collectCertificates 做签名验证，collectManifestDigest 主要是做包的项目清单摘要的收集，主要适合用来比较两个包的是否一样。如果我们设备上已经安装了一个 debug 版本的 apk，再次使用一个 release 版本的 apk 进行覆盖安装时，会在这一步验证失败，最终导致安装失败。
 - 图中 3 处时执行 dex 优化，实际为 dex2oat 操作，用来将 apk 中的 dex 文件转换为 oat 文件。
 - 图中 4 处调用 installNewPackageLI 方法执行新 apk 的安装操作
-
 
 installNewPackageLI 方法负责完成最后的 apk 安装过程，具体代码如下：
 
