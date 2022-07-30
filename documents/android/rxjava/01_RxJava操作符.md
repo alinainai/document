@@ -1,17 +1,20 @@
 
+## 说明
+
 官方文档
 [http://reactivex.io/documentation/observable.html](http://reactivex.io/documentation/observable.html)
 
-### RxJava2 gradle集成：
+RxJava2 gradle集成：也就是下面例子使用的版本
 
->implementation "io.reactivex.rxjava2:rxjava:2.2.8"
->
->implementation 'io.reactivex.rxjava2:rxkotlin:2.0.0'
+```groovy
+implementation "io.reactivex.rxjava2:rxjava:2.2.8"
+implementation 'io.reactivex.rxjava2:rxkotlin:2.0.0'
+```
 
 注意这里为了方便使用到了[RxKotlin](https://github.com/ReactiveX/RxKotlin)，一个非常不错的RxJava Kotlin扩展库，也是reactivex出品。
 
 
-## 1.生产者
+## 1、生产者
 
 ### 1.1 Flowable 操作符
 
@@ -27,7 +30,7 @@ Flowable.create(FlowableOnSubscribe<String> { emitter ->
 ```
 ### 1.2 Observable 操作符
 
-Observable: 无背压 (被观察者)，最常用的一个
+`Observable`: 不支持背压 (被观察者)，也是咱们开发中最常用的一个
 
 两者官方的使用建议：
 
@@ -46,7 +49,7 @@ Observable: 无背压 (被观察者)，最常用的一个
 
 ### 1.3 Single 操作符
 
-Single只包含两个事件，一个是正常处理成功的 onSuccess，另一个是处理失败的 onError，它只发送一次消息，一般在Android中网络请求返回结果使用 Single 接收。
+Single 只包含两个事件，一个是正常处理成功的 onSuccess，另一个是处理失败的 onError，它只发送一次消息，可以在网络请求需要结果的时候使用 Single 接收。
 
 ```kotlin
 Single.create(SingleOnSubscribe<Int> { emitter -> emitter.onSuccess(1) })
@@ -54,7 +57,7 @@ Single.create(SingleOnSubscribe<Int> { emitter -> emitter.onSuccess(1) })
 ```
 ### 1.4 Completable 操作符 
 
-Completable: 没有任何元素，只有一个完成或者错误信号的流，onComplete 和 onError 两个事件
+Completable: 没有任何元素，只有一个完成或者错误信号的流，onComplete 和 onError 两个事件。可以在网络请求不需要关心结果的时候使用 Completable 接收，比如说埋点。
 
 ```kotlin
 Completable.create { e -> e.onComplete() }
@@ -84,7 +87,7 @@ Maybe.create(MaybeOnSubscribe<Int> {e->
 举一个简单点的例子，如果被观察者快速发送消息，但是观察者处理消息的很缓慢，如果没有特定的流（Flow）控制，就会导致大量消息积压占用系统资源，最终导致十分缓慢。
 
 
-## 2.调度器
+## 2、调度器
 
  * Schedulers.computation() 用于计算任务，如事件循环或和回调处理，默认线程数等于处理器的数量
  * Schedulers.from(executor)使用指定的Executor作为调度器
@@ -94,7 +97,7 @@ Maybe.create(MaybeOnSubscribe<Int> {e->
  * Schedulers.trampoline()  当其它排队的任务完成后，在当前线程排队开始执行。
  * AndroidSchedulers.mainThread() 主线程，UI线程，可以用于更新界面
 
-## 3.创建事件序列
+## 3、创建事件序列
 
 ### 3.1 create() 操作符
 
