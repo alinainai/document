@@ -1,46 +1,39 @@
 ## 1.前言
 
-`app` 的启动的入口是 `ActivityThread` 的 `main` 方法。大多数UI系统会采用消息队列维护一个 `main线程` 进行单独控制视图，如 `win32`、`Android`、`Java Swing`。
+`app` 的启动的入口是 `ActivityThread` 的 `main` 方法。大多数UI系统会采用消息队列维护一个 `main线程` 单独控制视图的绘制，如 `win32`、`Android`、`Java Swing`。
 
-在 ActivityThread.main 方法中便存在一个消息循环的初始化。
+我们先看下在 ActivityThread.main 方法中 关于 Looper 的代码。
 
 ```java
 class ActivityThread{
     public static void main(String[] args) {
-        //构造一个主线程对应的Looper实例，存放在Looper.sMainLooper中
+        // 1、创建主线程对应的 Looper 实例
         Looper.prepareMainLooper();
 	//...
-	//创建一个Handler对象实例
-	if (sMainThreadHandler == null) {
-            sMainThreadHandler = thread.getHandler();
-        }
-        //开启事件循环
+	// 2、开启事件循环
         Looper.loop();
-    }
-    //handler实例
-    final H mH = new H();
-    final Handler getHandler() {
-        return mH;
     }
     static volatile Handler sMainThreadHandler;
 }
 ```
+注意两处核心代码
+
 ## 2. Looper分析
 
 Looper.prepareMainLooper 分析
 
 ```java
 class Looper{
-    //用于存放线程对应 Looper 实例
+    //ThreadLocal 是一个线程独有的对象，可以简单理解为线程隔离
     static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
     @Deprecated
     public static void prepareMainLooper() {
-        prepare(false);
+        prepare(false); // 注意这里的传入的参数为 false，在 Looper 的构造方法中会用到
         synchronized (Looper.class) {
-            sMainLooper = myLooper(); //保存mainLooper实例
+            sMainLooper = myLooper(); //将主线程的 Looper 赋值给静态引用 sMainLooper
         }
     }
-    //获取当前线程对应的Looper实例  	
+    
     public static @Nullable Looper myLooper() {
         return sThreadLocal.get();
     }
@@ -49,41 +42,46 @@ class Looper{
         prepare(true);
     }
     
-    //构造lopper实例放入一个ThteadLocal中
     private static void prepare(boolean quitAllowed) {
+        //如果 looper 已经存在直接抛出异常，一个线程只允许有一个 Looper 对象
+        if (sThreadLocal.get() != null) {
+            throw new RuntimeException("Only one Looper may be created per thread");
+        }
+	//创建一个 lopper 实例，并赋值给到当前线程 sThreadLocal 
         sThreadLocal.set(new Looper(quitAllowed));
     }
-    //构造一个消息队列，@param quitAllowed 是否允许退出
-	  private Looper(boolean quitAllowed) {
+    
+    // Looper 的构造方法，Looper 创建的时候会初始化一个 MessageQueue 对象
+    // main线程中 quitAllowed 为 false，表示 MessageQueue 不可以退出
+    private Looper(boolean quitAllowed) {
         mQueue = new MessageQueue(quitAllowed);
         mThread = Thread.currentThread();
     }
 }
 ```
 
-从上面我们可以得到 Looper.prepare 构造对应调用线程的 Looper 实例，然后将实例放入一个 ThreadLocal 中。
+`Looper.prepare` 主要作用是创建一个 Looper 实例并存储到当前线程的 sThreadLocal 中。sThreadLocal 是一个 ThreadLocal 对象，ThreadLocal 用于各个线程不共享变量值的操作。
+在 Looper 的构造方法中会生成一个 MessageQueue 对象，继续看一下 Looper.loop 方法。
 
-Looper.loop分析
 ```java
 class Looper{
     public static void loop() {      	
-    	final Looper me = myLooper(); //得到当前线程对应实例
-    	final MessageQueue queue = me.mQueue; //得到Looper对应MessageQueue
+    	final Looper me = myLooper(); // 得到当前线程对应实例
+    	final MessageQueue queue = me.mQueue; // 得到 Looper 对应 MessageQueue
     	boolean slowDeliveryDetected = false;
     	for (;;) {
             //取出消息队列
             Message msg = queue.next(); // might block
-            //没有消息那么就退出死循环
-            if (msg == null) {
+            if (msg == null) { //没有消息那么就退出循环
              	return;
             }
-            // Looper中你可以自定义一个日志器实例，然后就可以统计主线程是否耗时了
+            // 通过该方法可以在 Looper 中自定义一个日志器的实例，用于统计主线程是否耗时了
             final Printer logging = me.mLogging;
             if (logging != null) {
             logging.println(">>>>> Dispatching to " + msg.target + " " 
                 msg.callback + ": " + msg.what);
             }
-            //分配消息给回调
+            //调用消息分发
             msg.target.dispatchMessage(msg);
             if (observer != null) {
                 observer.messageDispatched(token, msg);
@@ -96,9 +94,10 @@ class Looper{
 }
 ```
 
-我们可以大概知道looper的loop函数会从MessageQueue不断取出Message对象,然后进行分发.
+Looper 的 loop 方法 从MessageQueue 不断取出 Message 对象，然后进行分发。
 
-一个可以用于统计主线程耗时的技巧
+上面我们提到通过实现一个 Printer 于统计主线程耗时的技巧，下面给出一个小例子
+
 ```kotlin
 class MainActivity : AppCompatActivity() {
     class MyPrinter : Printer {
@@ -126,33 +125,35 @@ class MainActivity : AppCompatActivity() {
     }
 }
 ```
-Looper 会不断调用 MessageQueue 的 next
+继续跟踪 MessageQueue 相关的方法
 
-### 3. MessageQueue 分析1
+## 3、MessageQueue 分析
+
+我们先看一下 MessageQueue 这个类的主要代码，主要还是 next() 方法
+
 ```java
-class MessageQueue{
-    //一个用于标识状态的类，这个标志位被native代码所使用
-    private long mPtr; // used by native code
+class MessageQueue{ 
+
+    private long mPtr; // used by native code //一个用于标识状态的类，这个标志位被native代码所使用
+    
     Message next() {
-        // Return here if the message loop has already quit and been disposed.
-      	//如果标志位为 0 那么证明消息循环已经结束，那么返回 null 即可
+        // Return here if the message loop has already quit and been disposed. 如果标志位为 0，那么证明消息循环已经结束，那么返回 null 即可
         final long ptr = mPtr;
         if (ptr == 0) {
             return null;
         }	
-	//未决的消息数目
         int pendingIdleHandlerCount = -1; // -1 only during first iteration
-        //下次轮询的时间
+        // 下次轮询的时间
         int nextPollTimeoutMillis = 0;
         for (;;) {
-            //如果现在最近的一个消息需要若干时间才能运行
+            // 如果现在最近的一个消息需要若干时间之后才执行
             if (nextPollTimeoutMillis != 0) {
-            	//刷新所有的binder命令到内核，这里不需要关心
+            	// 刷新所有的binder命令到内核，这里不需要关心
                 Binder.flushPendingCommands();
             }
-            //调用linux的epoll函数进行休眠
-	    //epoll是linux的下的api，这里不需要深究只需要认为object.wait 和object.notify的作用即可
-	    //当有信息要处理或者休眠到期或被内核唤醒
+            // 调用 linux 的 epoll 函数进行休眠
+	    // epoll 是 linux的 下的 api，这里不需要深究只需要认为 object.wait 和 object.notify 的作用即可
+	    // 当有信息要处理或者休眠到期或被内核唤醒
             nativePollOnce(ptr, nextPollTimeoutMillis);
             synchronized (this) {
                 // Try to retrieve the next message.  Return if found.
@@ -188,18 +189,18 @@ class MessageQueue{
                     // No more messages.
                     nextPollTimeoutMillis = -1;
                 }
-               //...略
+               //...
         }
     }
 }
 ```
 
-Message 作为队列节点的数据机构，我们看下他的属性：
+Message 作为队列节点的数据结构，我们看下他的属性：
 
 ```java
 public final class Message implements Parcelable {
    	
-    public int what; //用户多定义的消息标识号
+    public int what; // 用户多定义的消息标识号
     /**
      * 目标消息要送达的时间。这个时间是基于{@link SystemClock#uptimeMillis}.
      */
@@ -207,11 +208,11 @@ public final class Message implements Parcelable {
     @VisibleForTesting(visibility = VisibleForTesting.Visibility.PACKAGE)
     public long when;
 	
-    //所对应的handler如果这个为空那么标识这个消息作为同步凭证
+    // 所对应的 handler，如果这个为空那么标识这个消息作为同步屏障
     @UnsupportedAppUsage
     /*package*/ Handler target;
     
-    //如果你希望直接回调自定义的函数那么赋值这个即可
+    // 如果你希望直接回调自定义的函数那么赋值这个即可
     @UnsupportedAppUsage
     /*package*/ Runnable callback;
 
@@ -220,31 +221,34 @@ public final class Message implements Parcelable {
     /*package*/ Message next;
 }
 ```
-链表按照时间戳排序，when越小越靠前
+
+Message 在 MessageQueue 中按照时间戳排序，when越小越靠前
 
 ## 4. MessageQueue入队的操作函数
 ```java
 class MessageQueue{
-    //标识消息队列在调用next函数的时候被阻塞在pollOnce()传入非零的超时参数
+
+    // Indicates whether next() is blocked waiting in pollOnce() with a non-zero timeout.
     private boolean mBlocked;
-    final long ptr = mPtr; //当mPtr为0时退出消息循环，在构造MessageQueue的时候会初始化一个非0数值
-    //when 表示此消息要送达的时间
+    
+    final long ptr = mPtr; //当 mPtr 为0时退出消息循环，在构造 MessageQueue 的时候会初始化一个非0数值
+    // when 表示此消息要送达的时间
     boolean enqueueMessage(Message msg, long when) {
         synchronized (this) {       
             msg.markInUse();
             msg.when = when;
             Message p = mMessages;
             boolean needWake;
-            //当前队列是空的还未初始化 那么进行初始化
+            // 当前队列是空的还未初始化 那么进行初始化
             if (p == null || when == 0 || when < p.when) {
                 // New head, wake up the event queue if blocked.
                 msg.next = p;
                 mMessages = msg;
                 needWake = mBlocked;
             } else {
-                //插入消息在队列中，在多数情况我们不需要唤醒队列，除非有一个同步屏障在头队列头且消息是一个最早的异步消息，这里可以简单理解为了快速响应异步消息
+                // 插入消息在队列中，在多数情况我们不需要唤醒队列，除非有一个同步屏障在头队列头且消息是一个最早的异步消息，这里可以简单理解为了快速响应异步消息
                 needWake = mBlocked && p.target == null && msg.isAsynchronous();     
-                //根据消息的优先级插入到队列中
+                // 根据消息的优先级插入到队列中
                 Message prev;
                 for (;;) {
                     prev = p;
@@ -261,11 +265,11 @@ class MessageQueue{
                 prev.next = msg;
             }
             // We can assume mPtr != 0 because mQuitting is false.
-            //因为之前判断过当前消息队列没有退出( mQuitting is false),所以我们假设
+            // 因为之前判断过当前消息队列没有退出( mQuitting is false),所以我们假设
             //mPtr!=0
             if (needWake) {
-           	   //mPtr==0标识已经退出
-           	   //nativeWake使用linux底层的epool唤醒队列，并且使用mPtr告知唤醒的消息队列状态
+           	//mPtr==0 标识已经退出
+           	//nativeWake 使用 linux 底层的 epool 唤醒队列，并且使用 mPtr 告知唤醒的消息队列状态
                 nativeWake(mPtr);
             }
         }
@@ -280,17 +284,19 @@ class MessageQueue{
 
 Handler 的构造函数
 ```java
+class Handler{
+    //callback: 当消息对象 Message 没有设置特有回调时，就先会先用 Handler.CallBack，然后再根据返回值为false再去调用Handler自身的handleMessage函数
+    //async: 是否允许开启同步屏障 后文在讲叙
+    public Handler(Callback callback, boolean async) 
+}
+
 public interface Callback {
     public boolean handleMessage(Message msg);
 }
-
-class Handler{
-    //callback：当消息对象Message没有设置特有回调时，就先会先用Handler.CallBack，然后再根据返回值为false再去调用Handler自身的handleMessage函数
-    //async:是否允许开启同步屏障 后文在讲叙
-    public Handler(Callback callback, boolean async) 
-}
 ```
-我们知道消息分发的时候会调用下面的代码：
+
+消息通过下面的方法进行分发：
+
 ```java
 class Looper{
     public static void loop() {
@@ -325,13 +331,11 @@ class Handler{
 ```
 回调流程图：
 
-<img width="501" alt="msg回调流程" src="https://user-images.githubusercontent.com/17560388/154253375-a203c5d7-6a30-46e3-9841-983abc3bd84a.png">
+<img width="500" alt="msg回调流程" src="https://user-images.githubusercontent.com/17560388/154253375-a203c5d7-6a30-46e3-9841-983abc3bd84a.png">
 
 ## 6. 同步屏障
 
-Android 的主线程负责更新 ui，一般会每 16ms 重绘一次屏幕，为了防止 `UI绘制事件` 延迟。
-
-我们将 Message 分为 同步消息 和 异步消息，默认情况我们的消息都是同步消息。只需要调用 Message.setAsynchronous 即可成为异步消息.
+Android 的 main线程 负责更新 ui，一般会每 16ms 重绘一次屏幕。为了防止 `UI绘制事件` 延迟，我们将 Message 分为 同步消息 和 异步消息，默认情况我们的消息都是同步消息。只需要调用 Message.setAsynchronous 即可成为异步消息.
 
 ```java
 class Message{
@@ -348,14 +352,14 @@ class Message{
 }
 ```
 
-成为异步消息后，还需要插入同步屏障，这时所有的同步的消息都不会执行只会优先执行异步消息。
+成为异步消息后，还需要插入同步屏障，插入同步屏障后会优先执行异步消息。
 
 我们回过头看下MessageQueue的异步处理部分
 
 ```java
 class MessageQueue{
     Message next() {
-                //...略
+                //...
                 //如果当前的头节点是 target 是 null 那么证明插入了一个同步屏障标志
                 //那么一直轮询到一个异步消息然后返回处理
                 if (msg != null && msg.target == null) {
@@ -365,12 +369,11 @@ class MessageQueue{
                         msg = msg.next;
                     } while (msg != null && !msg.isAsynchronous());
                 }
-               //...略
+               //...
         }
     }
 }
 ```
-
 
 ## 7. UI更新机制
 ```java
