@@ -1,6 +1,6 @@
 先看一下 `android` 系统的结构图
 
-<img width="800" alt="interval弹珠图" src="(https://user-images.githubusercontent.com/17560388/181872654-aaf75bb7-7bcb-4fe5-b4cb-481cc36af221.png">
+<img width="800" alt="interval弹珠图" src="https://user-images.githubusercontent.com/17560388/181872654-aaf75bb7-7bcb-4fe5-b4cb-481cc36af221.png">
 
 ## 1、字节码层面
 `Android` 应用程序是运行在 `DVM` 中，每一个应用程序对应有一个单独的`DVM`实例。
