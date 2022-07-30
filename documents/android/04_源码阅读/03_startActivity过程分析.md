@@ -1,61 +1,109 @@
-本课时我们来看一下 startActivity 过程的具体流程，课程中引用的源码版本是 android-28。
+## 前提知识点
 
-在手机桌面应用中点击某一个 icon 之后，实际上最终就是通过 startActivity 去打开某一个 Activity 页面。我们知道 Android 中的一个 App 就相当于一个进程，所以 startActivity 操作中还需要判断，目标 Activity 的进程是否已经创建，如果没有，则在显示 Activity 之前还需要将进程 Process 提前创建出来。
+### 1.系统的启动流程 
 
-假设是从 ActivityA 跳转到另一个 App 中的 ActivityB，过程如下图所示：
+先简单的了解下android系统的启动流程方
 
-![image](https://user-images.githubusercontent.com/17560388/168716141-b60ef11f-b649-421c-9563-88ac64b99d6a.png)
+>加载BootLoader --> 初始化内核 --> 启动init进程 --> init进程fork出Zygote进程 --> Zygote进程fork出SystemServer进程
 
-整个 startActivity 的流程分为 3 大部分，也涉及 3 个进程之间的交互：
+### 2.前提知识点
 
-1. ActivityA --> ActivityManagerService（简称 AMS）
-2. ActivityManagerService --> ApplicationThread
-3. ApplicationThread --> Activity
+- 系统中的所有进程都是由 Zygote 进程 fork 出来的
+- SystemServer 进程是系统进程，很多系统服务，例如 ActivityManagerService、PackageManagerService、WindowManagerService…都是在该进程被创建后启动
+- ActivityManagerServices（AMS）：是一个服务端对象，负责所有的 Activity 的生命周期，AMS 通过 Binder与Activity 通信，而 AMS 与 Zygote 之间是通过 Socket 通信
+- ActivityThread：本篇的主角，UI线程/主线程，它的 main() 方法是 APP 的真正入口
+- ApplicationThread：一个实现了 IBinder 接口的 ActivityThread 内部类，用于 ActivityThread 和 AMS 的所在进程间通信
+- Instrumentation：可以理解为 ActivityThread 的一个工具类，在 ActivityThread 中初始化，一个进程只存在一个 Instrumentation 对象，在每个 Activity 初始化时，会通过 Activity 的 Attach 方法，将该引用传递给 Activity。Activity 所有生命周期的方法都有该类来执行。
 
-## ActivityA --> ActivityManagerService 阶段
+**本文基于 android 10 代码分析**
 
-这一过程并不复杂，用一张图表示具体过程如下：
+## 1、点击 Launcher 启动 App
 
-![image](https://user-images.githubusercontent.com/17560388/168716226-e6a97fc7-df2a-480d-8a9a-0232c4968b51.png)
+>Launcher 进程 --请求启动App的launcher页面 --> system_server(AMS) --创建应用--> Zygote
 
+### 1.1 Activity 的 startActivity
 
-接下来看下源码中做了哪些操作。
+Activity 的 startActivity 方法会走到 startActivityForResult 方法
 
-### Activity 的 startActivity
+```java
+    public void startActivityForResult(@RequiresPermission Intent intent, int requestCode,
+            @Nullable Bundle options) {
+        if (mParent == null) {
+            options = transferSpringboardActivityOptions(options);
+            Instrumentation.ActivityResult ar = mInstrumentation.execStartActivity( this, mMainThread.getApplicationThread(), mToken, this,
+                    intent, requestCode, options);
+            if (ar != null) {
+                mMainThread.sendActivityResult(
+                    mToken, mEmbeddedID, requestCode, ar.getResultCode(),
+                    ar.getResultData());
+            }
+            if (requestCode >= 0) {
+                mStartedActivity = true;
+            }
+            cancelInputsAndStartExitTransition(options);
+        } else {
+            ...
+        }
+    }
+```
+该方法最终调用 mInstrumentation.execStartActivity 方法
 
-![image](https://user-images.githubusercontent.com/17560388/168716252-2f284cac-c133-42e9-8ba8-9fc80da5303a.png)
+- mMainThread 是 ActivityThread 类型，ActivityThread 可以理解为一个进程，在这就是 A 所在的进程。
+- mMainThread.getApplicationThread() 的返回类型是 ApplicationThread，ApplicationThread 是 ActivityThread 的内部类，继承 IApplicationThread.Stub，也是个Binder 对象。ApplicationThread 用来实现进程间通信，具体来说就是 AMS 所在系统进程通知应用程序进程进行的一系列操作
 
-
-最终调用了 startActivityForResult 方法，传入的 -1 表示不需要获取 startActivity 的结果。
-
-### Activity 的 startActivityForResult
-
-具体代码如下所示：
-
-![image](https://user-images.githubusercontent.com/17560388/168716282-fe9d63d4-d9c5-4462-8aa7-905e79aea6f2.png)
-
-
-startActivityForResult 也很简单，调用 Instrumentation.execStartActivity 方法。剩下的交给 Instrumentation 类去处理。
-
-解释说明：
-
-- Instrumentation 类主要用来监控应用程序与系统交互。
-- 蓝框中的 mMainThread 是 ActivityThread 类型，ActivityThread 可以理解为一个进程，在这就是 A 所在的进程。
-- 通过 mMainThread 获取一个 ApplicationThread 的引用，这个引用就是用来实现进程间通信的，具体来说就是 AMS 所在系统进程通知应用程序进程进行的一系列操作，稍后会再介绍。
-
-### Instrumentation 的 execStartActivity
+### Instrumentation 的 execStartActivity 方法
 
 方法如下：
+```java
+    public ActivityResult execStartActivity(
+            Context who, IBinder contextThread, IBinder token, Activity target,
+            Intent intent, int requestCode, Bundle options) {
+        IApplicationThread whoThread = (IApplicationThread) contextThread;
+        Uri referrer = target != null ? target.onProvideReferrer() : null;
+        if (referrer != null) {
+            intent.putExtra(Intent.EXTRA_REFERRER, referrer);
+        }
+        ...
 
-![image](https://user-images.githubusercontent.com/17560388/168716311-9f940e3b-39d4-4152-a8a4-c5207a34997b.png)
+        try {
+            intent.migrateExtraStreamToClipData();
+            intent.prepareToLeaveProcess(who);
+            int result = ActivityTaskManager.getService()
+                .startActivity(whoThread, who.getBasePackageName(), intent,
+                        intent.resolveTypeIfNeeded(who.getContentResolver()),
+                        token, target != null ? target.mEmbeddedID : null,
+                        requestCode, 0, null, options);
+            checkStartActivityResult(result, intent);
+        } catch (RemoteException e) {
+            throw new RuntimeException("Failure from system", e);
+        }
+        return null;
+    }
+```
+在 Instrumentation 中，会通过 ActivityTaskManager.getService 获取 AMS(Android10之后改为 ActivityTaskManager，之前是 ActivityManager。) 的实例，然后调用其 startActivity 方法，实际上这里就是通过 AIDL 来调用 AMS 的 startActivity 方法，至此，startActivity 的工作重心成功地从进程 A 转移到了系统进程 AMS 中。
 
-在 Instrumentation 中，会通过 ActivityManger.getService 获取 AMS 的实例，然后调用其 startActivity 方法，实际上这里就是通过 AIDL 来调用 AMS 的 startActivity 方法，至此，startActivity 的工作重心成功地从进程 A 转移到了系统进程 AMS 中。
+我们看一下继续看一下获取 ActivityTaskManager 相关代码
 
-## ActivityManagerService --> ApplicationThread
+```java
+public static IActivityTaskManager getService() {
+    return IActivityTaskManagerSingleton.get();
+}
+
+private static final Singleton<IActivityTaskManager> IActivityTaskManagerSingleton =
+        new Singleton<IActivityTaskManager>() {
+            @Override
+            protected IActivityTaskManager create() {
+                final IBinder b = ServiceManager.getService(Context.ACTIVITY_TASK_SERVICE);
+                return IActivityTaskManager.Stub.asInterface(b);
+            }
+        };
+```
+
+## 2、ActivityManagerService --> ApplicationThread
 
 接下来就看下在 AMS 中是如何一步一步执行到 B 进程的。
 
-> 这里先剧透一下：刚才在看 Instrumentation 的时候，我们讲过一个 ApplicationThread 类，这个类是负责进程间通信的，这里 AMS 最终其实就是调用了 B 进程中的一个 ApplicationThread 引用，从而间接地通知 B 进程进行相应操作。
+>上面我们说过 ApplicationThread 类是负责进程间通信的，这里 AMS 最终其实就是调用了 B 进程中的一个 ApplicationThread 引用，从而间接地通知 B 进程进行相应操作。
 
 相比于 startActivity-->AMS，AMS-->ApplicationThread 流程看起来复杂好多了，实际上这里面就干了 2 件事：
 
