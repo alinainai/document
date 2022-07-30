@@ -1,8 +1,8 @@
-### 1.前言
-`Android` 基于`JVM`部分规范定制了自己的 `Davik` 和 `Art` 虚拟机，`Android` 会调用 `ActivityThread` 的 `main` 开始一个 `app` 的启动。
-大多数UI应用为了避免内存共享导致的多线程问题，都采用了消息队列维护一个 `Main线程` 进行单独控制视图，如 `win32`、`Android`、`Java Swing`。
+## 1.前言
 
-在 ActivityThread.main 便存在一个消息循环的初始化。
+`app` 的启动的入口是 `ActivityThread` 的 `main` 方法。大多数UI系统会采用消息队列维护一个 `main线程` 进行单独控制视图，如 `win32`、`Android`、`Java Swing`。
+
+在 ActivityThread.main 方法中便存在一个消息循环的初始化。
 
 ```java
 class ActivityThread{
@@ -25,15 +25,13 @@ class ActivityThread{
     static volatile Handler sMainThreadHandler;
 }
 ```
-### 2. Looper分析
-
-为避免一次性分析所有代码所带来的烦恼这chapter只解析部分
+## 2. Looper分析
 
 Looper.prepareMainLooper 分析
 
 ```java
 class Looper{
-    //用于存放线程对应Looper实例
+    //用于存放线程对应 Looper 实例
     static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
     @Deprecated
     public static void prepareMainLooper() {
@@ -200,8 +198,8 @@ Message 作为队列节点的数据机构，我们看下他的属性：
 
 ```java
 public final class Message implements Parcelable {
-   	//用户多定义的消息标识号
-    public int what;
+   	
+    public int what; //用户多定义的消息标识号
     /**
      * 目标消息要送达的时间。这个时间是基于{@link SystemClock#uptimeMillis}.
      */
@@ -222,9 +220,9 @@ public final class Message implements Parcelable {
     /*package*/ Message next;
 }
 ```
-链表按照时间戳排序，when越小越在前面
+链表按照时间戳排序，when越小越靠前
 
-### 4. MessageQueue入队的操作函数
+## 4. MessageQueue入队的操作函数
 ```java
 class MessageQueue{
     //标识消息队列在调用next函数的时候被阻塞在pollOnce()传入非零的超时参数
@@ -276,7 +274,7 @@ class MessageQueue{
 }
 ```
 
-### 5. Handler分析
+## 5. Handler分析
 
 为了构建一个和其他线程通信的桥梁，Android 提供 Handler，方便我们使用 Looper 完成线程通信和切换.
 
@@ -329,7 +327,7 @@ class Handler{
 
 <img width="501" alt="msg回调流程" src="https://user-images.githubusercontent.com/17560388/154253375-a203c5d7-6a30-46e3-9841-983abc3bd84a.png">
 
-### 6. 同步屏障
+## 6. 同步屏障
 
 Android 的主线程负责更新 ui，一般会每 16ms 重绘一次屏幕，为了防止 `UI绘制事件` 延迟。
 
@@ -374,7 +372,7 @@ class MessageQueue{
 ```
 
 
-### 7. UI更新机制
+## 7. UI更新机制
 ```java
 class ViewRootImpl{
     //这个函数开始便利根view致性各种绘制操作
