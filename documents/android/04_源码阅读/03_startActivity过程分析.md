@@ -1,5 +1,7 @@
 ## 前提知识点
 
+本文基于 Android 9 （SDK 28）代码
+
 ### 1.系统的启动流程 
 
 先简单的了解下 Android 系统的启动流程
@@ -16,8 +18,6 @@
 - ActivityThread：可以理解为我们常说的 `UI线程/主线程`，它的 main() 方法是 APP 的真正入口
 - ApplicationThread：一个实现了 IBinder 接口的 ActivityThread 内部类，用于 ActivityThread 和 AMS 的所在进程间通信
 - Instrumentation：可以理解为 ActivityThread 的一个工具类，在 ActivityThread 中初始化，一个进程只存在一个 Instrumentation 对象，在每个 Activity 初始化时，会通过 Activity 的 Attach 方法，将该引用传递给 Activity。Activity 所有生命周期的方法都有该类来执行。
-
-**本文基于 android 10 代码分析**
 
 ## 1、点击 Launcher 启动 App
 
@@ -63,32 +63,31 @@ public void startActivityForResult(@RequiresPermission Intent intent, int reques
 
 方法如下：
 ```java
-    public ActivityResult execStartActivity(
-            Context who, IBinder contextThread, IBinder token, Activity target,
-            Intent intent, int requestCode, Bundle options) {
-        IApplicationThread whoThread = (IApplicationThread) contextThread;
-        Uri referrer = target != null ? target.onProvideReferrer() : null;
-        if (referrer != null) {
-            intent.putExtra(Intent.EXTRA_REFERRER, referrer);
-        }
-        ...
-
-        try {
-            intent.migrateExtraStreamToClipData();
-            intent.prepareToLeaveProcess(who);
-            int result = ActivityTaskManager.getService()
-                .startActivity(whoThread, who.getBasePackageName(), intent,
-                        intent.resolveTypeIfNeeded(who.getContentResolver()),
-                        token, target != null ? target.mEmbeddedID : null,
-                        requestCode, 0, null, options);
-            checkStartActivityResult(result, intent);
-        } catch (RemoteException e) {
-            throw new RuntimeException("Failure from system", e);
-        }
-        return null;
+public ActivityResult execStartActivity(
+        Context who, IBinder contextThread, IBinder token, Activity target,
+        Intent intent, int requestCode, Bundle options) {
+    IApplicationThread whoThread = (IApplicationThread) contextThread;
+    Uri referrer = target != null ? target.onProvideReferrer() : null;
+    if (referrer != null) {
+        intent.putExtra(Intent.EXTRA_REFERRER, referrer);
     }
+    ...
+    try {
+        intent.migrateExtraStreamToClipData();
+        intent.prepareToLeaveProcess(who);
+        int result = ActivityTaskManager.getService()
+            .startActivity(whoThread, who.getBasePackageName(), intent,
+                    intent.resolveTypeIfNeeded(who.getContentResolver()),
+                    token, target != null ? target.mEmbeddedID : null,
+                    requestCode, 0, null, options);
+        checkStartActivityResult(result, intent);
+    } catch (RemoteException e) {
+        throw new RuntimeException("Failure from system", e);
+    }
+    return null;
+}
 ```
-在 Instrumentation 中，会通过 ActivityTaskManager.getService 获取 ATMS(Android10 之前是 AMS) 的实例，然后调用其 startActivity 方法，实际上这里就是通过 AIDL 来调用 AMS 的 startActivity 方法，至此，startActivity 的工作重心成功地从进程 A 转移到了系统进程 ATMS 中。
+在 Instrumentation 中，会通过 ActivityManager.getService 获取 AMS 的实例，然后调用其 startActivity 方法，实际上这里就是通过 AIDL 来调用 AMS 的 startActivity 方法，至此，startActivity 的工作重心成功地从进程 A 转移到了系统进程 ATMS 中。
 
 我们看一下继续看一下获取 ActivityTaskManager 相关代码
 
@@ -109,16 +108,16 @@ private static final Singleton<IActivityTaskManager> IActivityTaskManagerSinglet
 
 ## 2、ActivityManagerService --> ApplicationThread
 
-接下来就看下在 ATMS 中是如何一步一步执行到 B 进程的。
+接下来就看下 AMS 是如何一步一步执行到 B 进程的。
 
->上面我们说过 ApplicationThread 类是负责进程间通信的，这里 ATMS 最终其实就是调用了 B 进程中的一个 ApplicationThread 引用，从而间接地通知 B 进程进行相应操作。
+>上面我们说过 ApplicationThread 类是负责进程间通信的，AMS 会调用 B 进程中的 ApplicationThread 引用，从而间接地通知 B 进程进行相应操作。
 
 相比于 startActivity-->ATMS，ATMS-->ApplicationThread 流程看起来复杂好多了，实际上这里面就干了 2 件事：
 
 1. 综合处理 launchMode 和 Intent 中的 Flag 标志位，并根据处理结果生成一个目标 Activity B 的对象（ActivityRecord）。
 2. 判断是否需要为目标 Activity B 创建一个新的进程（ProcessRecord）、新的任务栈（TaskRecord）。
 
-接下来就从 ATMS 的 startActivity 方法开始看起：
+接下来就从 AMS 的 startActivity 方法开始看起：
 
 ### 2.1 ATMS 的 startActivity
 
@@ -126,7 +125,7 @@ private static final Singleton<IActivityTaskManager> IActivityTaskManagerSinglet
 
 从上图可以看出，经过多个方法的调用，最终通过 obtainStarter 方法获取了 ActivityStarter 类型的对象，然后调用其 execute 方法。在 execute 方法中，会再次调用其内部的 startActivityMayWait 方法。
 
-### ActivityStarter 的 startActivityMayWait
+### 2.2 ActivityStarter 的 startActivityMayWait
 
 ActivityStarter 这个类看名字就知道它专门负责一个 Activity 的启动操作。它的主要作用包括解析 Intent、创建 ActivityRecord、如果有可能还要创建 TaskRecord。startActivityMayWait 方法的部分实现如下：
 
@@ -138,9 +137,9 @@ ActivityStarter 这个类看名字就知道它专门负责一个 Activity 的启
 
 在 startActivityMayWait 方法中调用了一个重载的 startActivity 方法，而最终会调用的 ActivityStarter 中的 startActivityUnchecked 方法来获取启动 Activity 的结果。
 
-ActivityStarter 的 startActivityUnchecked
+### 2.3 ActivityStarter 的 startActivityUnchecked
 
-
+![image](https://user-images.githubusercontent.com/17560388/182028262-67ba6306-aec1-4779-bfce-515eebec8fb2.png)
 
 解释说明：
 
@@ -159,7 +158,7 @@ computeLaunchingTaskFlags 方法具体如下：
 - 图中 3 处表示初始 Activity 如果是在 SingleInstance 栈中的 Activity，这种需要添加 NEW_TASK 的标识。因为 SingleInstance 栈只能允许保存一个 Activity。
 - 图中 4 处表示如果 Launch Mode 设置了 singleTask 或 singleInstance，则也要创建一个新栈。
 
-### ActivityStackSupervisor 的 startActivityLocked
+### 2.4 ActivityStackSupervisor 的 startActivityLocked
 
 方法中会调用 insertTaskAtTop 方法尝试将 Task 和 Activity 入栈。如果 Activity 是以 newTask 的模式启动或者 TASK 堆栈中不存在该 Task id，则 Task 会重新入栈，并且放在栈的顶部。需要注意的是：Task 先入栈，之后才是 Activity 入栈，它们是包含关系。
 
@@ -167,16 +166,15 @@ computeLaunchingTaskFlags 方法具体如下：
 
 ![image](https://user-images.githubusercontent.com/17560388/168717305-b9e58b4e-477c-4343-a143-10a0cb4bb851.png)
 
-关于它们之间实际操作过程可以参考 [Android 8.0 Activity启动流程](https://mp.weixin.qq.com/s/Z14PtsmQXgIuTrbC6VVLiw) 这篇文章，不过需要注意这篇文章中分析的是基于 android-27 版本。
+关于它们之间实际操作过程可以参考 [Android 8.0 Activity启动流程 (基于 android-27 版本)](https://mp.weixin.qq.com/s/Z14PtsmQXgIuTrbC6VVLiw) 
 
-### ActivityStack 的 resumeFocusedStackTopActivityLocked
+### 2.5 ActivityStack 的 resumeFocusedStackTopActivityLocked
 
 ![image](https://user-images.githubusercontent.com/17560388/168718185-0e6fd100-efb6-4a62-926c-42d36df2aab5.png)
 
-
 经过一系列调用，最终代码又回到了 ActivityStackSupervisor 中的 startSpecificActivityLocked 方法。
 
-ActivityStackSupervisor 的 startSpecificActivityLocked
+### 2.6 ActivityStackSupervisor 的 startSpecificActivityLocked
 
 ![image](https://user-images.githubusercontent.com/17560388/168718217-6027770e-3b28-48dc-954c-d87a82e5aa08.png)
 
@@ -187,7 +185,7 @@ ActivityStackSupervisor 的 startSpecificActivityLocked
 
 不管是目标进程已经存在还是新建目标进程，最终都会调用图中红线标记的 realStartActivityLocked 方法来执行启动 Activity 的操作。
 
-### ActivityStackSupervisor 的 realStartActivityLocked
+### 2.7 ActivityStackSupervisor 的 realStartActivityLocked
 
 ![image](https://user-images.githubusercontent.com/17560388/168718270-41d35daf-d006-4350-9aa8-87002bcef17f.png)
 
@@ -211,7 +209,8 @@ Activity 启动事务的执行是由 ClientLifecycleManager 来完成的，具�
 
 到这为止 startActivity 操作就成功地从 AMS 转移到了另一个进程 B 中的 **ApplicationThread **中，剩下的就是 AMS 通过进程间通信机制通知 ApplicationThread 执行 ActivityB 的生命周期方法。
 
-## ApplicationThread -> Activity
+## 3、ApplicationThread -> Activity
+
 刚才我们已近分析了 AMS 将启动 Activity 的任务作为一个事务 ClientTransaction 去完成，在 ClientLifecycleManager 中会调用 ClientTransaction的schedule() 方法，如下：
 
 ![image](https://user-images.githubusercontent.com/17560388/168718489-9c69c427-02c2-4dab-8b9a-3b0b4a131bd8.png)
@@ -247,7 +246,7 @@ LaunchActivityItem 的 execute()
 
 终于到了跟 Activity 生命周期相关的方法了，图中 client 是 ClientTransationHandler 类型，实际实现类就是 ActivityThread。因此最终方法又回到了 ActivityThread。
 
-ActivityThread 的 handleLaunchActivity
+## 4、ActivityThread 的 handleLaunchActivity
 这是一个比较重要的方法，Activity 的生命周期方法就是在这个方法中有序执行，具体如下：
 
 ![image](https://user-images.githubusercontent.com/17560388/168718706-38e2e44c-37bb-4b26-9e19-4bbc51c35f52.png)
