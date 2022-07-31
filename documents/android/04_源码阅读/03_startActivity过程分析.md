@@ -2,16 +2,18 @@
 
 ### 1.系统的启动流程 
 
-先简单的了解下android系统的启动流程方
+先简单的了解下 Android 系统的启动流程
 
 >加载BootLoader --> 初始化内核 --> 启动init进程 --> init进程fork出Zygote进程 --> Zygote进程fork出SystemServer进程
 
-### 2.前提知识点
-
 - 系统中的所有进程都是由 Zygote 进程 fork 出来的
 - SystemServer 进程是系统进程，很多系统服务，例如 ActivityManagerService、PackageManagerService、WindowManagerService…都是在该进程被创建后启动
-- ActivityManagerServices（AMS）：是一个服务端对象，负责所有的 Activity 的生命周期，AMS 通过 Binder与Activity 通信，而 AMS 与 Zygote 之间是通过 Socket 通信
-- ActivityThread：本篇的主角，UI线程/主线程，它的 main() 方法是 APP 的真正入口
+
+### 2.前提知识点
+先大概讲几个知识点和相关类的概念
+
+- ActivityManagerServices（AMS）：是一个服务端进程，负责管理所有的 Activity 的生命周期，AMS 通过 Binder与Activity 通信，而 AMS 与 Zygote 之间是通过 Socket 通信
+- ActivityThread：可以理解为我们常说的 `UI线程/主线程`，它的 main() 方法是 APP 的真正入口
 - ApplicationThread：一个实现了 IBinder 接口的 ActivityThread 内部类，用于 ActivityThread 和 AMS 的所在进程间通信
 - Instrumentation：可以理解为 ActivityThread 的一个工具类，在 ActivityThread 中初始化，一个进程只存在一个 Instrumentation 对象，在每个 Activity 初始化时，会通过 Activity 的 Attach 方法，将该引用传递给 Activity。Activity 所有生命周期的方法都有该类来执行。
 
@@ -19,38 +21,42 @@
 
 ## 1、点击 Launcher 启动 App
 
->Launcher 进程 --请求启动App的launcher页面 --> system_server(AMS) --创建应用--> Zygote
+点击 Launcher 启动 App 的大概流程如下：
+>Launcher 进程 --请求启动 App 的 launcher Activity--> system_server(AMS) --请求创建应用--> Zygote
 
-Launcher 本身也是一个应用程序，点击 icon 启动 app 最终也是调用 Activity.startActivity 方法。
+Launcher 本身也是一个应用程序，点击 icon 启动 app 也是调用 Activity.startActivity 方法。
+
+所以我们先从 startActivity 开始。
 
 ### 1.1 Activity 的 startActivity
 
-这里假设从进程 A 启动进程 B 中的 Activity 对象，Activity.startActivity 方法会走到 startActivityForResult 方法
+这里假设从进程 A 启动进程 B 中的 Activity 对象，Activity.startActivity 方法最终会走到 startActivityForResult 方法
 
 ```java
-    public void startActivityForResult(@RequiresPermission Intent intent, int requestCode,
-            @Nullable Bundle options) {
-        if (mParent == null) {
-            options = transferSpringboardActivityOptions(options);
-            Instrumentation.ActivityResult ar = mInstrumentation.execStartActivity( this, mMainThread.getApplicationThread(), mToken, this,
-                    intent, requestCode, options);
-            if (ar != null) {
-                mMainThread.sendActivityResult(
-                    mToken, mEmbeddedID, requestCode, ar.getResultCode(),
-                    ar.getResultData());
-            }
-            if (requestCode >= 0) {
-                mStartedActivity = true;
-            }
-            cancelInputsAndStartExitTransition(options);
-        } else {
-            ...
+public void startActivityForResult(@RequiresPermission Intent intent, int requestCode,
+        @Nullable Bundle options) {
+    if (mParent == null) {
+        options = transferSpringboardActivityOptions(options);
+        Instrumentation.ActivityResult ar = mInstrumentation.execStartActivity( this, mMainThread.getApplicationThread(), mToken, this,
+                intent, requestCode, options);
+        if (ar != null) {
+            mMainThread.sendActivityResult(
+                mToken, mEmbeddedID, requestCode, ar.getResultCode(),
+                ar.getResultData());
         }
+        if (requestCode >= 0) {
+            mStartedActivity = true;
+        }
+        cancelInputsAndStartExitTransition(options);
+    } else {
+        ...
     }
+}
 ```
-该方法最终调用 mInstrumentation.execStartActivity 方法
 
-- mMainThread 是 ActivityThread 类型，ActivityThread 可以理解为一个进程，在这就是 A 所在的进程。
+而该方法最终调用 mInstrumentation.execStartActivity 方法
+
+- mMainThread 就是上面我们说过的 ActivityThread 类型的对象，在这里 ActivityThread 可以理解为一个进程，就是 A 所在的进程。
 - mMainThread.getApplicationThread() 的返回类型是 ApplicationThread，ApplicationThread 是 ActivityThread 的内部类，继承 IApplicationThread.Stub，也是个Binder 对象。ApplicationThread 用来实现进程间通信，具体来说就是 AMS 所在系统进程通知应用程序进程进行的一系列操作
 
 ### Instrumentation 的 execStartActivity 方法
