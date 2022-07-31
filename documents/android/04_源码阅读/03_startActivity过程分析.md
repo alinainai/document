@@ -21,9 +21,11 @@
 
 >Launcher 进程 --请求启动App的launcher页面 --> system_server(AMS) --创建应用--> Zygote
 
+Launcher 本身也是一个应用程序，点击 icon 启动 app 最终也是调用 Activity.startActivity 方法。
+
 ### 1.1 Activity 的 startActivity
 
-Activity 的 startActivity 方法会走到 startActivityForResult 方法
+这里假设从进程 A 启动进程 B 中的 Activity 对象，Activity.startActivity 方法会走到 startActivityForResult 方法
 
 ```java
     public void startActivityForResult(@RequiresPermission Intent intent, int requestCode,
@@ -80,7 +82,7 @@ Activity 的 startActivity 方法会走到 startActivityForResult 方法
         return null;
     }
 ```
-在 Instrumentation 中，会通过 ActivityTaskManager.getService 获取 AMS(Android10之后改为 ActivityTaskManager，之前是 ActivityManager。) 的实例，然后调用其 startActivity 方法，实际上这里就是通过 AIDL 来调用 AMS 的 startActivity 方法，至此，startActivity 的工作重心成功地从进程 A 转移到了系统进程 AMS 中。
+在 Instrumentation 中，会通过 ActivityTaskManager.getService 获取 ATMS(Android10 之前是 AMS) 的实例，然后调用其 startActivity 方法，实际上这里就是通过 AIDL 来调用 AMS 的 startActivity 方法，至此，startActivity 的工作重心成功地从进程 A 转移到了系统进程 ATMS 中。
 
 我们看一下继续看一下获取 ActivityTaskManager 相关代码
 
@@ -101,18 +103,18 @@ private static final Singleton<IActivityTaskManager> IActivityTaskManagerSinglet
 
 ## 2、ActivityManagerService --> ApplicationThread
 
-接下来就看下在 AMS 中是如何一步一步执行到 B 进程的。
+接下来就看下在 ATMS 中是如何一步一步执行到 B 进程的。
 
->上面我们说过 ApplicationThread 类是负责进程间通信的，这里 AMS 最终其实就是调用了 B 进程中的一个 ApplicationThread 引用，从而间接地通知 B 进程进行相应操作。
+>上面我们说过 ApplicationThread 类是负责进程间通信的，这里 ATMS 最终其实就是调用了 B 进程中的一个 ApplicationThread 引用，从而间接地通知 B 进程进行相应操作。
 
-相比于 startActivity-->AMS，AMS-->ApplicationThread 流程看起来复杂好多了，实际上这里面就干了 2 件事：
+相比于 startActivity-->ATMS，ATMS-->ApplicationThread 流程看起来复杂好多了，实际上这里面就干了 2 件事：
 
 1. 综合处理 launchMode 和 Intent 中的 Flag 标志位，并根据处理结果生成一个目标 Activity B 的对象（ActivityRecord）。
 2. 判断是否需要为目标 Activity B 创建一个新的进程（ProcessRecord）、新的任务栈（TaskRecord）。
 
-接下来就从 AMS 的 startActivity 方法开始看起：
+接下来就从 ATMS 的 startActivity 方法开始看起：
 
-## AMS 的 startActivity
+### 2.1 ATMS 的 startActivity
 
 ![image](https://user-images.githubusercontent.com/17560388/168716566-eb040ef6-9538-42bf-9900-31304aad33a0.png)
 
