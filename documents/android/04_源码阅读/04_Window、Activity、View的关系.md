@@ -16,7 +16,7 @@ Activity 将操作交给 Window 来处理。getWindow 返回的是 Activity 中�
 
 最终，在 PhoneWindow 中持有了一个 WindowManagerImpl 的引用。
 
-### PhoneWindow 的 setContentView
+## 2、PhoneWindow 的 setContentView
 
 Activity 将 setContentView 的操作交给了 PhoneWindow，接下来看下其实现过程：
 
@@ -44,7 +44,7 @@ WindowManger 的 addView 结果有两个：
 - DecorView 被渲染绘制到屏幕上显示；
 - DecorView 可以接收屏幕触摸事件。
 
-### WindowManager 的 addView
+## 3、WindowManager 的 addView
 
 PhoneWindow 只是负责处理一些应用窗口通用的逻辑（设置标题栏，导航栏等）。但是真正完成把一个 View 作为窗口添加到 WMS 的过程是由 WindowManager 来完成的。
 
@@ -56,7 +56,7 @@ WindowManagerImpl 也是一个空壳，它调用了 WindowManagerGlobal 的 addV
 
 WindowMangerGlobal 是一个单例，每一个进程中只有一个实例对象。如上图红框中所示，在其 addView 方法中，创建了一个最关键的 ViewRootImpl 对象，然后通过 ViewRootImpl 的 setView 方法将 view 添加到 WMS 中。
 
-### ViewRootImpl 的 setView
+## 4、ViewRootImpl 的 setView
 
 <img src="https://user-images.githubusercontent.com/17560388/132349299-b662f52b-930d-483c-bd2d-6989ccc07523.png" alt="图片替换文本" width="600"  align="bottom" />
 
@@ -73,7 +73,7 @@ sWindowSession 实际上是 IWindowSession 类型，是一个 Binder 类型，�
 
 图中的 mService 就是 WMS。至此，Window 已经成功的被传递给了 WMS。剩下的工作就全部转移到系统进程中的 WMS 来完成最终的添加操作。
 
-### 再看 Activity
+## 5、再看 Activity
 
 上文中我提到 addView 成功有一个标志就是能够接收触屏事件，通过对 setContentView 流程的分析，可以看出添加 View 的操作实质上是 PhoneWindow 在全盘操作，背后负责人是 WMS，反之 Activity 自始至终没什么参与感。但是我们也知道当触屏事件发生之后，Touch 事件首先是被传入到 Activity，然后才被下发到布局中的 ViewGroup 或者 View。那么 Touch 事件是如何传递到 Activity 上的呢？
 
@@ -103,7 +103,7 @@ ViewRootImpl 中的 setView 方法中，除了调用 IWindowSession 执行跨进
 
 Touch 事件在 Activity 中只是绕了一圈最后还是回到了 PhoneWindow 中的 DecorView 来处理。剩下的就是从 DecorView 开始将事件层层传递给内部的子 View 中了。
 
-### 总结
+## 总结
 这节课主要通过 setContentView 的流程，分析了 Activity、Window、View 之间的关系。整个过程 Activity 表面上参与度比较低，大部分 View 的添加操作都被封装到 Window 中实现。而 Activity 就相当于 Android 提供给开发人员的一个管理类，通过它能够更简单的实现 Window 和 View 的操作逻辑。
 
 最后再简单列一下整个流程需要注意的点：
