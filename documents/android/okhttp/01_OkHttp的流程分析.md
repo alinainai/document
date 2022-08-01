@@ -1,18 +1,20 @@
 ## 1、基本使用
 
-OkHttp是一个默认有效的HTTP客户端：
+OkHttp 是一个默认有效的 HTTP 客户端：
 
-- HTTP/2支持允许对同一主机的所有请求共享套接字。
-- 连接池减少了请求延迟（如果HTTP/2不可用）。
-- transparent GZIP 压缩了下载大小。
-- Response缓存可以完全避免网络的重复请求。
+- `HTTP/2` 支持允许对同一主机的所有请求共享 套接字。
+- `连接池` 减少了请求延迟（如果HTTP/2不可用）。
+- `transparent GZIP` 压缩了下载大小。
+- `Response`缓存可以完全避免网络的重复请求。
 
-当网络故障时，OkHttp会自动重试：它将从常见的连接问题中静默地恢复。如果您的服务有多个IP地址，如果第一次连接失败，OkHttp将尝试备用地址；
+当网络故障时，`OkHttp`会自动重试：它将从常见的连接问题中静默地恢复。如果您的服务有多个IP地址，如果第一次连接失败，OkHttp将尝试备用地址；
 这对于IPv4 + IPv6以及在冗余数据中心中托管的服务是必需的。
 
-OkHttp还支持现代TLS功能（TLS 1.3，ALPN，certificate pinning）。It can be configured to fall back for broad connectivity.
+OkHttp 还支持现代 TLS 功能（TLS 1.3，ALPN，certificate pinning）。It can be configured to fall back for broad connectivity.
 
-本章主要介绍OkHttp的实现，代码基于 [okhttp-4.9.0](https://github.com/square/okhttp/tree/parent-4.9.0)
+本章基于 [okhttp-4.9.0](https://github.com/square/okhttp/tree/parent-4.9.0) 做代码分析
+
+先看下使用方式
 
 ```kotlin
 //1、用建造者模式初始化一个 OkHttpClient 对象
@@ -55,12 +57,12 @@ call.enqueue(object : Callback {
 val response = call.execute()
 ```
 
-使用步骤总结：
+总结一下使用步骤：
 
 - 1.使用 `OkHttpClient.Builder` 新建一个 `OkHttpClient` 对象，可以在 `OkHttpClient.Builder` 中设置一些参数
 - 2.使用 `Request.Builder` 新建一个 `Request` 对象
 - 3.使用 `OkHttpClient.newCall(Request)` 生成一个 `Call(RealCall)` 对象
-- 4.调用 `Call.enqueue(Callback)` 或者 `Call.execute()` 实现网络请求。
+- 4.调用 `Call.enqueue(Callback) (异步请求)` 或者 `Call.execute() (同步请求)` 实现网络请求。
 
 ## 2、OkHttpClient 的建造者参数
 
@@ -119,7 +121,7 @@ class Request internal constructor(
 
 ## 3、Call 和 RealCall 
 
-按照调用步骤，首先看下`OkHttpCient.newCall(Request)`方法：
+按照调用步骤，首先看下 `OkHttpCient.newCall(Request)` 方法：
 
 ```kotlin
 override fun newCall(request: Request): Call = RealCall(this, request, forWebSocket = false)
@@ -178,7 +180,7 @@ class RealCall(
   private val executed = AtomicBoolean()
 ```
 
-## 4、同步请求 RealCall.execute()
+## 4、同步请求 RealCall.execute() 的调用步骤
 
 同步请求的代码如下：
 
