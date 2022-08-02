@@ -1,7 +1,17 @@
 ## 1、Activity 的 setContentView
 
-<img src="https://user-images.githubusercontent.com/17560388/132340891-b304f0cd-c5f4-497c-98df-cd70ca4b6d65.png" alt="Activity 的 setContentView" width="600" />
+```java
+private Window mWindow;
 
+public void setContentView(@LayoutRes int layoutResID) {
+    getWindow().setContentView(layoutResID);
+    initWindowDecorActionBar();
+}
+
+public Window getWindow() {
+    return mWindow;
+}
+```
 Activity 将操作交给 Window 来处理。getWindow 返回的是 Activity 中的全局变量 mWindow，它是 Window 窗口类型。
 
 在分析 startActivity 的过程中，最终代码会调用到 ActivityThread 中的 performLaunchActivity 方法，通过反射创建 Activity 对象，并执行其 attach 方法。Window 就是在这个方法中被创建，详细代码如下：
