@@ -12,19 +12,21 @@ public Window getWindow() {
     return mWindow;
 }
 ```
-Activity 将操作交给 Window 来处理。getWindow 返回的是 Activity 中的全局变量 mWindow，它是 Window 窗口类型。
+在 `Activity` 的 `setContentView` 方法中，直接将操作交给 `Window` 来处理。`getWindow` 返回的是 `Activity` 中的全局变量 mWindow，它是一个 `Window` 类型的对象。
 
-在分析 startActivity 的过程中，最终代码会调用到 ActivityThread 中的 performLaunchActivity 方法，通过反射创建 Activity 对象，并执行其 attach 方法。Window 就是在这个方法中被创建，详细代码如下：
+在分析 startActivity 的过程中，最终代码会调用到 ActivityThread 中的 `performLaunchActivity` 方法，通过反射创建 Activity 对象，并执行其 `attach` 方法。
+
+`Window` 就是在这个方法中被创建，详细代码如下：
 
 <img src="https://user-images.githubusercontent.com/17560388/132342189-08a36d6b-698d-4009-8f23-5d9afd7d13da.png" alt="图片替换文本" width="600"  align="bottom" />
 
-在 Activity 的 attach 方法中将 mWindow 赋值给一个 PhoneWindow 对象，实际上整个 Android 系统中 Window 只有一个实现类，就是 PhoneWindow。
+在 Activity 的 `attach` 方法中将 `mWindow` 赋值为一个 `PhoneWindow` 对象，PhoneWindow 是 Window 唯一实现类。
 
-接下来调用 setWindowManager 方法，将系统 WindowManager 传给 PhoneWindow，如下所示：
+接下来调用 `setWindowManager` 方法，将系统 `WindowManager` 传给 `PhoneWindow`，如下所示：
 
 <img src="https://user-images.githubusercontent.com/17560388/132344119-261e7c52-8d12-4812-ae93-10d1007c162e.png" alt="图片替换文本" width="600"  align="bottom" />
 
-最终，在 PhoneWindow 中持有了一个 WindowManagerImpl 的引用。
+最终，PhoneWindow 持有了一个 WindowManagerImpl 的引用。
 
 ## 2、PhoneWindow 的 setContentView
 
@@ -37,7 +39,7 @@ Activity 将 setContentView 的操作交给了 PhoneWindow，接下来看下其�
 - 图中 1 处调用如果 mContentParent 为 null，则调用 installDecor 初始化 DecorView 和 mContentParent。
 - 图中 2 处将我们调用 setContentView 传入的布局添加到 mContentParent 中。
 
-可以看出在 PhoneWindow 中默认有一个 DecorView（实际上是一个 FrameLayout），在 DecorView 中默认自带一个 mContentParent（实际上是一个 ViewGroup）。我们自己实现的布局是被添加到 mContentParent 中的，因此经过 setContentView 之后，PhoneWindow 内部的 View 关系如下所示：
+可以看出在 `PhoneWindow` 中默认有一个 `DecorView（实际上是一个 FrameLayout）`，在 `DecorView` 中默认自带一个 mContentParent（实际上是一个 ViewGroup）。我们自己实现的布局是被添加到 `mContentParent` 中的，因此经过 setContentView 之后，PhoneWindow 内部的 View 关系如下所示：
 
 <img src="https://github.com/alinainai/documents/blob/master/images/CgqCHl7PgCyAce60AGnE3SJ9tVE104.gif?raw=true" alt="图片替换文本" width="600"  align="bottom" />
 
