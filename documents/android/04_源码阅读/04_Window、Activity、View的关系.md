@@ -1,3 +1,5 @@
+本文基于 android 10 (SDK 29)
+
 ## 1、Activity 的 setContentView
 
 ```java
