@@ -1,31 +1,32 @@
-## 1. 从Activity开始出发 
+## 一、从 Activity 出发 
 
-### 1.1 Activity中主要代码分析
+先从持有 Window 对象的 Activity 开始，首先看下  Activity 的 dispatchTouchEvent 方法
+
+### 1.1 先看下 Activity 中 dispatchTouchEvent 方法
 
 ```java
-public class Activity xxx{
-
-    public boolean dispatchTouchEvent(MotionEvent ev) {   
-        if (ev.getAction() == MotionEvent.ACTION_DOWN) {// 一般事件列开始都是 DOWN 事件，故此处基本是true
-            onUserInteraction(); 
-         }
-        if (getWindow().superDispatchTouchEvent(ev)) {//若getWindow().superDispatchTouchEvent(ev)的返回true，则Activity.dispatchTouchEvent（）就返回true，则方法结束      		
-            return true;
-        }
-        return onTouchEvent(ev);    
+public boolean dispatchTouchEvent(MotionEvent ev) {   
+    if (ev.getAction() == MotionEvent.ACTION_DOWN) {// 一般事件列开始都是 DOWN 事件，故此处基本是true
+        onUserInteraction(); 
+     }
+    if (getWindow().superDispatchTouchEvent(ev)) {// 若 getWindow().superDispatchTouchEvent(ev) 的返回 true，不会回调 Activity 的 onTouchEvent 方法
+        return true;
     }
-    
+    return onTouchEvent(ev);    
 }
 ```
+
+如果 getWindow().superDispatchTouchEvent(ev) 处理了事件，就不会回调 Activity 的 onTouchEvent 方法。我们继续跟进看下 Window 中的 superDispatchTouchEvent(ev) 方法
+
 ### 1.2 Window 中的 superDispatchTouchEvent(ev) 方法
 
-PhoneWindow 是 Window 唯一子类。Activity 中持有的 mWindow 对象就是 PhoneWindow 类。
+PhoneWindow 是 Window 类的唯一子类。Activity 的成员变量 mWindow 就是 PhoneWindow 类型。
 
 ```java
 public class PhoneWindow extends Window implements MenuBuilder.Callback {
-	  @Override
+    @Override
     public boolean superDispatchTouchEvent(MotionEvent event) {
-        return mDecor.superDispatchTouchEvent(event); //mDecor 是顶层View（DecorView）的实例对象，事件从 Activity 分发给 ViewGroup
+        return mDecor.superDispatchTouchEvent(event); //mDecor（DecorView类型） 是顶层 View 的实例对象
     } 
 }
 ```
@@ -33,13 +34,15 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 ```java
 public class DecorView extends FrameLayout implements RootViewSurfaceTaker, WindowCallbacks
     public boolean superDispatchTouchEvent(MotionEvent event) {
-		    //直接调用父类（ViewGroup）的的dispatchTouchEvent()
+	//直接调用父类（ViewGroup）的的dispatchTouchEvent()
         return super.dispatchTouchEvent(event);
     }
 }
 ```
+事件的传递流程 Activity -> Window -> DecorView
 
 ## 2. ViewGroup 的 dispatchTouchEvent
+
 ```java
 @Override
 public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -141,9 +144,6 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
     return handled;
 }
 ```
-   
-
-
 
 1.touch 事件是如何从驱动层传递给 Framework 层的 InputManagerService；
 
