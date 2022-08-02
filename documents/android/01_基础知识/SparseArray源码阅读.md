@@ -1,28 +1,22 @@
 
-### SparseArray 的使用
+## 1、SparseArray 的使用
 
 ```java
-//创建
+// 创建
 SparseArray sparseArray = new SparseArray<>();
 SparseArray sparseArray = new SparseArray<>(capacity);
 
-//put()
+// put()
 sparseArray.put(int key,Student value);
 
 //get()
 sparseArray.get(int key);
 sparseArray.get(int key,Student valueIfNotFound);
 
-//remove()
+// remove()
 sparseArray.remove(int key);
-```
 
-**index**
-
-前面几个都跟HashMap没有什么太大区别，而这个index就是SparseArray所特有的属性了，这里为了方便理解先提一嘴，SparseArray从名字上看就能猜到跟数组有关系，事实上他底层是两条数组，一组存放key，一组存放value，知道了这一点应该能猜到index的作用了。
-index — key在数组中的位置。SparseArray提供了一些跟index相关的方法：
-
-```java
+// index 相关的API
 sparseArray.indexOfKey(int key);
 sparseArray.indexOfValue(T value);
 sparseArray.keyAt(int index);
@@ -32,13 +26,15 @@ sparseArray.removeAt(int index);
 sparseArray.removeAt(int index,int size);
 ```
 
-### SparseArray 实现原理
+前面几个方法都跟 HashMap 没有什么太大区别，而这个 index 就是 SparseArray 所特有的属性了，SparseArray 的底层数据结构是两条数组，一组存放key，一组存放value，知道了这一点应该能猜到index的作用了。
 
-**官方优点：** 
+## 2、SparseArray 实现原理
+
+**官方优点介绍的优点：** 
 - 避免装箱
 - 不使用额外的结构体（Entry)
 
-#### 初始化
+### 初始化
 
 SparseArray没有继承任何其他的数据结构，实现了Cloneable接口。
 
@@ -59,7 +55,7 @@ public SparseArray(int initialCapacity) {
 
 初始化SparseArray只是简单的创建了两个数组。
 
-#### put()方法
+### put()方法
 
 接下来就是往SparseArray中存放数据。
 
@@ -195,7 +191,7 @@ public E get(int key, E valueIfKeyNotFound) {
 ```
 get()中的代码就比较简单了，通过二分查找获取到key的索引，通过该索引来获取到value
 
-### 总结
+## 3、总结
 了解了SparseArray的实现原理，就该来总结一下它与HashMap之间来比较的优缺点
 
 优势：
