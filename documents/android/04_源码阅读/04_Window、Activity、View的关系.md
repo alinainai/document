@@ -41,7 +41,10 @@ Activity 将 setContentView 的操作交给了 PhoneWindow，接下来看下其�
 
 可以看出在 `PhoneWindow` 中默认有一个 `DecorView（实际上是一个 FrameLayout）`，在 `DecorView` 中默认自带一个 mContentParent（实际上是一个 ViewGroup）。我们自己实现的布局是被添加到 `mContentParent` 中的，因此经过 setContentView 之后，PhoneWindow 内部的 View 关系如下所示：
 
-<img src="https://github.com/alinainai/documents/blob/master/images/CgqCHl7PgCyAce60AGnE3SJ9tVE104.gif?raw=true" alt="图片替换文本" width="600"  align="bottom" />
+<!-- <img src="https://github.com/alinainai/documents/blob/master/images/CgqCHl7PgCyAce60AGnE3SJ9tVE104.gif?raw=true" alt="图片替换文本" width="600"  align="bottom" /> -->
+
+<img width="625" alt="image" src="https://user-images.githubusercontent.com/17560388/182329127-68947cf0-b687-4e17-8a51-3dcfa6d248b6.png">
+
 
 目前为止 PhoneWindow 中只是创建出了一个 DecorView，并在 DecorView 中填充了我们在 Activity 中传入的 layoutId 布局，可是 DecorView 还没有跟 Activity 建立任何联系，也没有被绘制到界面上显示。那 DecorView 是何时被绘制到屏幕上的呢？
 
