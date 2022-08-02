@@ -1,16 +1,14 @@
 在介绍 Activity、Window 和 View 之间的关系时，我们了解了 ViewRootImpl 在整个流程中，起着承上启下的作用。
+- 一方面 ViewRootImpl 中通过 Binder 通信机制，远程调用 WindowSession 将 View 添加到 Window 中。
+- 另一方面，ViewRootImpl 在添加 View 之前，又需要调用 requestLayout 方法，执行完整的 View 树的渲染操作
 
-一方面 ViewRootImpl 中通过 Binder 通信机制，远程调用 WindowSession 将 View 添加到 Window 中。
+## 1、屏幕绘制
 
-另一方面，ViewRootImpl 在添加 View 之前，又需要调用 requestLayout 方法，执行完整的 View 树的渲染操作
-
-## 屏幕绘制
-
-#### ViewRootImpl requestLayout 流程
+### 1。1 ViewRootImpl requestLayout 流程
 
 <img src="https://user-images.githubusercontent.com/17560388/132429043-12b4319b-d7c7-4e32-ba06-7b86a2b7e4c2.png" alt="图片替换文本" width="600"  align="bottom" />
 
-requestLayout 第一次被调用是在 setView 方法中，从名字也能看出，这个方法的主要目的就是请求布局操作，其中包括 View 的测量、布局、绘制等。具体代码如下：
+requestLayout 第一次被调用是在 ViewRootImpl 的 setView 方法中，从名字也能看出，这个方法的主要目的就是请求布局操作，其中包括 View 的测量、布局、绘制等。具体代码如下：
 
 <img src="https://user-images.githubusercontent.com/17560388/132429168-d69fc318-37c1-4f62-ae65-930becea28cf.png" alt="图片替换文本" width="600"  align="bottom" />
 
@@ -39,7 +37,7 @@ mTraversalRunnable 是一个实现 Runnable 接口的 TraversalRunnable 类型�
 
 可以看出，在 run 方法中调用了 doTraversal 方法，并最终调用了 performTraversals() 方法，这个方法就是真正的开始 View 绘制流程：measure –> layout –> draw 。
 
-#### ViewRootImpl 的 performTraversals 方法
+### 1.2 ViewRootImpl 的 performTraversals 方法
 
 这个方法是一个比较重的方法，查看源码发现总共将近 900 行代码。但是抽取一下核心部分代码，这个方法实际上只负责做 3 件事情：
 
@@ -49,7 +47,7 @@ mTraversalRunnable 是一个实现 Runnable 接口的 TraversalRunnable 类型�
 
 接下来以测量 performMeasure 实现举例。
 
-#### ViewRootImpl 的 measureHierarchy
+### 1.3 ViewRootImpl 的 measureHierarchy
 
 我们知道 View 的测量是一层递归调用，递归执行子 View 的测量工作之后，最后决定父视图的宽和高。但是这个递归的起源是在哪里呢？答案就是 DecorView。因为在 measureHierarchy 方法中最终是调用 performMeasure 方法来进行测量工作的，所以我们直接看 performMeasure 方法的实现，如下所示：
 
@@ -57,7 +55,7 @@ mTraversalRunnable 是一个实现 Runnable 接口的 TraversalRunnable 类型�
 
 在这个方法中，通过 getRootMeasureSpec 方法获取了根 View的MeasureSpec，实际上 MeasureSpec 中的宽高此处获取的值是 Window 的宽高。关于 MeasureSpec 的介绍可以查看第15课时“自定义 View”。
 
-#### ViewRootImpl 的 performMeasure
+### 1.4 ViewRootImpl 的 performMeasure
 
 <img src="https://user-images.githubusercontent.com/17560388/132429781-5b428648-f6df-47c0-a04f-189e14dcdae6.png" alt="图片替换文本" width="600"  align="bottom" />
 
@@ -65,7 +63,7 @@ mTraversalRunnable 是一个实现 Runnable 接口的 TraversalRunnable 类型�
 
 performLayout 也是类似的过程，就不再赘述。
 
-#### ViewRootImpl 的 performDraw
+### 1.5 ViewRootImpl 的 performDraw
 
 <img src="https://user-images.githubusercontent.com/17560388/132429828-23033020-c24e-472c-9442-4ca1ae3c1e2f.png" alt="图片替换文本" width="600"  align="bottom" />
 
@@ -76,7 +74,7 @@ performLayout 也是类似的过程，就不再赘述。
 
 ViewRootImpl 中有一个非常重要的对象 Surface，之所以说 ViewRootImpl 的一个核心功能就是负责 UI 渲染，原因就在于在 ViewRootImpl 中会将我们在 draw 方法中绘制的 UI 元素，绑定到这个 Surface 上。如果说 Canvas 是画板，那么 Surface 就是画板上的画纸，Surface 中的内容最终会被传递给底层的 SurfaceFlinger，最终将 Surface 中的内容进行合成并显示的屏幕上。
 
-#### 软件绘制 drawSoftware
+### 1.6 软件绘制 drawSoftware
 
 <img src="https://user-images.githubusercontent.com/17560388/132429861-d134f09e-94a7-4c95-a35e-3a14543b4a9c.png" alt="图片替换文本" width="600"  align="bottom" />
 
@@ -95,9 +93,9 @@ DecorView 并没有复写 draw 方法，因此实际是调用的顶层 View 的 
 - 图中 2 处绘制 View 自身内容；
 - 图中 3 处表示对 draw 事件进行分发，在 View 中是空实现，实际调用的是 ViewGroup 中的实现，并递归调用子 View 的 draw 事件。
 
-### 启用硬件加速
+## 2、启用硬件加速
 
-#### 是否启用硬件加速
+### 2.1 是否启用硬件加速
 
 可以在 ViewRootImpl 的 draw 方法中，通过如下方法判断是否启用硬件加速：
 
@@ -128,7 +126,7 @@ DecorView 并没有复写 draw 方法，因此实际是调用的顶层 View 的 
 - setMaskFilter()
 - setRasterizer()
 
-#### 硬件加速优势
+### 2.2 硬件加速优势
 
 接下来，看下为什么硬件加速能够提高 UI 渲染的性能。再看 ViewRootImpl 的 draw 方法：
 
@@ -149,7 +147,7 @@ Android 硬件加速过程中，View 视图被抽象成 RenderNode 节点，View
 
 上图中 1 处就是遍历 View 递归构建 DrawOp，2 处就是根据 Canvas 将所有的 DrawOp 进行缓存操作。所有的 DrawOp 对应的 OpenGL 命令构建完成之后，就需要使用 RenderProxy 向 RenderThread 发送消息，请求 OpenGL 线程进行渲染。整个渲染过程是通过 GPU 并在不同线程绘制渲染图形，因此整个流程会更加顺畅。
 
-#### Invalidate 轻量级刷新
+### 2.3 Invalidate 轻量级刷新
 
 如果你做过开发应该用过 invalidate 来刷新 View，这个方法跟 requestLayout 的区别在于，它不一定会触发 View 的 measure 和 layout 的操作，多数情况下只会执行 draw 操作。
 
@@ -165,7 +163,7 @@ Android 硬件加速过程中，View 视图被抽象成 RenderNode 节点，View
 
 可以看出，当 View 的位置发送改变，或者添加 PFLAG_FORCE_LAYOUT 标志位后 onLayout 才会被执行。当调用 invalidate 方法时，如果 View 的位置并没有发生改变，则 View 不会触发重新布局的操作。
 
-#### postInvalidate
+### 2.4 postInvalidate
 说到 invalidate 就不得不说一下 postInvalidate，不光是因为面试中经常被问到，实际开发中使用频率也是较高。
 
 它们两者之间的区别就是 invalidate 是在 UI 线程调用，postInvalidate 是在非 UI 线程调用。
@@ -176,7 +174,7 @@ postInvalidate 的实现如下：
 
 最终还是在 ViewRootImpl 中进行操作。
 
-#### ViewRootImpl 的 dispatchInvalidateDelayed
+### 2.5 ViewRootImpl 的 dispatchInvalidateDelayed
 
 <img src="https://user-images.githubusercontent.com/17560388/132430302-19925b55-b9c7-463a-bb46-fb0ed57c3928.png" alt="图片替换文本" width="600"  align="bottom" />
 
@@ -192,6 +190,6 @@ postInvalidate 的实现如下：
 
 图中 mThread 是被赋值为当前线程，而 ViewRootImpl 是在 UI 线程中被创建的，因此只有 UI 线程可以进行 View 刷新。但是如果我们能在非 UI 线程中创建 ViewRootImpl，并通过这个 ViewRootImpl 进行 View 的添加和绘制操作，那么后续理论上也是可以在非 UI 线程中刷新 View 控件的，只是维护成本较高，很少有人去做这件事情。
 
-### 总结
+## 3、总结
 至此 View 的工作流程的大致整体已经描述完毕了，做一下总结。本课时主要介绍了 ViewRootImpl 是如何执行 View 的渲染操作的，其中核心方法在 performTraversals 方法中会按顺序执行 measure-layout-draw 操作。并顺带介绍了软件绘制和硬件加速的区别，最后介绍了 View 刷新的两种方式 Invalidate 和 postInvalidate。
 
