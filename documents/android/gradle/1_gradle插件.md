@@ -1,12 +1,10 @@
 ## 1、Gradle Plugins简介 
 
-`Gradle插件`打包了可重用的构建逻辑，可以在不同的项目中使用。
-
-可以使用多种语言来实现`Gradle插件`，其实只要最终被编译为JVM字节码的都可以，常用的有`Groovy、Java、Kotlin`。
+`Gradle插件`打包了可重用的构建逻辑，方便在不同的项目中使用。我们可以使用多种语言来实现`Gradle插件`，只要最终能被编译为JVM字节码的就可以，常用的有`Groovy、Java、Kotlin`。
 
 通常，使用 `Java/Kotlin（静态类型语言`）实现的插件比使用 `Groovy(动态类型语言)` 实施的插件性能更好。
 
-`android官方提供了很多可用的 gradle 插件，比如:
+`android`官方提供了很多可用的 gradle 插件，比如:
 - apply plugin: 'com.android.application'
 - apply plugin: 'com.android.library'
 
@@ -15,6 +13,7 @@
 本文 `demo` 基于 `gradle 7.3.3` 开发，实现方式是通过`单独的项目`去`实现 gradle 插件`并发布到本地 `maven_repo` 仓库。
 
 ### 2.1 新建一个 `anndroid` 项目 `TransformDemo` 
+
 ### 2.2 新建一个 `Java or Kotlin Library` 名字任意，如 `gradleplugin` 
 并配置 gradleplugin 的 build.gradle 
 
