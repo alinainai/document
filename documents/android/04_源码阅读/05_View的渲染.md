@@ -4,7 +4,7 @@
 
 ## 1、屏幕绘制
 
-### 1。1 ViewRootImpl requestLayout 流程
+### 1.1 ViewRootImpl requestLayout 流程
 
 <img src="https://user-images.githubusercontent.com/17560388/132429043-12b4319b-d7c7-4e32-ba06-7b86a2b7e4c2.png" alt="图片替换文本" width="600"  align="bottom" />
 
