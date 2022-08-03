@@ -26,7 +26,7 @@ sparseArray.removeAt(int index);
 sparseArray.removeAt(int index,int size);
 ```
 
-前面几个方法都跟 HashMap 没有什么太大区别，而这个 index 就是 SparseArray 所特有的属性了，SparseArray 的底层数据结构是两条数组，一组存放key，一组存放value，知道了这一点应该能猜到index的作用了。
+前面几个方法都跟 HashMap 没有什么太大区别，index 相关的 API 就是 SparseArray 所特有的属性了，SparseArray 的底层数据结构是两条数组，一组存放key，一组存放value，知道了这一点应该能猜到index的作用了。
 
 ## 2、SparseArray 实现原理
 
@@ -53,7 +53,7 @@ public SparseArray(int initialCapacity) {
         mSize = 0;
 ```
 
-初始化SparseArray只是简单的创建了两个数组。
+SparseArray 初始化的时候只是简单的创建了两个数组。
 
 ### put()方法
 
@@ -82,7 +82,7 @@ public void put(int key, E value) {
 
 <img src="https://user-images.githubusercontent.com/17560388/132646961-a386faf3-865e-447c-bf41-3165d6b9f3da.png" alt="图片替换文本" width="600"  align="bottom" />
 
-上面这个图，插入一个key=3的元素，因为在mKeys中已经存在了这个值，则直接覆盖。
+上面这个图，插入一个 key=3 的元素，因为在mKeys中已经存在了这个值，则直接覆盖。
 
 **插入索引上为DELETED**
 
