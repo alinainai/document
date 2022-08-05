@@ -49,7 +49,7 @@ Flowable.create(FlowableOnSubscribe<String> { emitter ->
 
 ### 1.3 Single 操作符
 
-Single 只包含两个事件，一个是正常处理成功的 onSuccess，另一个是处理失败的 onError，它只发送一次消息，可以在网络请求需要结果的时候使用 Single 接收。
+Single 只包含两个事件，一个是正常处理成功的 onSuccess，另一个是处理失败的 onError，它只发送一次消息，可以在网络请求需要结果的时候使用 Single。
 
 ```kotlin
 Single.create(SingleOnSubscribe<Int> { emitter -> emitter.onSuccess(1) })
@@ -57,7 +57,7 @@ Single.create(SingleOnSubscribe<Int> { emitter -> emitter.onSuccess(1) })
 ```
 ### 1.4 Completable 操作符 
 
-Completable: 没有任何元素，只有一个完成或者错误信号的流，onComplete 和 onError 两个事件。可以在网络请求不需要关心结果的时候使用 Completable 接收，比如说埋点。
+Completable: 没有任何元素，只有一个完成或者错误信号的流，onComplete 和 onError 两个事件。可以在网络请求不需要关心结果的时候使用 Completable，比如说埋点。
 
 ```kotlin
 Completable.create { e -> e.onComplete() }
