@@ -1,38 +1,40 @@
-### 1. 依赖注入的好处
+## 1、依赖注入的好处
 
 依赖注入，解耦，保证代码的健壮性、灵活性和可维护性
 
-### 2. dagger用到的注解
+## 2、dagger用到的注解
 
-#### 2.1 @Inject （注入）
+### 2.1 @Inject （注入）
+
 两个用处：
 - 1.标记需要注入的对象。
 - 2.标记注入对象使用的构造函数。
-#### 2.2 @Module （模块）
 
-@Module标注提供依赖的类，结合 @Provides 和 @Binder 使用，解决没有提供 @Inject 构造方法的类的注入。
+### 2.2 @Module （模块）
 
-#### 2.3 @Provides 和 @Binder 
+@Module 标注提供依赖的类，结合 @Provides 和 @Binder 使用，实现没有提供 @Inject 构造方法的类的注入。
+
+### 2.3 @Provides 和 @Binder 
 
 在 Module 中注入数据的标注
 
-#### 2.4 @Component 
+### 2.4 @Component 
 
 生成 DaggerXXXComponent 的注解，标注接口，可以把 Component 类当做一个链接器。
 
-#### 2.5 @Qulifier 
+### 2.5 @Qulifier 
 
 用来区分同种类型的不同的实例。
 
-#### 2.6 @Scope 和 @Singleten 
+### 2.6 @Scope 和 @Singleten 
 
 @Scope 限定变量的使用范围，形成局部单例
 
 @Singleten 是 Scope 一个特例，App的单例
 
-### 3. Dagger使用的实例
+## 3、Dagger使用的实例
 
-#### 3.1 @inject 修饰构造方法实现注入
+### 3.1 @inject 修饰构造方法实现注入
 
 @Inject 修饰数据的构造方法
 
@@ -55,10 +57,8 @@ interface DataComponent {
 
 ```kotlin
 class DaggerActivity : AppCompatActivity() {
-
     @Inject
     lateinit var data: Data
-    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 由 DataComponent 生成的 DaggerDataComponent，实现注入
@@ -72,9 +72,9 @@ class DaggerActivity : AppCompatActivity() {
 最后打印
 
 ```shell
-// E/dagger2: 花花草草
+E/dagger2: 花花草草
 ```
-#### 3.2 Module 中使用 @Provides 提供数据
+### 3.2 Module 中使用 @Provides 提供数据
 
 一般我们使用的第三方库不会提供 @Inject 修饰的构造参数，如 Retrofit 和 Okhttp 等库。这种情况下我们可以使用 @Module 实现注入数据的提供方。
 
@@ -127,7 +127,7 @@ class DaggerActivity : AppCompatActivity() {
 ```shell
 // E/dagger2: 草草花花
 ```
-#### 3.3 Module 中使用 @Binds 提供数据
+### 3.3 Module 中使用 @Binds 提供数据
 
 开发中使用到的接口和实现可以通过 @Binds 来提供数据，比如 dataSource 的实现 remoteDataSource 和 localDataSource。
 
@@ -177,7 +177,7 @@ class DaggerActivity : AppCompatActivity() {
     }
 }
 ``` 
-### 4.通过添加 @Scope 限制注入实例的使用范围 
+## 4.通过添加 @Scope 限制注入实例的使用范围 
 
 首先自定义一个 @Scope
 ``` kotlin
@@ -223,7 +223,7 @@ object DataModule {
 
 一般我们在使用自定义 Scope 时候，都会自定义 ActivityScope 和 FragmentScope 方便使用。
 
-### 5.通过 @Qulifier 来区分同一中类型的不同实例
+## 5.通过 @Qulifier 来区分同一中类型的不同实例
 
 还是用 3.2 来举例子。我们在 module 中提供了一个 "草草花花" 的 Data 实例。由于业务需求，我们还想提供一个 "花花草草" Data 实例。
 
