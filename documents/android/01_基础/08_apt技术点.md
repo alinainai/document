@@ -1,9 +1,8 @@
 ## 1、什么是 APT
 
-`APT（Annotation Processing Tool）`，注解处理器。是一种处理注解的工具，确切的说它是`javac`的一个工具，它用来在编译时扫描和处理注解。
-注解处理器以`Java`代码(或者编译过的字节码)作为输入，生成`.java`文件作为输出。
+`APT（Annotation Processing Tool，注解处理器）`是一种处理注解的工具，确切的说它是 `javac` 的一个工具。用来在编译时扫描和处理注解，以`Java`代码(或者编译过的字节码)作为输入，然后生成`.java`文件作为输出。
 
-简单来说就是在编译期，通过注解生成`.java`文件。
+简单来说就是在编译期通过 解析注解生成`java`文件。
 
 ## 2、实现
 
@@ -234,7 +233,7 @@ class MainActivity : AppCompatActivity() {
 
 ## 3、通过javapoet生成代码
 
-上面在ClassCreatorProxy中，通过StringBuilder来生成对应的Java代码。这种做法是比较麻烦的，还有一种更优雅的方式，那就是javapoet。
+上面在ClassCreatorProxy中，通过StringBuilder来生成对应的Java代码。这种做法是比较麻烦的，还有一种更优雅的方式，那就是 javapoet。
 
 先添加依赖
 ```groove
@@ -298,9 +297,9 @@ public class ClassCreatorProxy {
         return true;
     }
 ```
-相比用StringBuilder拼Java代码，明显简洁和很多
+相比用 StringBuilder 拼凑 Java 代码，明显简洁和很多
 
-代码分支 [main_poet](https://github.com/alinainai/AptDemo/tree/main_poet)
+代码分支 [main_poet](https://github.com/alinainai/AndroidDemo/tree/feature_apt)
 
 ## 参考
 
