@@ -471,9 +471,8 @@ Build Analyzer results available
 
 ## 参考
 
-[Android Gradle Transform 详解](https://www.jianshu.com/p/cf90c557b866)
-
-[其实 Gradle Transform 就是个纸老虎 —— Gradle 系列(4)](https://www.jianshu.com/p/067675243777)
+- [Android Gradle Transform 详解](https://www.jianshu.com/p/cf90c557b866)
+- [其实 Gradle Transform 就是个纸老虎 —— Gradle 系列(4)](https://www.jianshu.com/p/067675243777)
 
 
 
