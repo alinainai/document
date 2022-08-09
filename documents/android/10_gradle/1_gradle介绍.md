@@ -29,6 +29,38 @@ Groovy 同样生成 .class 文件并在 JVM 上运行。
 - 双引号：支持在引号内通过 $ 关键字直接引用变量值；
 - 三引号：支持换行。
 
+8.支持 `**` 次方运算符
+```groovy
+assert  2 ** 4 == 16
+```
+9.简洁的三元表达式
+
+```groovy
+//左边结果不为空则取左边的值，否则取右边的值
+String str = obj ?: ""
+```
+10.简洁的非空判断
+```groovy
+obj?.group?.artifact
+```
+11.强大的 Switch
+```groovy
+def result = 'erdai666'
+switch (result){
+    case [1,2,'erdai666']:
+        println "匹配到了result"
+        break
+    default:
+        println 'default'
+        break
+}
+```
+
+12.判断是否为 null 和 非运算符
+```groovy
+if(name){ // 等价于 if (name != null && name.length > 0) 
+}
+```
 ### 2.2 函数
 
 - Groovy 支持通过返回类型或 def 关键字定义函数。
@@ -46,7 +78,7 @@ def methodName(param1, param2 = 1) {
 Groovy 支持通过 [] 关键字定义 List 列表或 Map 集合：
 
 ```groove
-def range = 1 .. 10
+def range = 1 .. 10 //
 def list = [1, 2, 3, 4]
 def map = [’name’:’Tom’, ‘age’:18]，空集合 [:]
 list.each { value ->
