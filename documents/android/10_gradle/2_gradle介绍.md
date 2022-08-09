@@ -1,11 +1,12 @@
 ## 1、Gradle 构建生命周期
 
 - 初始化阶段: 执行 settings.gradle，确定主 project 和⼦ project 
-- 定义阶段: 执⾏每个 project 的 bulid.gradle（将每个 build.gradle 文件实例化为一个 Gradle 的 project 对象），确定出所有 task 所组成的有向无环图
+- 配置阶段: 执⾏每个 project 的 bulid.gradle（将每个 build.gradle 文件实例化为一个 Gradle 的 project 对象），确定出所有 task 所组成的有向无环图
 - 执行阶段: 按照上一阶段所确定出的有向⽆环图来执行指定的 task
 
+<img width="400" alt="Gradle 构建生命周期" src="https://user-images.githubusercontent.com/17560388/183627888-cba4352d-c45b-41c8-8b42-cbc77688b37b.png">
 
-### 3.2 Project 和 Tasks
+### 1.2 Project 和 Tasks
 
 每次构建（build）至少由一个 project 构成，一个 project 由一到多个 task 构成。
 
