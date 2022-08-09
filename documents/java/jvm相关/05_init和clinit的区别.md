@@ -1,10 +1,9 @@
-
-### 1.二者的执行时机不同
+### 1.执行时机不同
 
 - `init` 是对象构造器方法，也就是说在程序执行 `new`一个对象调用该对象类的 `constructor` 方法时才会执行 `init` 方法，
-- 而 `clinit` 是类构造器方法，也就是在 `jvm` 进行 `类加载—–验证—-解析—–初始化`中的初始化阶段`jvm`会调用`clinit`方法。
+- 而 `clinit` 是类构造器方法（Class 类的 init），也就是在 `jvm` 进行 `类加载的初始化`阶段调用`clinit`方法。
 
-### 2.二者的执行目不同
+### 2.执行目不同
 
 - init is the (or one of the) constructor(s) for the instance, and non-static field initialization.
 - clinit are the static initialization blocks for the class, and static field initialization.
@@ -15,22 +14,19 @@
 
 ```java
 class X {
-
    static Log log = LogFactory.getLog(); // <clinit>
    private int x = 1;   // <init>
-
    X(){
       // <init>
    }
-
    static {
       // <clinit>
    }
 }
 ```
-### 3.clinit详解
+### 3.clinit 详解
 
-在准备阶段，变量已经赋过一次系统要求的初始值（零值），而在初始化阶段，则根据程序员通过程序制定的主观计划去初始化类变量和其他资源，
+在准备阶段，变量已经赋过一次系统要求的初始值（零值），而在初始化阶段，则根据程序员通过程序制定的主观计划去初始化 类变量 和 其他资源，
 或者可以从另外一个角度来表达：初始化阶段是执行类构造器`＜clinit＞()`方法的过程。
 
 ① `＜clinit＞()` 方法是由编译器自动收集类中的所有类变量的赋值动作和静态语句块`（static{}块）`中的语句合并产生的，编译器收集的顺序是由语句在源文件中出现的顺序所决定的，
@@ -65,4 +61,4 @@ static class Parent{
 但接口与类不同的是，执行接口的`＜clinit＞()`方法不需要先执行父接口的`＜clinit＞()`方法。 
 只有当父接口中定义的变量使用时，父接口才会初始化。 另外，接口的实现类在初始化时也一样不会执行接口的`＜clinit＞()`方法。
 
-注意：接口中的属性都是static final类型的常量，因此在准备阶段就已经初始化话。
+注意：接口中的属性都是 static final 类型的常量，因此在准备阶段就已经初始化话。
