@@ -79,12 +79,11 @@ Groovy 支持通过 [] 关键字定义 List 列表或 Map 集合：
 
 ```groove
 def range = 1 .. 10 //
+def range1 = 1..<10
 def list = [1, 2, 3, 4]
 def map = [’name’:’Tom’, ‘age’:18]，空集合 [:]
-list.each { value ->
-}
-list.eachWIthIndex { value, index ->
-}
+list.each { value ->}
+list.eachWIthIndex { value, index ->}
 ```
 ### 2.4 闭包 Closure
 
@@ -95,7 +94,7 @@ Groovy 闭包是一个匿名代码块，可以作为值传递给变量或函数�
 { String x, int y ->                                
     println "hey ${x} the value is ${y}"
 }
-//Closure c = { 123 }
+Closure a = { 123 }
 def c = { 123 }
 c.call() // Closure#call() 调用
 c() // 通过变量名调用
@@ -151,6 +150,220 @@ assert cl() == 'IGOR'
 - Closure.DELEGATE_ONLY：只在 delegate 对象中寻找；
 - Closure.TO_SELF：只在闭包本身寻找；
 
+## 3、IO文件处理
+ 
+### 3.1 IO 常用的 Api
+```groovy
+def file = new File('testFile.txt')
+// 1. 读取
+file.eachLine { String line ->
+    println line
+}
+file.withInputStream { InputStream inputStream ->
+    inputStream.eachLine { String it ->
+        println it
+    }
+}
+file.withReader { BufferedReader it ->
+    it.readLines().each { String it ->
+        println it
+    }
+}
+// 2. 输出
+//会把之前的内容给覆盖
+file.withOutputStream { OutputStream outputStream ->
+    outputStream.write("erdai999".getBytes())
+}
+
+// 会把之前的内容给覆盖
+file.withWriter { BufferedWriter it ->
+    it.write('erdai999')
+}
+
+//3. 通过输入输出流实现文件拷贝功能
+//1、通过 withOutputStream withInputStream 实现文件拷贝
+def targetFile = new File('testFile1.txt')
+targetFile.withOutputStream { OutputStream outputStream ->
+    file.withInputStream { InputStream inputStream ->
+        outputStream << inputStream
+    }
+}
+//2、通过 withReader、withWriter 实现文件拷贝
+targetFile.withWriter {BufferedWriter bufferedWriter ->
+    file.withReader {BufferedReader bufferedReader ->
+        bufferedReader.eachLine {String line ->
+            bufferedWriter.write(line + "\r\n")
+        }
+    }
+}
+```
+### 3.2 XML 文件操作
+
+1）、解析 XML 文件
+```groovy
+//定义一个带格式的 xml 字符串
+def xml = '''
+    <response>
+        <value>
+            <books id="1" classification="android">
+                <book available="14" id="2">
+                   <title>第一行代码</title>
+                   <author id="2">郭霖</author>
+               </book>
+               <book available="13" id="3">
+                   <title>Android开发艺术探索</title>
+                   <author id="3">任玉刚</author>
+               </book>
+           </books>
+       </value>
+    </response>
+'''
+//创建 XmlSlurper 类对象，解析 XML 文件主要借助 XmlSlurper 这个类
+def xmlSlurper = new XmlSlurper()
+//解析 mxl 返回 response 根结点对象
+def response = xmlSlurper.parseText(xml)
+//打印一些结果
+println response.value.books[0].book[0].title.text()
+println response.value.books[0].book[0].author.text()
+//打印结果
+第一行代码
+郭霖
+
+//1、使用迭代器解析
+response.value.books.each{ books ->
+    books.book.each{ book ->
+        println book.title
+        println book.author 
+    }
+}
+//打印结果
+第一行代码
+郭霖
+Android开发艺术探索
+任玉刚
+
+//2、深度遍历 XML 数据
+def str1 = response.depthFirst().findAll { book ->
+    return book.author == '郭霖'
+}
+println str1
+//打印结果
+[第一行代码郭霖]
+
+//3、广度遍历 XML 数据
+def str2 = response.value.books.children().findAll{ node ->
+    node.name() == 'book' && node.@id == '2'
+}.collect { node ->
+    "$node.title $node.author"
+}
+println str2
+//打印结果
+[第一行代码 郭霖]
+```
+2)、生成 XML 文件
+上面我们使用 XmlSlurper 这个类解析了 XML，现在我们借助 MarkupBuilder 来生成 XML ,代码如下：
+```groovy
+/**
+ * <response>
+ *      <value>
+ *          <books id="1" classification="android">
+ *              <book available="14" id="2">
+ *                 <title>第一行代码</title>
+ *                 <author id="2">郭霖</author>
+ *             </book>
+ *             <book available="13" id="3">
+ *                 <title>Android开发艺术探索</title>
+ *                 <author id="3">任玉刚</author>
+ *             </book>
+ *         </books>
+ *     </value>
+ * </response>
+ */
+//方式1：通过下面这种方式 就可以实现上面的效果，但是这种方式有个弊端，数据都是写死的
+def sw = new StringWriter()
+def xmlBuilder = new MarkupBuilder(sw)
+xmlBuilder.response{
+    value{
+        books(id: '1',classification: 'android'){
+            book(available: '14',id: '2'){
+                title('第一行代码')
+                author(id: '2' ,'郭霖')
+            }
+            book(available: '13',id: '3'){
+                title('Android开发艺术探索')
+                author(id: '3' ,'任玉刚')
+            }
+        }
+    }
+}
+println sw
+
+//方式2：将 XML 数据对应创建相应的数据模型，就像我们解析 Json 创建相应的数据模型是一样的
+//创建 XML 对应数据模型
+class Response {
+    def value = new Value()
+    
+    class Value {
+        def books = new Books(id: '1', classification: 'android')
+        class Books {
+            def id
+            def classification
+            def book = [new Book(available: '14', id: '2', title: '第一行代码', authorId: 2, author: '郭霖'),
+               new Book(available: '13', id: '3', title: 'Android开发艺术探索', authorId: 3, author: '任玉刚')]
+
+            class Book {
+                def available
+                def id
+                def title
+                def authorId
+                def author
+            }
+        }
+    }
+}
+
+//创建 response 对象
+def response = new Response()
+//构建 XML 
+xmlBuilder.response{
+    value{
+        books(id: response.value.books.id,classification: response.value.books.classification){
+            response.value.books.book.each{
+                def book1 = it
+                book(available: it.available,id: it.id){
+                    title(book1.title)
+                    author(authorId: book1.authorId,book1.author)
+                }
+            }
+        }
+    }
+}
+println sw
+```
+### 3.3 Json 解析
+Json解析主要是通过 JsonSlurper 这个类实现的，这样我们在写插件的时候就不需要额外引入第三方的 Json 解析库了，其示例代码如下所示：
+
+```groovy
+//发送请求获取服务器响应的数据
+def response = getNetWorkData("https://www.wanandroid.com/banner/json")
+println response.data[0].desc
+println response.data[0].imagePath
+
+def getNetWorkData(String url){
+    def connect = new URL(url).openConnection()
+    connect.setRequestMethod("GET")
+    //这个会阻塞线程 在Android中不能这样操作 但是在桌面程序是可以的
+    connect.connect()
+    def response = connect.content.text
+
+    //json转实体对象
+    def jsonSlurper = new JsonSlurper()
+    jsonSlurper.parseText(response)
+}
+//打印结果
+扔物线
+https://wanandroid.com/blogimgs/8a0131ac-05b7-4b6c-a8d0-f438678834ba.png
+```
 
 ## 3、Gradle 构建生命周期
 
