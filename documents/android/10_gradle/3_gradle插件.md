@@ -139,7 +139,14 @@ plugins {
 ```
 这样在执行 `app build` 过程的时候可以看到 `Hello CustomPlugin` 的日志
 
-## 3.gradle插件的拓展
+## 3.Extension 拓展
+
+Extension 为外部构建脚本提供的配置项，比如 `android{}` 就是 `Android Gradle Plugin` 提供的扩展。
+
+### 3.1 创建 Extension
+
+1、首先定义一个类来接收我们的配置项
+2、创建并添加扩展对象
 
 
 ## 参考
