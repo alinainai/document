@@ -248,8 +248,10 @@ task execFoo {
 
 使用 gradlew (gradle-wrapper) 执行 task。每个 gradle 版本有差异性，gradle-wrapper 对 gradle 进行封装。
 
+下面指令会先执行 clean 在执行 assembleDebug 的 Task
+
 ```shell
-./gradlew clean assemble
+./gradlew clean assembleDebug
 ```
 
 ## 4、Android Gradle 配置
