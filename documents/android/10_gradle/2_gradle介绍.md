@@ -12,17 +12,17 @@
 注意：Gradle 执行脚本文件的时候会生成对应的实例，主要有如下三种对象：
 
 - 1、Gradle 对象：在项目初始化时构建，全局单例存在，只有这一个对象
-- 2、Project 对象：每一个 build.gradle 都会转换成一个 Project 对象
-- 3、Settings 对象：Seetings.gradle 会转变成一个 Seetings 对象
+- 2、Settings 对象：Seetings.gradle 会转变成一个 Seetings 对象
+- 3、Project 对象：每一个 build.gradle 都会转换成一个 Project 对象
 
 Gradle 在各个阶段都提供了生命周期回调，在添加监听器的时候需要注意：监听器要在生命周期回调之前添加，否则会导致有些回调收不到
 
-### 1.1 Gradle 初始化阶段
+### 1.1 初始化阶段
 
 在 settings.gradle 执行完后，会回调 Gradle 对象的 settingsEvaluated 方法
 在构建所有工程 build.gradle 对应的 Project 对象后，也就是初始化阶段完毕，会回调 Gradle 对象的 projectsLoaded 方法
 
-### 1.2 Gradle 配置阶段：
+### 1.2 配置阶段：
 
 Gradle 会循环执行每个工程的 build.gradle 脚本文件
 
@@ -42,9 +42,12 @@ Gradle 会循环执行 Task 及其依赖的 Task
 - 在当前 Task 执行之前，会回调 TaskExecutionGraph 对象的 beforeTask 方法
 - 在当前 Task 执行之后，会回调 TaskExecutionGraph 对象的 afterTask 方法
 
-### 1.4 当所有的 Task 执行完毕后，会回调 Gradle 对象的 buildFinish 方法
+当所有的 Task 执行完毕后，会回调 Gradle 对象的 buildFinish 方法
 
-### 1.5 打印 Gradle 构建各个阶段及各个任务的耗时
+### 1.4 各阶段 Hook
+
+打印 Gradle 构建各个阶段及各个任务的耗时
+
 在 settings.gradle 添加如下代码：
 ```groovy
 //初始化阶段开始时间
@@ -124,41 +127,86 @@ gradle.buildFinished {
 
 ## 2、Project 和 Tasks
 
-每次构建（build）至少由一个 project 构成，一个 project 由一到多个 task 构成。
-项目结构中的每个 build.gradle 文件代表一个 project ，在这些编译脚本文件中可以定义一系列的task；
+每次构建（build）至少由一个 Project 构成，一个 Project 由一到多个 Task 构成。
+项目结构中的每个 build.gradle 文件代表一个 Project ，在这些编译脚本文件中可以定义一系列的 Task。
 
 ### 2.1 Project API
 
+[Project API 官方文档](https://docs.gradle.org/current/javadoc/org/gradle/api/Project.html)
+
+```groovy
+//根 build.gradle 打印
+println "根 build.gradle"
+println getRootProject() // 获取根 Project 对象 -> root project 'AndroidDemo'
+println getRootDir()     // 获取根目录文件夹路径 -> /Users/lijiaxing/workspace/AndroidDemo
+println getBuildDir()    // 获取当前 Project 的 build 目录 -> /Users/lijiaxing/workspace/AndroidDemo/build
+println getParent()      // 获取当前父 Project 对象 -> null （根 Project 没有父类）
+println getAllprojects() // 获取当前 Project 及其子 Project 对象，返回值是一个 Set 集合 -> [root project 'AndroidDemo', project ':app']
+println getSubprojects() // 获取当前 Project 下的所有子 Project 对象，返回值是一个 Set 集合 -> [project ':app']
+
+//app: build.gradle 打印
+println "app build.gradle"
+println getRootProject()  // root project 'AndroidDemo'
+println getRootDir()      // /Users/lijiaxing/workspace/AndroidDemo
+println getBuildDir()     // /Users/lijiaxing/workspace/AndroidDemo/app/build
+println getParent()       // root project 'AndroidDemo'
+println getAllprojects()  // [project ':app']
+println getSubprojects()  // []
+```
+## 3、Tasks 相关
 
 task 本质上又是由一组被顺序执行的 Action 对象构成，Action其实是一段代码块，类似于Java中的方法。
+
+- doFirst: Task 执行最开始时被调用的 Action
+- doLast: Task 执行完时被调用的 Action
+- doFirst 和 doLast 可被多次添加执行 
+
+doFirst() doLast() 和普通代码段的区别:
+- 普通代码段: 在 task 创建过程中就会被执行，发在 configuration 阶段
+- doFirst() 和 doLast(): 在 task 执⾏过程中被执行，发⽣在 execution 阶段。如果⽤用户没有直接或间接执⾏ task，那么它的 doLast() doFirst() 代码不会被执行，其中 doFirst() 是往队列的前⾯插入代码，doLast() 是往队列的后面插⼊代码
 
 ```groovy
 task taskName { 
     //初始化代码，初始化话的时候会执行
-    doFirst { //Closure
-     //初始化的时候不会执行
+    // config code 
+    
+    doFirst { //初始化的时候不会执行
     }
-    doLast {
-    //初始化的时候不会执行
+    
+    doLast { //初始化的时候不会执行
     }
 }
 ```
-### 1.2 task的执行: 
+### 3.1 自定义 Task
 
-使用 gradlew 执行命令的时候，就是执行 gradle-wrapper 的指令。每个 gradle 版本有差异性，gradle-wrapper 对 gradle 进行封装。
+Task 的属性
 
-```shell
-./gradlew taskName1 taskName2
+- name：Task 名字
+- type: Task 的父类，默认为 DefaultTask
+- action: 当 Task 执行的时候，需要执行的闭包或 Action 默认为 null
+- overwrite: 替换一个已存在的 Task ，默认为 false 
+- dependsOn: 该 Task 所依赖的 Task ，默认为集合[]
+- group:该 task 所属分组，默认为 null
+- description: 该 Task 的描述信息，默认为 null
+- constructorArgs: 传递到 Task Class 构造器中的参数，默认为 null
+
+继承 Delete Task，删除根目录下的 build 文件
+```groovy
+task deleteTask(type: Delete) {
+    delete rootProject.buildDir
+}
 ```
-### 1.3 doFirst() doLast() 和普通代码段的区别:
-
-普通代码段: 在 task 创建过程中就会被执行，发在 configuration 阶段
-
-doFirst() 和 doLast(): 在 task 执⾏过程中被执行，发⽣在 execution 阶段。如果⽤用户没有直接或间接执⾏ task，那么它的 doLast() doFirst() 代码不会被执行，其中 doFirst() 是往队列的前⾯插入代码，doLast() 是往队列的后面插⼊代码
-
-### 1.4 task 的依赖:
-
-可以使⽤ task taskA(dependsOn: b) 的形式来指定依赖。指定依赖后，task 会在⾃⼰执行前先执行⾃己依赖的 task。
+依赖 copy
+```groovy
+task copyImage(type: Copy) {
+    from 'C:\\Users\\yiba_zyj\\Desktop\\gradle\\copy'
+    into 'C:\\Users\\yiba_zyj\\Desktop'
+    include "*.jpg"
+    exclude "image1.jpg"
+    rename("image2.jpg","123.jpg")
+}
+```
+使⽤ task taskA(dependsOn: b) 的形式来指定依赖
 ```groovy
 task task1 {
     doLast { println "执行task1----"}
@@ -170,79 +218,7 @@ task task2 {
 task2.dependsOn task1
 ```
 
-执行和日志
-
-```shell
-./gradlew task2
-
-> Task :task1
-执行task1----
-
-> Task :task2
-执行task2----
-```
-
-## 2. Android Gradle 配置
- 
-### 2.1 gradle 项⽬结构
-
-- 单 project: build.gradle
-- 多 project: 由 settings.gradle 配置多个 
- 
-查找 settings 的顺序:
-
-1. 当前⽬录
-2. 兄弟目录 master 
-3. ⽗目录
-
-### 2.2 根目录下的 build.gradle
-
-```groovy
-buildscript {//配置构建脚本所用到的代码库和依赖关系}
-
-allprojects {//所有模块需要用到的一些公共属性}
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}
-```
-
-### 2.3 module 下的 build.gradle
-
-android{} 是 pluagins {id 'com.android.application'} 中的方法 
-
-常用的依赖:
-
-compile, implementation 和 api
-
-implementation: 不会传递依赖
-
-compile / api: 会传递依赖; api 是 compile 的替代品，效果完全等同。
-
-当依赖被传递时，⼆级依赖的改动会导致 0 级项⽬重新编译;
-当依赖不传递时，⼆级依赖的改动不会导致 0 级项⽬重新编译
-
-
-## 3. 在 build.gradle 中自定义 task
-
-### 3.1 依赖 copy
-```groovy
-task copyImage(type: Copy) {
-    from 'C:\\Users\\yiba_zyj\\Desktop\\gradle\\copy'
-    into 'C:\\Users\\yiba_zyj\\Desktop'
-    include "*.jpg"
-    exclude "image1.jpg"
-    rename("image2.jpg","123.jpg")
-}
-```
-### 3.2 依赖 delete
-```groovy
-task deleteFile(type: Delete) {
-    //删除系统桌面 delete 
-    delete "path"
-}
-```
-### 3.3 执行 shell
+执行 shell
 
 1. Use Gradle [Exec](https://docs.gradle.org/current/dsl/org.gradle.api.tasks.Exec.html) task type
 ```groovy
@@ -268,10 +244,58 @@ task execFoo {
 }
 ```
 
-## 4. 将 task 放到单独的文件
+### 3.3 task的执行
+
+使用 gradlew (gradle-wrapper) 执行 task。每个 gradle 版本有差异性，gradle-wrapper 对 gradle 进行封装。
+
+```shell
+./gradlew clean assemble
+```
+
+## 4、Android Gradle 配置
+ 
+### 4.1 gradle 项⽬结构
+
+- 单个 project: build.gradle
+- 多个 project: 由 settings.gradle 配置多个 
+ 
+查找 settings 的顺序:
+
+1. 当前⽬录
+2. 兄弟目录 master 
+3. ⽗目录
+
+### 4.2 根目录的 build.gradle
 
 ```groovy
-// ../代表根目录
+buildscript {//配置构建脚本所用到的代码库和依赖关系}
+
+allprojects {//所有模块需要用到的一些公共属性}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+```
+
+### 4.3 app 中的 build.gradle
+
+`android{}` 是 `pluagins {id 'com.android.application'}` 中的方法 
+
+常用的依赖: compile, implementation 和 api
+
+- implementation: 不会传递依赖
+- compile / api: 会传递依赖; api 是 compile 的替代品，效果完全等同。
+
+当依赖被传递时，⼆级依赖的改动会导致 0 级项⽬重新编译;
+当依赖不传递时，⼆级依赖的改动不会导致 0 级项⽬重新编译
+
+
+## 5、针对项目优化
+
+将 task 放到单独的文件
+
+```groovy
+// ../代表上一层目录
 apply from:"../utils.gradle"
 ```
 
