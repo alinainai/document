@@ -352,12 +352,7 @@ abstract class BaseTransform(private val debug: Boolean) : Transform() {
 
 我们通过自定义 Gradle 插件来承载 Transform 的逻辑，可维护性更好。
 
-提示： 提醒一下，并不是说一定要由 Gradle 插件来承载，你直接在 .gradle 文件中实现也是 OK 的。
-
-插件实现类如下：
-
-ToastPlugin.kt
-
+```kotlin
 class ToastPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         // 获取 Android 扩展
@@ -366,18 +361,15 @@ class ToastPlugin : Plugin<Project> {
         androidExtension.registerTransform(ToastTransform(project)/* 支持增加依赖*/)
     }
 }
-### 4.2 实现一个具体的 BaseTransform 子类
+```
+### 3.2 实现一个具体的 BaseTransform 子类
 
 将我们实现的 BaseTransform 模板类复制到工程下，再实现一个子类：
-
-ToastTransform.kt
-
+```kotlin
 internal class ToastTransform(val project: Project) : BaseCustomTransform(true) {
 
     override fun getName() = "ToastTransform"
-
     override fun isIncremental() = true
-
     /**
      * 用于过滤 Variant，返回 false 表示该 Variant 不执行 Transform
      */
@@ -397,10 +389,12 @@ internal class ToastTransform(val project: Project) : BaseCustomTransform(true) 
         input.copyTo(output)
     }
 }
+```
 其中，provideFunction() 是模板代码，参数分别表示源 Class 文件的输入流和目标 Class 文件输出流。子类要做的事，就是从输入流读取 Class 信息，修改后写入到输出流。
 
-4.3 步骤 3：使用 Javassist 修改字节码
-使用 Javassist API 从输入流加载数据，在匹配到 onCreate() 方法后检查是否声明 @Hello 注解。是则在该方法末尾织入一句 Toast：Hello Transform。本文重点不是 Javassist，此处就不展开了。
+### 3.3 使用 Javassist 修改字节码
+```kotlin
+使用 Javassist API 从输入流加载数据，在匹配到 onCreate() 方法后检查是否声明 @Hello 注解。是则在该方法末尾织入一句 Toast：Hello Transform。
 
 override fun provideFunction() = { ios: InputStream, zos: OutputStream ->
     val classPool = ClassPool.getDefault()
@@ -428,11 +422,14 @@ override fun provideFunction() = { ios: InputStream, zos: OutputStream ->
     zos.write(ctClass.toBytecode())
     ctClass.detach()
 }
-4.4 步骤 4：应用插件
-sample 模块 build.gradle
+```
+4.4 应用插件
 
+在 app 的 build.gradle 添加
+```groovy
 apply plugin: 'com.pengxr.toastplugin'
-4.5 步骤 5：声明 @Hello 注解
+```
+### 4.5 声明 @Hello 注解
 HelloActivity.kt
 
 class HelloActivity : AppCompatActivity() {
@@ -443,9 +440,11 @@ class HelloActivity : AppCompatActivity() {
         setContentView(R.layout.activity_hello)
     }
 }
-4.6 步骤 6：运行
-完成以上步骤后，编译运行程序。可以在 Build Output 看到以下输出，HelloActivity 启动时会弹出 Toast HelloTransform，说明织入成功。
 
+### 4.6 运行检验效果
+
+完成以上步骤后，编译运行程序。可以在 Build Output 看到以下输出，HelloActivity 启动时会弹出 Toast HelloTransform，说明织入成功。
+```shell
 ...
 Task :sample:mergeDebugJavaResource
 
@@ -466,11 +465,11 @@ BUILD SUCCESSFUL in 3m 18s
 33 actionable tasks: 33 executed
 
 Build Analyzer results available
-
-
+```
 
 ## 参考
 
+- [【Android】函数插桩（Gradle + ASM）](https://www.jianshu.com/p/16ed4d233fd1)
 - [Android Gradle Transform 详解](https://www.jianshu.com/p/cf90c557b866)
 - [其实 Gradle Transform 就是个纸老虎 —— Gradle 系列(4)](https://www.jianshu.com/p/067675243777)
 
