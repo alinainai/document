@@ -1,6 +1,6 @@
 ## 1、Transform 的定义
 
-### 1.1 什么是 Transform？
+### 1.1 什么是`Transform`
 
 `Transform API` 是 Android Gradle Plugin 1.5 开始引入，用于在 Android 构建过程中，在 `Class→Dex` 这个节点修改 Class 字节码。
 
@@ -70,12 +70,13 @@ public abstract class Transform {
 ```
 ### 1.4 ContentType 内容类型
 
-ContentType 是一个枚举类接口，表示输入或输出内容的类型，在 AGP 中定义了 DefaultContentType 和 ExtendedContentType 两个枚举类。但是，我们在自定义 Transform 时只能使用 DefaultContentType 中定义的枚举，即 CLASSES 和 RESOURCES 两种类型，其它类型仅供 AGP 内置的 Transform 使用。
+`ContentType` 是一个枚举类接口，表示输入或输出内容的类型，在 AGP 中定义了 `DefaultContentType` 和 `ExtendedContentType` 两个枚举类。
+但是，我们在自定义 `Transform` 时只能使用 `DefaultContentType 中定义的枚举，即 CLASSES 和 RESOURCES 两种类型，其它类型仅供 AGP 内置的 Transform 使用。
 
 自定义 Transform 需要在两个位置定义内容类型：
 
-- 1、Set<ContentType> getInputTypes()： 指定输入内容类型，允许通过 Set 集合设置输入多种类型；
-- 2、Set<ContentType> getOutputTypes()： 指定输出内容类型，默认取 getInputTypes() 的值，允许通过 Set 集合设置输出多种类型。
+- 1、`Set<ContentType> getInputTypes()`： 指定输入内容类型，允许通过 `Set` 集合设置输入多种类型；
+- 2、`Set<ContentType> getOutputTypes()`： 指定输出内容类型，默认取 `getInputTypes()` 的值，允许通过 `Set` 集合设置输出多种类型。
   
 ```java
 // 加强类型，自定义 Transform 无法使用
@@ -87,14 +88,13 @@ public enum ExtendedContentType implements ContentType {
     DEX_ARCHIVE(0x40000), // Dex Archive
     ;
 }
-// QualifiedContent.java
 enum DefaultContentType implements ContentType {
     CLASSES(0x01), // Java 字节码，包括 Jar 文件和由源码编译产生的
     RESOURCES(0x02); // Java 资源
 }
 ```
 
-在 TransformManager 中，预定义了一部分内容类型集合，常用的是 CONTENT_CLASS 操作 Class。
+在 `TransformManager` 中，预定义了一部分内容类型集合，常用的是 `CONTENT_CLASS` 操作 Class。
     
 ```java
 public static final Set<ContentType> CONTENT_CLASS = ImmutableSet.of(CLASSES);
@@ -102,10 +102,10 @@ public static final Set<ContentType> CONTENT_JARS = ImmutableSet.of(CLASSES, RES
 public static final Set<ContentType> CONTENT_RESOURCES = ImmutableSet.of(RESOURCES);
 ```
 ### 1.5 ScopeType 作用域
-ScopeType 也是一个枚举类接口，表示输入内容的范畴。
+`ScopeType` 也是一个枚举类接口，表示输入内容的范畴。
 
-- 1、Set<ScopeType> getScopes() 消费型输入内容范畴： 此范围的内容会被消费，因此当前 Transform 必须将修改后的内容复制到 Transform 的中间目录中，否则无法将内容传递到下一个 Transform 处理；
-- 2、Set<ScopeType> getReferencedScopes() 指定引用型输入内容范畴： 默认是空集合，此范围的内容不会被消费，因此不需要复制传递到下一个 Transform，也不允许修改。
+- 1、`Set<ScopeType> getScopes()` 消费型输入内容范畴: 此范围的内容会被消费，因此当前 Transform 必须将修改后的内容复制到 `Transform` 的中间目录中，否则无法将内容传递到下一个 Transform 处理；
+- 2、`Set<ScopeType> getReferencedScopes()` 指定引用型输入内容范畴: 默认是空集合，此范围的内容不会被消费，因此不需要复制传递到下一个 `Transform`，也不允许修改。
 
 QualifiedContent.java
     
@@ -116,7 +116,7 @@ EXTERNAL_LIBRARIES(0x10), // 外部依赖，包括当前模块和子模块本地
 TESTED_CODE(0x20), // 当前变体所测试的代码（包括依赖项）
 PROVIDED_ONLY(0x40), // 本地依赖和远程依赖的 JAR/AAR（provided-only）
 ```
-在 TransformManager 中，预定义了一部分作用域集合，常用的是 SCOPE_FULL_PROJECT 所有模块。需要注意，Library 模块注册的 Transform 只能使用 Scope.PROJECT。
+在 TransformManager 中，预定义了一部分作用域集合，常用的是 `SCOPE_FULL_PROJECT` 所有模块。需要注意，`Library` 模块注册的 `Transform` 只能使用 Scope.PROJECT。
 
 ```java
 public static final Set<ScopeType> PROJECT_ONLY = ImmutableSet.of(Scope.PROJECT);
@@ -124,30 +124,37 @@ public static final Set<ScopeType> SCOPE_FULL_PROJECT = ImmutableSet.of(Scope.PR
 ``` 
 ### 1.6 transform 方法
   
-transform() 是实现 Transform 的核心方法，方法的参数是 TransformInvocation，它提供了所有与输入输出相关的信息：
+`transform()` 是实现 `Transform` 的核心方法，方法参数是 `TransformInvocation`，它提供了所有与输入输出相关的信息：
 
 ```java
 public interface TransformInvocation {
     Context getContext();
+    
     Collection<TransformInput> getInputs(); // 获取 TransformInput 对象，它是消费型输入内容，对应于 Transform#getScopes() 定义的范围；
+   
     Collection<TransformInput> getReferencedInputs();  // 获取 TransformInput 对象，它是引用型输入内容，对应于 Transform#getReferenceScope() 定义的内容范围；
+    
     Collection<SecondaryInput> getSecondaryInputs(); // 额外输入内容
+    
     TransformOutputProvider getOutputProvider(); // 获取输出信息，TransformOutputProvider 是对输出文件的抽象。
+    
     boolean isIncremental(); // 当前 Transform 任务是否增量构建；
 }
 ```
-输入内容 TransformInput 由两部分组成：
+`TransformInput` 由两部分组成：
 
-- DirectoryInput 集合： 以源码方式参与构建的输入文件，包括完整的源码目录结构及其中的源码文件；
-- JarInput 集合： 以 Jar 和 aar 依赖方式参与构建的输入文件，包含本地依赖和远程依赖。
+- `DirectoryInput 集合`: 以源码方式参与构建的输入文件，包括完整的源码目录结构及其中的源码文件；
+- `JarInput 集合`: 以 Jar 和 aar 依赖方式参与构建的输入文件，包含本地依赖和远程依赖。
   
-输入内容信息 TransformOutputProvider 有两个功能：
+`TransformOutputProvider` 有两个功能：
 
-- deleteAll()： 当 Transform 运行在非增量构建模式时，需要删除上一次构建产生的所有中间文件，可以直接调用 deleteAll() 完成；
-- getContentLocation()： 获得指定范围+类型的输出目标路径。
+- `deleteAll()`: 当 Transform 运行在非增量构建模式时，需要删除上一次构建产生的所有中间文件，可以直接调用 deleteAll() 完成；
+- `getContentLocation()`: 获得指定范围 + 类型的输出目标路径。
+
 ```java
 public interface TransformOutputProvider {
     void deleteAll() // 删除所有中间文件
+    
     // 获取指定范围+类型的目标路径
     File getContentLocation(String name, Set<QualifiedContent.ContentType> types, Set<? super QualifiedContent.Scope> scopes, Format format);
 }
@@ -172,8 +179,8 @@ for (input in transformInvocation.inputs) {
 
 1、增量模式标记位： Transform API 有两个增量标志位，不要混淆：
 
-- Transform#isIncremental()： Transform 增量构建的使能开关，返回 true 才有可能触发增量构建；
-- TransformInvocation#isIncremental()： 当次 TransformTask 是否增量执行，返回 true 表示正在增量模式。
+- `Transform#isIncremental()`: Transform 增量构建的使能开关，返回 true 才有可能触发增量构建；
+- `TransformInvocation#isIncremental()`: 当次 `TransformTask` 是否增量执行，返回 true 表示正在增量模式。
 
 增量模式下的所有输入都是带状态的，Transform 定义了四个输入文件状态：
 ```kotlin
@@ -186,14 +193,14 @@ public enum Status {
 ```
 ## 2、抽象出一个通用 Transform 模板
 
-整个 Transform 的核心过程是有固定套路，模板流程图如下：
+整个 `Transform` 的核心过程是有固定套路，模板流程图如下：
 
 <img width="600" alt="Transform的核心过程" src="https://user-images.githubusercontent.com/17560388/179890215-5cc7e596-c21d-47df-9d65-3ba1322f705a.png">
 
 我们把整个流程图做成一个抽象模板类，子类需要重写 provideFunction() 方法，从输入流读取 Class 文件，修改完字节码后再写入到输出流。其他的一切方法都交给 BaseTransform 去完成
 
 ```kotlin
-abstract class BaseTransform(private val debug: Boolean) : Transform() {
+abstract class ExtTransform(private val debug: Boolean) : Transform() {
 
     abstract fun provideFunction(): ((InputStream, OutputStream) -> Unit)?
 
