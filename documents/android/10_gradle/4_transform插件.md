@@ -355,27 +355,29 @@ abstract class ExtTransform(private val debug: Boolean) : Transform() {
 ```
 ## 3、具体应用
 
-### 3.1 初始化代码框架
+学习新知识目的最终都是落地到项目中，咱们先以一个简单的 Activity 生命周期回调打日志的例子来写一个具体的例子。
+
+### 3.1 新建 Gradle 插件
 
 我们通过自定义 Gradle 插件来承载 Transform 的逻辑，可维护性更好。
 
 ```kotlin
-class ToastPlugin : Plugin<Project> {
+class LogPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         // 获取 Android 扩展
         val androidExtension = project.extensions.getByType(BaseExtension::class.java)
         // 注册 Transform，支持额外增加依赖
-        androidExtension.registerTransform(ToastTransform(project)/* 支持增加依赖*/)
+        androidExtension.registerTransform(LogTransform(project)/* 支持增加依赖*/)
     }
 }
 ```
 ### 3.2 实现一个具体的 BaseTransform 子类
 
-将我们实现的 BaseTransform 模板类复制到工程下，再实现一个子类：
+将我们实现的 ExtTransform 模板类复制到工程下，再实现一个子类：
 ```kotlin
-internal class ToastTransform(val project: Project) : BaseCustomTransform(true) {
+internal class LogTransform(val project: Project) : ExtTransform(true) {
 
-    override fun getName() = "ToastTransform"
+    override fun getName() = "LogTransform"
     override fun isIncremental() = true
     /**
      * 用于过滤 Variant，返回 false 表示该 Variant 不执行 Transform
@@ -397,82 +399,9 @@ internal class ToastTransform(val project: Project) : BaseCustomTransform(true) 
     }
 }
 ```
-其中，provideFunction() 是模板代码，参数分别表示源 Class 文件的输入流和目标 Class 文件输出流。子类要做的事，就是从输入流读取 Class 信息，修改后写入到输出流。
+其中，`provideFunction()` 是模板代码，`ios` 表示源 Class 文件的输入流，`zos` 表示目标 `Class` 文件输出流。子类要做的事，就是从输入流读取 `Class` 信息，修改后写入到输出流。
 
-### 3.3 使用 Javassist 修改字节码
-```kotlin
-使用 Javassist API 从输入流加载数据，在匹配到 onCreate() 方法后检查是否声明 @Hello 注解。是则在该方法末尾织入一句 Toast：Hello Transform。
 
-override fun provideFunction() = { ios: InputStream, zos: OutputStream ->
-    val classPool = ClassPool.getDefault()
-    // 加入android.jar
-    classPool.appendClassPath((project.extensions.getByName("android") as BaseExtension).bootClasspath[0].toString())
-    classPool.importPackage("android.os.Bundle")
-    // Input
-    val ctClass = classPool.makeClass(ios)
-    try {
-        ctClass.getDeclaredMethod("onCreate").also {
-            println("onCreate found in ${ctClass.simpleName}")
-            val attribute = it.methodInfo.getAttribute(AnnotationsAttribute.invisibleTag) as? AnnotationsAttribute
-            if (null != attribute?.getAnnotation("com.pengxr.hellotransform.Hello")) {
-                println("Insert toast in ${ctClass.simpleName}")
-                it.insertAfter(
-                    """android.widget.Toast.makeText(this,"Hello Transform!",android.widget.Toast.LENGTH_SHORT).show();  
-                                  """
-                )
-            }
-        }
-    } catch (e: NotFoundException) {
-        // ignore
-    }
-    // Output
-    zos.write(ctClass.toBytecode())
-    ctClass.detach()
-}
-```
-4.4 应用插件
-
-在 app 的 build.gradle 添加
-```groovy
-apply plugin: 'com.pengxr.toastplugin'
-```
-### 4.5 声明 @Hello 注解
-HelloActivity.kt
-
-class HelloActivity : AppCompatActivity() {
-
-    @Hello
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_hello)
-    }
-}
-
-### 4.6 运行检验效果
-
-完成以上步骤后，编译运行程序。可以在 Build Output 看到以下输出，HelloActivity 启动时会弹出 Toast HelloTransform，说明织入成功。
-```shell
-...
-Task :sample:mergeDebugJavaResource
-
-> Task :sample:transformClassesWithToastTransformForDebug
-...
-onCreate found in HelloActivity
-Insert toast in HelloActivity
-ToastTransform - Transform end.
-
-> Task :sample:dexBuilderDebug
-> Task :sample:mergeExtDexDebug
-> Task :sample:mergeDexDebug
-> Task :sample:packageDebug
-> Task :sample:createDebugApkListingFileRedirect
-> Task :sample:assembleDebug
-
-BUILD SUCCESSFUL in 3m 18s
-33 actionable tasks: 33 executed
-
-Build Analyzer results available
-```
 
 ## 参考
 
