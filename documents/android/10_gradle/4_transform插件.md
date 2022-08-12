@@ -2,24 +2,24 @@
 
 ### 1.1 什么是 Transform？
 
-Transform API 是 Android Gradle Plugin 1.5 就引入的特性，主要用于在 Android 构建过程中，在 Class→Dex 这个节点修改 Class 字节码。
+`Transform API` 是 Android Gradle Plugin 1.5 开始引入，用于在 Android 构建过程中，在 `Class→Dex` 这个节点修改 Class 字节码。
 
-使用 Transform 的常见的应用场景有：
+使用 `Transform` 的常见的应用场景有：
 
 - 埋点统计： 在页面展现和退出等生命周期中插入埋点统计代码，以统计页面展现数据；
 - 耗时监控： 在指定方法的前后插入耗时计算，以观察方法执行时间；
 - 方法替换： 将方法调用替换为调用另一个方法。
 
-### 1.2 Transform 的基本原理
+### 1.2 Transform 的工作原理
 
-- 1、工作时机：Transform 工作在 Android 构建中由 Class → Dex 的节点；
-- 2、处理对象：处理对象包括 Javac 编译后的 Class 文件、Java 标准 resource 资源、本地依赖和远程依赖的 JAR/AAR。Android 资源文件不属于 Transform 的操作范围，因为它们不是字节码；
-- 3、Transform Task： 每个 Transform 都对应一个 Task，Transform 的输入和输出可以理解为对应 Transform Task 的输入输出。每个 TransformTask 的输出都分别存储在 app/build/intermediates/transform/[Transform Name]/[Variant] 文件夹中；
-- 4、Transform 链：TaskManager 会将每个 TransformTask 串联起来，前一个 Transform 的输出会作为下一个 Transform 的输入。
+- 1、工作时机：`Transform` 工作在 `Android` 构建中由 `Class → Dex` 的节点；
+- 2、处理对象：处理对象包括 `Javac` 编译后的 `Class` 文件、Java 标准 `resource` 资源、本地依赖和远程依赖的 `JAR/AAR`。Android 资源文件不属于 Transform 的操作范围，因为它们不是字节码；
+- 3、Transform Task： 每个 `Transform` 都对应一个 Task，`Transform` 的输入和输出可以理解为对应 `Transform Task` 的输入输出。每个 `TransformTask` 的输出都分别存储在 `app/build/intermediates/transform/[Transform Name]/[Variant]` 文件夹中；
+- 4、`Transform` 链：`TaskManager` 会将每个 `TransformTask` 串联起来，前一个 Transform 的输出会作为下一个 Transform 的输入。
 
 ### 1.3 Transform API
 
-这里仅列举出 Transform 抽象类中最核心的方法
+这里仅列举出 `Transform` 抽象类中核心的方法
 
 ```java
 //com.android.build.api.transform.java
