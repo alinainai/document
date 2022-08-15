@@ -85,21 +85,23 @@ def map = [’name’:’Tom’, ‘age’:18]，空集合 [:]
 list.each { value ->}
 list.eachWIthIndex { value, index ->}
 ```
-### 2.4 闭包 Closure
+## 3、闭包 Closure
 
-Groovy 闭包是一个匿名代码块，可以作为值传递给变量或函数参数，也可以接收参数和提供返回值，形式上与 Java / Kotlin 的 lambda 表达式类似。
+Groovy 闭包是一个匿名代码块，可以作为值传递给变量或函数参数，也可以接收参数和提供返回值，形式上与 Java/Kotlin 的 lambda 表达式类似。
 ```groove
 { 123 }                                          
 { name -> println name }                            
 { String x, int y ->                                
     println "hey ${x} the value is ${y}"
 }
+// 定义
 Closure a = { 123 }
 def c = { 123 }
+// 调用
 c.call() // Closure#call() 调用
 c() // 通过变量名调用
 ```
-### 2.5 Closure 的 隐式参数
+### 3.1 Closure 的 隐式参数
 隐式参数： 闭包默认至少有一个形式参数，如果闭包没有显式定义参数列表（使用 →），Groovy 总是带有隐式添加一个参数 it。如果调用者没有使用任何实参，则 it 为空。
 当你需要声明一个不接收任何参数的闭包，那么必须用显式的空参数列表声明。
 ```groove
@@ -120,7 +122,7 @@ methodName("Hello") {
     // Closure Code
 }
 ```
-### 2.5 Closure 的 关键变量
+### 3.2 Closure 的 关键变量
 
 闭包委托是 Groovy Closure 相比 Java Lambda 最大的区别，通过修改闭包的委托可以实现灵活多样的 DSL。先认识闭包中的三个关键变量：
 
@@ -128,8 +130,7 @@ methodName("Hello") {
 - owner：永远指向定义该闭包的类对象或者闭包对象，顾名思义，闭包只能定义在类中或者闭包中
 - delegate：默认情况 delegate 等同于 owner，this 和 owner 的语义无法修改，而 delegate 可以修改。
 
-
-闭包委托策略： 在闭包中，如果一个属性没有显式声明接收者对象，则会通过闭包代理解析策略寻找定义的对象，例如：
+闭包委托策略: 在闭包中，如果一个属性没有显式声明接收者对象，则会通过闭包代理解析策略寻找定义的对象，例如：
 ```groove
 class Person {
     String name
@@ -150,7 +151,7 @@ assert cl() == 'IGOR'
 - Closure.DELEGATE_ONLY：只在 delegate 对象中寻找；
 - Closure.TO_SELF：只在闭包本身寻找；
 
-## 2.6 IO文件处理
+## 4、IO文件处理
  
 ```groovy
 def file = new File('testFile.txt')
