@@ -1,48 +1,25 @@
+## 1、ProGuard 简介
 
-博客比较老，16年的 仅供参考 [ProGuard代码混淆技术详解](https://www.cnblogs.com/cr330326/p/5534915.html)
+Proguard 是一个 Java 类文件压缩器、优化器、混淆器、预校验器。
+压缩环节会检测以及移除没有用到的类、字段、方法以及属性。优化环节会分析以及优化方法的字节码。
+混淆环节会用无意义的短变量去重命名类、变量、方法。
+这些步骤让代码更精简，更高效，也更难被逆向（破解）。
 
-## 前言   
-
-受《APP研发录》启发，里面讲到一名Android程序员，在工作一段时间后，会感觉到迷茫，想进阶的话接下去是看Android系统源码呢，还是每天继续做应用，毕竟每天都是画UI和利用MobileAPI处理Json还是蛮无聊的，做着重复的事情，没有技术的上提升空间的。所以，根据里面提到的Android应用开发人员所需要精通的20个技术点，写篇文章进行总结，一方面是梳理下基础知识和巩固知识，另一方面也是弥补自我不足之处。
-
-那么，今天就来讲讲ProGuard代码混淆的相关技术知识点。
-    
-## 内容目录
-- ProGuard简介
-- ProGuard工作原理
-- 如何编写一个ProGuard文件
-- 其他注意事项
-- 小结
-
-
-## 1. ProGuard简介
-
-因为Java代码是非常容易反编码的，况且Android开发的应用程序是用Java代码写的，为了很好的保护Java源代码，我们需要对编译好后的class文件进行混淆。
-
-ProGuard是一个混淆代码的开源项目，它的主要作用是混淆代码，殊不知ProGuard还包括以下4个功能。
-
-- 压缩(Shrink)：检测并移除代码中无用的类、字段、方法和特性（Attribute）。
+主要包含下面4个方面:
+- 压缩(Shrink)：检测并移除代码中无用的类、字段、方法和属性（Attribute）。
 - 优化(Optimize)：对字节码进行优化，移除无用的指令。
-- 混淆(Obfuscate)：使用a，b，c，d这样简短而无意义的名称，对类、字段和方法进行重命名。
-- 预检(Preveirfy)：在Java平台上对处理后的代码进行预检，确保加载的class文件是可执行的。
-
-总而言之，根据官网的翻译：Proguard是一个Java类文件压缩器、优化器、混淆器、预校验器。压缩环节会检测以及移除没有用到的类、字段、方法以及属性。优化环节会分析以及优化方法的字节码。混淆环节会用无意义的短变量去重命名类、变量、方法。这些步骤让代码更精简，更高效，也更难被逆向（破解）。
- 
-## 2. ProGuard工作原理
-
-ProGuar由shrink、optimize、obfuscate和preveirfy四个步骤组成，每个步骤都是可选的，我们可以通过配置脚本来决定执行其中的哪几个步骤。
+- 混淆(Obfuscate)：使用 a，b，c，d 这样简短而无意义的名称，对类、字段和方法进行重命名。
+- 预检(Preveirfy)：在 Java 平台上对处理后的代码进行预检，确保加载的 class 文件是可执行的。
 
 ![image](https://user-images.githubusercontent.com/17560388/174275957-c1cd15f6-b5f5-45c7-a13f-b126232ba876.png)
 
-混淆就是移除没有用到的代码，然后对代码里面的类、变量、方法重命名为人可读性很差的简短名字。
+ProGuard怎么知道这个代码没有被用到呢？
 
-那么有一个问题，ProGuard怎么知道这个代码没有被用到呢？
-
-这里引入一个Entry Point（入口点）概念，Entry Point是在ProGuard过程中不会被处理的类或方法。在压缩的步骤中，ProGuard会从上述的Entry Point开始递归遍历，搜索哪些类和类的成员在使用，对于没有被使用的类和类的成员，就会在压缩段丢弃，在接下来的优化过程中，那些非Entry Point的类、方法都会被设置为private、static或final，不使用的参数会被移除，此外，有些方法会被标记为内联的，在混淆的步骤中，ProGuard会对非Entry Point的类和方法进行重命名。
+这里引入一个 Entry Point（入口点）概念，Entry Point 是在 ProGuard 过程中不会被处理的类或方法。在压缩的步骤中，ProGuard 会从上述的 Entry Point 开始递归遍历，搜索哪些类和类的成员在使用，对于没有被使用的类和类的成员，就会在压缩段丢弃，在接下来的优化过程中，那些非 Entry Point 的类、方法都会被设置为 private、static 或 final，不使用的参数会被移除，此外，有些方法会被标记为内联的，在混淆的步骤中，ProGuard 会对非 Entry Point 的类和方法进行重命名。
 
 那么这个入口点怎么来呢？就是从ProGuard的配置文件来，只要这个配置了，那么就不会被移除。
  
-## 3.如何编写一个ProGuard文件
+## 3、如何编写一个ProGuard文件
 
 有个三步走的过程：
 - 基本混淆
@@ -240,13 +217,11 @@ AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someFie
 
 在混淆的时候，要在项目中搜索一下上述方法，将相应的类或者方法的名称进行保留而不被混淆。
 
- 
-
 6.对于自定义View的解决方案
 
 但凡在Layout目录下的XML布局文件配置的自定义View，都不能进行混淆。为此要遍历Layout下的所有的XML布局文件，找到那些自定义View，然后确认其是否在ProGuard文件中保留。有一种思路是，在我们使用自定义View时，前面都必须加上我们的包名，比如com.a.b.customeview，我们可以遍历所有Layout下的XML布局文件，查找所有匹配com.a.b的标签即可。
  
-## 4.针对第三方jar包的解决方案
+## 4、针对第三方jar包的解决方案
 
 我们在Android项目中不可避免要使用很多第三方提供的SDK，一般而言，这些SDK是经过ProGuard混淆的，而我们所需要做的就是避免这些SDK的类和方法在我们APP被混淆。
 
@@ -275,24 +250,18 @@ AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someFie
 
 值得注意的是，不是每个第三方SDK都需要-dontwarn 指令，这取决于混淆时第三方SDK是否出现警告，需要的时候再加上。
 
-## 5 其他注意事项
-当然在使用ProGuard过程中，还有一些注意的事项，如下。
+## 5、其他注意事项
 
-1.如何确保混淆不会对项目产生影响
 
-测试工作要基于混淆包进行，才能尽早发现问题
-每天开发团队的冒烟测试，也要基于混淆包
-发版前，重点的功能和模块要额外的测试，包括推送，分享，打赏
-
-2.打包时忽略警告
+1.打包时忽略警告
 
 当导出包的时候，发现很多could not reference class之类的warning信息，如果确认App在运行中和那些引用没有什么关系，可以添加-dontwarn 标签，就不会提示这些警告信息了
  
 3.对于自定义类库的混淆处理
 
-比如我们引用了一个叫做AndroidLib的类库，我们需要对Lib也进行混淆，然后在主项目的混淆文件中保留AndroidLib中的类和类的成员。
+比如我们引用了一个叫做 AndroidLib 的类库，我们需要对 Lib 也进行混淆，然后在主项目的混淆文件中保留 AndroidLib 中的类和类的成员。
  
-4.使用annotation避免混淆
+4.使用 annotation 避免混淆
 
 另一种类或者属性被混淆的方式是，使用annotation，比如这样：
 ```java
@@ -304,11 +273,6 @@ public class Bean{
     public  String stringProperty;
 }
 ```
-5.在项目中指定混淆文件
 
-到最后，发现没有介绍如何在项目中指定混淆文件。在项目中有一个project.properties文件，在其中写这么一句话，就可以确保每次手动打包生成的apk是混淆过的。
-proguard.config=proguard.cfg
-其中，proguard.cfg是混淆文件的名称。
 
-## 小结
-总之ProGuard是一个比较枯燥的过程，但Android项目没有了ProGuard就真不行了，这样可以保证我们开发出的APK可以更健壮，毕竟很多核心代码质量也算是一个APK的核心竞争力吧。
+
