@@ -1,6 +1,6 @@
-### 1. LiveData的简单使用
+## 1、简单介绍和使用
 
-ViewModel 使用：
+在我们的 ViewModel 中创建和属性对应的 LiveData。一个属性对应两个 LiveData，一个是内部使用，一个暴露给 Activity 或者 Fragment。代码如下：
 
 ```kotlin
 // 内部更新数据使用 MutableLiveData，因为该类对外公开了 postValue 和 setValue 方法
@@ -31,7 +31,7 @@ loginViewModel.loginLiveData.observe(this){bean->
 
 MultableLiveData 是 LiveData 子类。并对外公开了 postValue 和 setValue 的方法。
 
-### 2. 源码分析
+## 2、源码分析
 
 `LiveData（abstract类）` 的子类 `MutableLiveData`的源码
 
@@ -102,12 +102,12 @@ public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> 
     owner.getLifecycle().addObserver(wrapper);
 }
 ```
-### 3. 两种方式回调 Observer#onChanged 方式
+## 3. 两种方式回调 Observer#onChanged 方式
 
 1. 当界面生命周期发生变化时 `LiveData` 方法的调用情况
 2. 当数据发生变化时 `LiveData` 方法的调用情况
 
-#### 3.1 界面生命周期发生变化时，LiveData 方法的调用情况
+### 3.1 界面生命周期发生变化时，LiveData 方法的调用情况
 
 当生命周期发生变化的时候，会调用 onStateChanged 方法，然后
 
@@ -188,7 +188,7 @@ private abstract class ObserverWrapper {
 
 当界面从 Inactive 变为 Active（onStart-onPause 周期内），如果不调用回调函数，UI的界面还是显示上一次的数据。
 
-#### 3.2 数据发生发生变化时，LiveData的方法调用情况
+### 3.2 数据发生发生变化时，LiveData的方法调用情况
 
 当数据发生变化，需要调用 LiveData 的 setValue/postValue 方法
 
@@ -393,7 +393,7 @@ public class SingleLiveEvent<T> extends MutableLiveData<T> {
 }
 ```
 
-### 参考
+## 参考
 
 
 [SingleLiveEvent.java ](https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java)
