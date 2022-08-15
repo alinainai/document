@@ -407,6 +407,7 @@ internal class LogTransform(val project: Project) : ExtTransform(true) {
 
 - [【Android】函数插桩（Gradle + ASM）](https://www.jianshu.com/p/16ed4d233fd1)
 - [Android Gradle Transform 详解](https://www.jianshu.com/p/cf90c557b866)
+- [Android ASM快速入门](https://www.jianshu.com/p/d5333660e312)
 - [其实 Gradle Transform 就是个纸老虎 —— Gradle 系列(4)](https://www.jianshu.com/p/067675243777)
 
 
