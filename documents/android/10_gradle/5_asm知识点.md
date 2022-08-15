@@ -10,16 +10,16 @@ IDEA 相关插件 `ASM Bytecode Outline`
 
 ## 2、ASM API
 
-ASM库提供了两个用于生成和转换已编译类的API，一个是核心API，以基于事件的形式来表示类；另一个是树API，以基于对象的形式来表示类；
+ASM库提供了两个用于生成和转换已编译类的API，一个是核心 API，以基于事件的形式来表示类；另一个是树 API，以基于对象的形式来表示类；
 
-- 基于事件的API要快于基于对象的API，所需要的内存也较少，但在使用基于事件的API时，类转换的实现可能要更难一些；
-- 基于对象的API会把整个类加载到内存中
+- 基于事件的 API 要快于基于对象的 API，所需要的内存也较少，但在使用基于事件的 API 时，类转换的实现可能要更难一些；
+- 基于对象的 API 会把整个类加载到内存中
 
 ### 2.1 核心 API
 
-- `ClassReader`: 对具体的class文件进行读取与解析；
-- `ClassVisitor`: ClassReader 解析 class文件过程中，解析到某个结构就会通知到 ClassVisitor 内部的相应方法（比如：解析到方法时，就会回调ClassVisitor.visitMethod方法）
-- `ClassWriter`: 将修改后的 class 文件通过文件流的方式覆盖掉原来的 class 文件，从而实现class修改
+- `ClassReader`: 对具体的 class 文件进行读取与解析；
+- `ClassVisitor`: ClassReader 解析 class 文件过程中，解析到某个结构就会通知到 ClassVisitor 内部的相应方法（比如：解析到方法时，就会回调 ClassVisitor.visitMethod 方法）
+- `ClassWriter`: 将修改后的 class 文件通过文件流的方式覆盖掉原来的 class 文件，从而实现 class 修改
 
 我们一般通过 ClassVisitor 的子类来实现对字节码的处理。
 
