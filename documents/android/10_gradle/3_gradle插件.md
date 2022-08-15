@@ -1,21 +1,19 @@
-## 1、Gradle Plugins 简介 
+## 1、Gradle 插件简介 
 
-`Gradle插件`主要功能是 打包可重用的构建逻辑，方便在不同的项目中使用。
+`Gradle插件`帮助我们`打包可重用的构建逻辑，方便在不同的项目中使用`。
 
-我们可以使用多种语言来实现`Gradle插件`，常用的有`Groovy、Java、Kotlin`。
-
-通常，使用 `Java/Kotlin（静态类型语言`）实现的插件比使用 `Groovy(动态类型语言)` 实施的插件性能更好。
+我们可以使用多种语言来实现`Gradle插件`，常用的有`Groovy、Java、Kotlin`。通常，使用 `Java/Kotlin（静态类型语言`）实现的插件比使用 `Groovy(动态类型语言)` 实施的插件性能更好。
 
 `android`官方提供了很多可用的 gradle 插件，比如:
 
 - apply plugin: 'com.android.application'
 - apply plugin: 'com.android.library'
 
-## 2、实现一个 Gradle 插件
+## 2、实现 Gradle 插件
 
-本文 `demo` 基于 `gradle 7.3.3` 开发，实现方式是通过`单独的项目`去`实现 gradle 插件`并发布到本地 `maven_repo` 仓库。
+我们通过新建一个`单独的项目`去`实现 gradle 插件`，并发布到本地 `maven_repo` 仓库。基于 `gradle 7.3.3` 开发。
+
 除了使用单独的项目，还可以通过 `脚本` 和 `buildSrc` 创建插件。
-
 
 ### 2.1 新建插件 module
 
@@ -98,9 +96,10 @@ class CustomPlugin : Plugin<Project> {
 
 如果 `gradle task` 列表中没有 task 任务，可以先执行一下 `File -> Sync Project with Gradle Files`
 
-### 2.3 在 app 添加依赖
+## 3、使用插件
 
-在 setting.gradle 中添加 maven 本地仓库
+在项目的 setting.gradle 中添加本地 maven 仓库的依赖
+
 ```groovy
 pluginManagement {
     repositories {
@@ -121,6 +120,7 @@ buildscript {
         classpath "com.gas.gradleplugin:custom:1.1"
     }
 }
+
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     id 'com.android.application' version '7.2.1' apply false
@@ -139,11 +139,11 @@ plugins {
 ```
 这样在执行 `app build` 过程的时候可以看到 `Hello CustomPlugin` 的日志
 
-## 3.Extension 拓展
+## 4、Extension 拓展
 
 Extension 为外部构建脚本提供的配置项，比如 `android{}` 就是 `Android Gradle Plugin` 提供的扩展。
 
-### 3.1 创建 Extension
+### 4.1 创建 Extension
 
 1、首先定义一个类来接收我们的配置项
 2、创建并添加扩展对象
