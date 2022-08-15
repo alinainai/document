@@ -13,6 +13,8 @@ Proguard 是一个 Java 类文件压缩器、优化器、混淆器、预校验�
 
 ![image](https://user-images.githubusercontent.com/17560388/174275957-c1cd15f6-b5f5-45c7-a13f-b126232ba876.png)
 
+## 2、ProGuard 原理
+
 ProGuard怎么知道这个代码没有被用到呢？
 
 这里引入一个 Entry Point（入口点）概念，Entry Point 是在 ProGuard 过程中不会被处理的类或方法。在压缩的步骤中，ProGuard 会从上述的 Entry Point 开始递归遍历，搜索哪些类和类的成员在使用，对于没有被使用的类和类的成员，就会在压缩段丢弃，在接下来的优化过程中，那些非 Entry Point 的类、方法都会被设置为 private、static 或 final，不使用的参数会被移除，此外，有些方法会被标记为内联的，在混淆的步骤中，ProGuard 会对非 Entry Point 的类和方法进行重命名。
