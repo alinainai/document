@@ -1,5 +1,11 @@
 ## 1、Gradle 构建生命周期
 
+官方的介绍：
+
+Gradle is an open-source build automation tool focused on flexibility and performance. Gradle build scripts are written using a Groovy or Kotlin DSL.
+
+翻译过来就是：Gradle 是一个开源的自动化构建工具，专注于灵活性和性能。Gradle 构建脚本是使用 Groovy 或 Kotlin DSL 编写的。
+
 - 1.初始化阶段: 执行 settings.gradle，确定主 project 和⼦ project 
 - 2.配置阶段: 执⾏每个 project 的 bulid.gradle（将每个 build.gradle 文件实例化为一个 Gradle 的 project 对象），确定出所有 task 所组成的有向无环图
 - 3.执行阶段: 按照上一阶段所确定出的有向⽆环图来执行指定的 task
@@ -125,7 +131,7 @@ gradle.buildFinished {
 执行阶段总耗时：325
 ```
 
-## 2、Project 和 Tasks
+## 2、Project 相关
 
 每次构建（build）至少由一个 Project 构成，一个 Project 由一到多个 Task 构成。
 项目结构中的每个 build.gradle 文件代表一个 Project ，在这些编译脚本文件中可以定义一系列的 Task。
@@ -135,8 +141,7 @@ gradle.buildFinished {
 [Project API 官方文档](https://docs.gradle.org/current/javadoc/org/gradle/api/Project.html)
 
 ```groovy
-//根 build.gradle 打印
-println "根 build.gradle"
+//根 build.gradle 
 println getRootProject() // 获取根 Project 对象 -> root project 'AndroidDemo'
 println getRootDir()     // 获取根目录文件夹路径 -> /Users/lijiaxing/workspace/AndroidDemo
 println getBuildDir()    // 获取当前 Project 的 build 目录 -> /Users/lijiaxing/workspace/AndroidDemo/build
@@ -144,7 +149,7 @@ println getParent()      // 获取当前父 Project 对象 -> null （根 Projec
 println getAllprojects() // 获取当前 Project 及其子 Project 对象，返回值是一个 Set 集合 -> [root project 'AndroidDemo', project ':app']
 println getSubprojects() // 获取当前 Project 下的所有子 Project 对象，返回值是一个 Set 集合 -> [project ':app']
 
-//app: build.gradle 打印
+//---app: build.gradle 
 println "app build.gradle"
 println getRootProject()  // root project 'AndroidDemo'
 println getRootDir()      // /Users/lijiaxing/workspace/AndroidDemo
@@ -177,9 +182,7 @@ task taskName {
     }
 }
 ```
-### 3.1 自定义 Task
-
-Task 的属性
+### 3.1 Task 的属性
 
 - name：Task 名字
 - type: Task 的父类，默认为 DefaultTask
@@ -189,6 +192,8 @@ Task 的属性
 - group:该 task 所属分组，默认为 null
 - description: 该 Task 的描述信息，默认为 null
 - constructorArgs: 传递到 Task Class 构造器中的参数，默认为 null
+
+### 3.2 自定义 Task
 
 继承 Delete Task，删除根目录下的 build 文件
 ```groovy
@@ -244,9 +249,9 @@ task execFoo {
 }
 ```
 
-### 3.3 task的执行
+### 3.4 task 的执行
 
-使用 gradlew (gradle-wrapper) 执行 task。每个 gradle 版本有差异性，gradle-wrapper 对 gradle 进行封装。
+使用 `gradlew (gradle-wrapper)` 执行 `task`。由于每个 gradle 版本有差异性，所以用 `gradle-wrapper` 对 `gradle` 进行封装来执行 gradle 指令。
 
 下面指令会先执行 clean 在执行 assembleDebug 的 Task
 
@@ -258,10 +263,10 @@ task execFoo {
  
 ### 4.1 gradle 项⽬结构
 
-- 单个 project: build.gradle
-- 多个 project: 由 settings.gradle 配置多个 
+- 单个 project 构成的项目: build.gradle
+- 多个 project 构成的项目: 由 settings.gradle 配置多个 
  
-查找 settings 的顺序:
+查找 settings.gradle 的顺序:
 
 1. 当前⽬录
 2. 兄弟目录 master 
