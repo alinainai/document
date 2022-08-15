@@ -1,27 +1,29 @@
 ## 1、Gradle 构建生命周期
 
-官方的介绍：
+官方对 Gradle 的介绍：
 
 Gradle is an open-source build automation tool focused on flexibility and performance. Gradle build scripts are written using a Groovy or Kotlin DSL.
 
 翻译过来就是：Gradle 是一个开源的自动化构建工具，专注于灵活性和性能。Gradle 构建脚本是使用 Groovy 或 Kotlin DSL 编写的。
 
-- 1.初始化阶段: 执行 settings.gradle，确定主 project 和⼦ project 
-- 2.配置阶段: 执⾏每个 project 的 bulid.gradle（将每个 build.gradle 文件实例化为一个 Gradle 的 project 对象），确定出所有 task 所组成的有向无环图
-- 3.执行阶段: 按照上一阶段所确定出的有向⽆环图来执行指定的 task
+下面我来看一下 Gradle 的构建过程，其实也就是 Gradle 构建的生命周期，主要有下面三个阶段：
+
+- 1.初始化阶段: 执行 `settings.gradle`，确定主 `project` 和⼦ `project` 
+- 2.配置阶段: 执⾏每个 `project` 的 `bulid.gradle`（将每个 `build.gradle` 文件实例化为一个 `Project` 对象），确定出所有 task 所组成的有向无环图
+- 3.执行阶段: 按照上一阶段所确定出的有向⽆环图来执行指定的 `task`
 
 一张完整的 Gradle 生命周期图
 
 <img width="400" alt="Gradle 构建生命周期" src="https://user-images.githubusercontent.com/17560388/183627888-cba4352d-c45b-41c8-8b42-cbc77688b37b.png">
 
 
-注意：Gradle 执行脚本文件的时候会生成对应的实例，主要有如下三种对象：
+Gradle 执行脚本文件的时候会生成对应的实例，主要有如下三种对象：
 
-- 1、Gradle 对象：在项目初始化时构建，全局单例存在，只有这一个对象
-- 2、Settings 对象：Seetings.gradle 会转变成一个 Seetings 对象
-- 3、Project 对象：每一个 build.gradle 都会转换成一个 Project 对象
+- 1、`Gradle 对象`：在项目初始化时构建，全局单例存在，只有这一个对象
+- 2、`Settings 对象`：Seetings.gradle 会转变成一个 Seetings 对象
+- 3、`Project 对象`：每一个 build.gradle 都会转换成一个 Project 对象
 
-Gradle 在各个阶段都提供了生命周期回调，在添加监听器的时候需要注意：监听器要在生命周期回调之前添加，否则会导致有些回调收不到
+Gradle 在各个阶段都提供了生命周期回调，监听器要在生命周期回调之前添加，否则会导致有些回调收不到
 
 ### 1.1 初始化阶段
 
@@ -56,16 +58,16 @@ Gradle 会循环执行 Task 及其依赖的 Task
 
 在 settings.gradle 添加如下代码：
 ```groovy
-//初始化阶段开始时间
-long beginOfSetting = System.currentTimeMillis()
-//配置阶段开始时间
-def beginOfConfig
-//配置阶段是否开始了，只执行一次
-def configHasBegin = false
-//存放每个 build.gradle 执行之前的时间
-def beginOfProjectConfig = new HashMap()
-//执行阶段开始时间
-def beginOfTaskExecute
+long beginOfSetting = System.currentTimeMillis() //初始化阶段开始时间
+
+def beginOfConfig  //配置阶段开始时间
+
+def configHasBegin = false //配置阶段是否开始了，只执行一次
+
+def beginOfProjectConfig = new HashMap() //存放每个 build.gradle 执行之前的时间
+
+def beginOfTaskExecute //执行阶段开始时间
+
 //初始化阶段执行完毕
 gradle.projectsLoaded {
     println "初始化总耗时 ${System.currentTimeMillis() - beginOfSetting} ms"
