@@ -16,7 +16,7 @@ interface ApiService {
     fun checkUpdate(@Query("ver_code") code: String): Observable<VerRes>
 }
 
-// 2、利用Retrofit生成ApiService接口的实现
+// 2、使用 Builder 生成 retrofit 对象
 val retrofit = Retrofit.Builder()
     .client(okHttpClient)
     .baseUrl(apiUrl)
@@ -47,20 +47,20 @@ public <T> T create(final Class<T> service) {
 
         @Override public Object invoke(Object proxy, Method method, @Nullable Object[] args)
             throws Throwable {
-          // 如果是调用的Object中的方法，那就直接执行此方法
-          // If the method is a method from Object then defer to normal invocation.
+            
+          // 如果是调用的Object中的方法，那就直接执行此方法 If the method is a method from Object then defer to normal invocation.
           if (method.getDeclaringClass() == Object.class) {
             return method.invoke(this, args);
           }
-          // 如果是default方法(Java8中引进)，那就调用default方法
-          // 由于plaform是Android不是Java8，所以此处是false的
+          
+          // 如果是default方法(Java8中引进)，那就调用default方法，由于plaform是Android不是Java8，所以此处是false的
           if (platform.isDefaultMethod(method)) {
             return platform.invokeDefaultMethod(method, service, proxy, args);
           }
-          // 1、根据接口的 method 创建一个 ServiceMethod 对象
-          ServiceMethod<Object, Object> serviceMethod =
-              (ServiceMethod<Object, Object>) loadServiceMethod(method);
-          // 2、将 ServiceMethod 和 参数 封装为一个 OkHttpCall 对象
+          
+          // 1、根据 method 信息创建一个 ServiceMethod 对象
+          ServiceMethod<Object, Object> serviceMethod = (ServiceMethod<Object, Object>) loadServiceMethod(method); 
+          // 2、将 ServiceMethod 和 参数 传入一个 OkHttpCall 对象
           OkHttpCall<Object> okHttpCall = new OkHttpCall<>(serviceMethod, args);
           // 3、调用 serviceMethod.callAdapter.adapt(Call<R>) 实现网络请求和数据适配
           return serviceMethod.callAdapter.adapt(okHttpCall);
@@ -79,13 +79,12 @@ private final Map<Method, ServiceMethod<?, ?>> serviceMethodCache = new Concurre
 
 ServiceMethod<?, ?> loadServiceMethod(Method method) {
   ServiceMethod<?, ?> result = serviceMethodCache.get(method);
-  if (result != null) return result;
+  if (result != null) return result; // 有缓存就返回
 
   synchronized (serviceMethodCache) {
     result = serviceMethodCache.get(method);//取缓存
     if (result == null) {
-      //核心代码，通过 builer 创建一个 ServiceMethod 对象
-      result = new ServiceMethod.Builder<>(this, method).build();
+      result = new ServiceMethod.Builder<>(this, method).build(); //核心代码，通过 builer 创建一个 ServiceMethod 对象
       serviceMethodCache.put(method, result);//存缓存
     }
   }
@@ -96,7 +95,7 @@ ServiceMethod<?, ?> loadServiceMethod(Method method) {
 
 ### 2.1 ServiceMethod.Builder
 
-`ServiceMethod.Builder`的构造方法，会取出要调用方法的注解、参数以及参数的注解：
+`ServiceMethod.Builder`的构造方法，会取出 `method` 的注解、参数以及参数的注解：
 
 ```java
 Builder(Retrofit retrofit, Method method) {
@@ -108,7 +107,7 @@ Builder(Retrofit retrofit, Method method) {
 }
 ```
 
-再看`ServiceMethod.Builder.build`方法，去掉了一些数据校验的判断
+再看 `build()`方法
 
 ```java
 public ServiceMethod build() {
