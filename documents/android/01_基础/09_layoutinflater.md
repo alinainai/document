@@ -1,3 +1,5 @@
+本文基于 android 12 (SDK 31) 源码分析
+
 ## 1、使用方法
 
 一般我们加载布局的时候会通过下面这段代码去加载布局
@@ -79,102 +81,88 @@ static abstract interface ServiceFetcher<T> {
 
 `ServiceFetcher` 的子类有三种类型，它们的 `getSystemService()` 都是线程安全的，主要差别体现在 `单例范围`，具体如下：
 
-ServiceFetcher子类	单例范围	描述	举例
-CachedServiceFetcher	ContextImpl域	/	LayoutInflater、LocationManager等（最多）
-StaticServiceFetcher	进程域	/	InputManager、JobScheduler等
-StaticApplicationContextServiceFetcher	进程域	使用 ApplicationContext 创建服务	ConnectivityManager
-对于 LayoutInflater 来说，服务获取器是 CachedServiceFetcher 的子类，最终获得的服务对象为 PhoneLayoutInflater。
+|ServiceFetcher子类|	单例范围|	描述|	举例|
+|  ----  | ----  |:----:| ----  |
+|CachedServiceFetcher|	ContextImpl域|	/	|LayoutInflater、LocationManager等（最多）|
+|StaticServiceFetcher|	进程域	|/	|InputManager、JobScheduler等|
+|StaticApplicationContextServiceFetcher	|进程域	|使用 ApplicationContext 创建服务|	ConnectivityManager|
 
+对于 `LayoutInflater` 来说，服务获取器是 `CachedServiceFetcher` 的子类，最终获得的服务对象为 `PhoneLayoutInflater`。使用同一个 `Context` 对象，获得的 `LayoutInflater` 是单例。
 
-这里有一个重点，这句代码非常隐蔽，要留意：
+### 2.2 `inflate(...)` 分析
 
- return new PhoneLayoutInflater(ctx.getOuterContext());
-LayoutInflater.java
-
-public Context getContext() {
-    return mContext; 
-}
-
-protected LayoutInflater(Context context) {
-    mContext = context;
-    initPrecompiledViews();
-}
-可以看到，实例化 PhoneLayoutInflater 时使用了 getOuterContext()，也就是参数使用的是 ContextImpl 的代理对象，一般就是 Activity 了。也就是说，在 Activity / Fragment / View / Dialog 中，获取LayoutInflater#getContext()，返回的就是 Activity。
-
-小结：
-
-1、获取 LayoutInflater 对象只有通过LayoutInflater.from(context)，内部委派给Context#getSystemService(...)，线程安全；
-2、使用同一个 Context 对象，获得的 LayoutInflater 是单例；
-3、LayoutInflater 的实现类是 PhoneLayoutInflater。
-2. inflate(...) 主流程源码分析
-上一节，我们分析了获取 LayoutInflater 对象的过程，现在我们可以调用inflate()进行布局解析了。LayoutInflater#inflate(...)有多个重载方法，最终都会调用到：
-
+`LayoutInflater#inflate(...)`有多个重载方法，最终都会调用到：
+```java
 public View inflate(@LayoutRes int resource, @Nullable ViewGroup root, boolean attachToRoot) {
     final Resources res = getContext().getResources();
-    1. 解析预编译的布局
+    // 根据 XML 预编译生成 compiled_view.dex, 然后通过反射来生成对应的 View，从而减少 XmlPullParser 解析 Xml 的时间
+    // 需要注意的是在目前的 release 版本中不支持使用
     View view = tryInflatePrecompiled(resource, res, root, attachToRoot);
     if (view != null) {
         return view;
     }
-    2. 构造 XmlPull 解析器 
-    XmlResourceParser parser = res.getLayout(resource);
+    XmlResourceParser parser = res.getLayout(resource); // 构造 Xml 解析器 
     try {
-    3. 执行解析
-        return inflate(parser, root, attachToRoot);
+        return inflate(parser, root, attachToRoot); 
     } finally {
         parser.close();
     }
 }
-tryInflatePrecompiled(...)是解析预编译的布局，我后文再说；
-构造 XmlPull 解析器 XmlResourceParser
-执行解析，是解析的主流程
-提示： 在这里，我剔除了与 XmlPull 相关的代码，只保留了我们关心的逻辑：
+```
+如果能获取到`预编译的布局`就直接返回，否则调用如下方法继续解析 xml 文件
+```java
+    public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean attachToRoot) {
+        synchronized (mConstructorArgs) {
 
-public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean attachToRoot) {
-    1. 结果变量
-    View result = root;
-    2. 最外层的标签
-    final String name = parser.getName();
-    3. <merge>
-    if (TAG_MERGE.equals(name)) {
-        3.1 异常
-        if (root == null || !attachToRoot) {
-            throw new InflateException("<merge /> can be used only with a valid "
-                + "ViewGroup root and attachToRoot=true");
-        }
-        3.2 递归执行解析
-        rInflate(parser, root, inflaterContext, attrs, false);
-    } else {
-        4.1 创建最外层 View
-        final View temp = createViewFromTag(root, name, inflaterContext, attrs);
-        
-        ViewGroup.LayoutParams params = null;
+            final Context inflaterContext = mContext;
+            final AttributeSet attrs = Xml.asAttributeSet(parser);
+            Context lastContext = (Context) mConstructorArgs[0];
+            mConstructorArgs[0] = inflaterContext;
+            View result = root;
+            try {
+                advanceToRootNode(parser);
+                final String name = parser.getName();
+                if (TAG_MERGE.equals(name)) { // 如果是 merge 标签
+                    if (root == null || !attachToRoot) {
+                        throw new InflateException("<merge /> can be used only with a valid ViewGroup root and attachToRoot=true");
+                    }
+                    rInflate(parser, root, inflaterContext, attrs, false);
+                } else {
+                    // 根据 Tag 创建 temp 
+                    final View temp = createViewFromTag(root, name, inflaterContext, attrs);
+                    ViewGroup.LayoutParams params = null;
+                    if (root != null) {
+                        params = root.generateLayoutParams(attrs);
+                        if (!attachToRoot) {
+                            temp.setLayoutParams(params);
+                        }
+                    }
+                    // 递归解析子布局
+                    rInflateChildren(parser, temp, attrs, true);
+                    
+                    // 如果 attachToRoot 为 true ，将 temp 添加到 root 中
+                    if (root != null && attachToRoot) {
+                        root.addView(temp, params);
+                    }
 
-        if (root != null) {
-            4.2 创建匹配的 LayoutParams
-            params = root.generateLayoutParams(attrs);
-            if (!attachToRoot) {
-                4.3 如果 attachToRoot 为 false，设置LayoutParams
-                temp.setLayoutParams(params);
+                    // root 为空，attachToRoot 为 false，直接返回 temp
+                    if (root == null || !attachToRoot) {
+                        result = temp;
+                    }
+                }
+            } catch (XmlPullParserException e) {
+                ...
+            } catch (Exception e) {
+                ...
+            } finally {
+                // Don't retain static reference on context.
+                mConstructorArgs[0] = lastContext;
+                mConstructorArgs[1] = null;
             }
-        }
-
-        5. 以 temp 为 root，递归执行解析
-        rInflateChildren(parser, temp, attrs, true);
-        
-        6. attachToRoot 为 true，addView()
-        if (root != null && attachToRoot) {
-            root.addView(temp, params);
-        }
-
-        7. root 为空 或者 attachToRoot 为 false，返回 temp
-        if (root == null || !attachToRoot) {
-            result = temp;
+            return result;
         }
     }
-    return result;
-}
-
+```
 -> 3.2
 void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet attrs, boolean finishInflate) {
     while(parser 未结束) {
