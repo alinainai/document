@@ -499,4 +499,5 @@ AppCompatDialog & AppCompatActivity 初始化时，调用了setFactory2()，会�
 Activity 初始化时，调用了setPrivateFactory()，用来处理<fragment>标签。
 
 ## 参考
-[Android | 带你探究 LayoutInflater 布局解析原理](https://www.jianshu.com/p/a4dd4892c84e)
+- [Android | 带你探究 LayoutInflater 布局解析原理](https://www.jianshu.com/p/a4dd4892c84e)
+- [APK 加载流程之资源加载](https://zhuanlan.zhihu.com/p/138259652)
