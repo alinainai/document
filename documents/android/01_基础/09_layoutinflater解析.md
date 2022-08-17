@@ -2,7 +2,7 @@
 
 ## 1、使用方法
 
-一般我们加载布局的时候会通过下面这段代码去加载布局
+一般通过下面这段代码去加载布局，`Activity#setContentView(layoutId)` 最后也是通过这个方法去加载布局
 
 ```kotlin
  LayoutInflater.from(context).inflate(layoutId,viewGroup,attachToRoot)
@@ -111,6 +111,8 @@ public View inflate(@LayoutRes int resource, @Nullable ViewGroup root, boolean a
 }
 ```
 ### 3.1 预编译的布局
+
+从上面的 inflate 方法中我们知道，布局会先判断是否存在预加载的布局。
 
 
 
