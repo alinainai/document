@@ -50,7 +50,7 @@ $ git rm --cached [file]
 ```shell
 # 改名文件，并且将这个改名放入暂存区
 $ git mv [file-original] [file-renamed]
-
+```
 ### 四、代码提交
 ```shell
 # 提交暂存区到仓库区
@@ -244,6 +244,7 @@ $ git diff --shortstat "@{0 day ago}"
 ```shell
 # 显示某次提交的元数据和内容变化
 $ git show [commit]
+```
 ```shell
 # 显示某次提交发生变化的文件
 $ git show --name-only [commit]
@@ -269,10 +270,11 @@ $ git remote -v
 ```shell
 # 显示某个远程仓库的信息
 $ git remote show [remote]
-```shell
 ```
+```shell
 # 增加一个新的远程仓库，并命名
 $ git remote add [shortname] [url]
+```
 ```shell
 # 取回远程仓库的变化，并与本地分支合并
 $ git pull [remote] [branch]
@@ -353,8 +355,9 @@ git stash -u
 git reflog //包含被删除的commit记录
 ```
 
-比较两个版本差异
+
 ```shell
+# 比较两个版本差异
 git diff branch1 branch2 --stat //显示出所有有差异的文件列表
 git diff branch1 branch2 [具体文件路径] //显示指定文件的详细差异
 ```
