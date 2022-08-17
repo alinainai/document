@@ -89,19 +89,20 @@ static abstract interface ServiceFetcher<T> {
 
 对于 `LayoutInflater` 来说，服务获取器是 `CachedServiceFetcher` 的子类，最终获得的服务对象为 `PhoneLayoutInflater`。使用同一个 `Context` 对象，获得的 `LayoutInflater` 是单例。
 
-### 2.2 `inflate(...)` 分析
+## 3、`inflate(...)` 分析
 
 `LayoutInflater#inflate(...)`有多个重载方法，最终都会调用到：
+
 ```java
 public View inflate(@LayoutRes int resource, @Nullable ViewGroup root, boolean attachToRoot) {
     final Resources res = getContext().getResources();
-    // 根据 XML 预编译生成 compiled_view.dex, 然后通过反射来生成对应的 View，从而减少 XmlPullParser 解析 Xml 的时间
-    // 需要注意的是在目前的 release 版本中不支持使用
+    // 1、如果获取到预编译布局直接返回
     View view = tryInflatePrecompiled(resource, res, root, attachToRoot);
     if (view != null) {
         return view;
     }
-    XmlResourceParser parser = res.getLayout(resource); // 构造 Xml 解析器 
+    // 2、生成 XmlResourceParser 继续解析布局
+    XmlResourceParser parser = res.getLayout(resource); 
     try {
         return inflate(parser, root, attachToRoot); 
     } finally {
@@ -109,6 +110,11 @@ public View inflate(@LayoutRes int resource, @Nullable ViewGroup root, boolean a
     }
 }
 ```
+### 3.1 预编译的布局
+
+
+
+
 如果能获取到`预编译的布局`就直接返回，否则调用如下方法继续解析 xml 文件
 ```java
     public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean attachToRoot) {
