@@ -20,6 +20,7 @@ $ git config --list
 ```shell
 # 编辑Git配置文件
 $ git config -e [--global]
+```
 ```shell
 # 设置提交代码时的用户信息
 $ git config [--global] user.name "[name]"
