@@ -25,8 +25,8 @@ public static LayoutInflater from(Context context) {
     return LayoutInflater;
 }
 ```
-`ContextImpl` 是 `Context` 的实现类，`context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)` 会调用 `ContextImpl` 中的 `getSystemService(name)` 方法。
-然后继续调用 `SystemServiceRegistry.getSystemService(this, name)` 方法获取服务对象。
+`ContextImpl` 是 `Context` 的实现类，`context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)` 会调用 `ContextImpl#getSystemService(name)` 方法。
+在 `ContextImpl` 内部会继续调用 `SystemServiceRegistry.getSystemService(this, name)` 方法获取服务对象。
 
 ```java
 @Override
@@ -34,8 +34,7 @@ public Object getSystemService(String name) {
     return SystemServiceRegistry.getSystemService(this, name);
 }
 ```
-
-`SystemServiceRegistry.java`
+`SystemServiceRegistry` 是所有能通过 `Context#getSystemService` 返回的 `system service` 的管理类。我们继续跟踪 `SystemServiceRegistry` 类的代码，看下 `LayoutInflater` 是怎么提供的
 
 ```java
 private static final Map<String, ServiceFetcher<?>> SYSTEM_SERVICE_FETCHERS = new ArrayMap<String, ServiceFetcher<?>>();
@@ -63,35 +62,39 @@ private static <T> void registerService(String serviceName, Class<T> serviceClas
     SYSTEM_SERVICE_FETCHERS.put(serviceName, serviceFetcher);
 }
 ```
+在 `SystemServiceRegistry` 内维护了一个 `name - ServiceFetcher` 的映射。在静态代码块中注册对应的 `name - ServiceFetcher` 的 `entry` 对象。
+当调用它的 `getSystemService()` 方法时，会根据 `name` 获取对应的 `ServiceFetcher` 对象。ServiceFetcher 通过 getService(context) 返回持有的 Server 对象。
 
-在静态代码块中就会注册 `name - ServiceFetcher` 的映射。在 `SystemServiceRegistry.getSystemService()` 方法内部，会根据 `name` 获取映射的 `ServiceFetcher` 对象。
-这里 ServiceFetcher 是一个 CachedServiceFetcher 类。
+### 2.1 `ServiceFetcher` 接口和子类
 
-CachedServiceFetcher 使用 `createService(ContextImpl)` 方法创建对应的 `SystemService`。
-
-### 2.1 ServiceFetcher 接口和子类
-
-ServiceFetcher 代码如下
+我们先了解下 ServiceFetcher 接口和他的三个子类，ServiceFetcher 代码如下：是一个单一方法的接口
 
 ```java
 static abstract interface ServiceFetcher<T> {
     T getService(ContextImpl ctx);
 }
 ```
-
 `ServiceFetcher` 的子类有三种类型，它们的 `getSystemService()` 都是线程安全的，主要差别体现在 `单例范围`，具体如下：
 
 |ServiceFetcher子类|	单例范围|	描述|	举例|
-|  ----  | ----  |:----:| ----  |
+| ---- | ----  |:----:| ---- |
 |CachedServiceFetcher|	ContextImpl域|	/	|LayoutInflater、LocationManager等（最多）|
 |StaticServiceFetcher|	进程域	|/	|InputManager、JobScheduler等|
 |StaticApplicationContextServiceFetcher	|进程域	|使用 ApplicationContext 创建服务|	ConnectivityManager|
 
-对于 `LayoutInflater` 来说，服务获取器是 `CachedServiceFetcher` 的子类，最终获得的服务对象为 `PhoneLayoutInflater`。使用同一个 `Context` 对象，获得的 `LayoutInflater` 是单例。
+### 2.2 LayoutInflater 的 ServiceFetcher
 
-## 3、`inflate(...)` 分析
+从上面的代码中我们知道 LayoutInflater 对应的 `ServiceFetcher` 是一个 `CachedServiceFetcher` 类。
 
-`LayoutInflater#inflate(...)`有多个重载方法，最终都会调用到：
+`CachedServiceFetcher` 调用 `createService(ContextImpl)` 方法创建一个 `PhoneLayoutInflater` 对象。
+
+并且对于同一个 `Context` 对象，获得的 `LayoutInflater` 是单例形式的。
+
+## 3、`LayoutInflater.inflate(...)` 分析
+
+在开头的例子中，在通过 `LayoutInflater#from(context)` 方法获取 `LayoutInflater` 对象后，会通过 `LayoutInflater#inflate(...)` 方法来实现布局的加载。
+
+`LayoutInflater#inflate(...)`有多个重载方法，但最终都会调用：
 
 ```java
 public View inflate(@LayoutRes int resource, @Nullable ViewGroup root, boolean attachToRoot) {
@@ -110,149 +113,297 @@ public View inflate(@LayoutRes int resource, @Nullable ViewGroup root, boolean a
     }
 }
 ```
-### 3.1 预编译的布局
-
-从上面的 inflate 方法中我们知道，布局会先判断是否存在预加载的布局。
-
+- 1、该方法会先判断是否存在预编译的布局，如果存在直接返回
+- 2、否则就继续调用 `inflate(parser, root, attachToRoot)` 方法继续处理
 
 
+### 3.1 预编译布局
 
-如果能获取到`预编译的布局`就直接返回，否则调用如下方法继续解析 xml 文件
+预编译布局是 `Android10` 添加，在 `Android12` 版本中还未开始支持。我们知道布局文件越复杂 `XmlPullParser` 解析 `XML` 越耗时, `tryInflatePrecompiled` 方法根据 `XML` 预编译生成 `compiled_view.dex`，然后通过反射来生成对应的 `View`，从而减少` XmlPullParser` 解析 `XML` 的时间。`tryInflatePrecompiled` 方法源码如下：
+
 ```java
-    public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean attachToRoot) {
-        synchronized (mConstructorArgs) {
-
-            final Context inflaterContext = mContext;
-            final AttributeSet attrs = Xml.asAttributeSet(parser);
-            Context lastContext = (Context) mConstructorArgs[0];
-            mConstructorArgs[0] = inflaterContext;
-            View result = root;
+private @Nullable View tryInflatePrecompiled(@LayoutRes int resource, Resources res, @Nullable ViewGroup root, boolean attachToRoot) {
+    if (!mUseCompiledView) { // 是否允许使用编译布局，如果为 false 直接返回 null
+        return null;
+    }
+    
+    String pkg = res.getResourcePackageName(resource); //根据 resourceId 获取包名
+    String layout = res.getResourceEntryName(resource);
+    
+    try {
+        //通过反射生成 view
+        Class clazz = Class.forName("" + pkg + ".CompiledView", false, mPrecompiledClassLoader);
+        Method inflater = clazz.getMethod(layout, Context.class, int.class);
+        View view = (View) inflater.invoke(null, mContext, resource);
+        if (view != null && root != null) {
+            XmlResourceParser parser = res.getLayout(resource);
             try {
+                AttributeSet attrs = Xml.asAttributeSet(parser);
                 advanceToRootNode(parser);
-                final String name = parser.getName();
-                if (TAG_MERGE.equals(name)) { // 如果是 merge 标签
-                    if (root == null || !attachToRoot) {
-                        throw new InflateException("<merge /> can be used only with a valid ViewGroup root and attachToRoot=true");
-                    }
-                    rInflate(parser, root, inflaterContext, attrs, false);
+                ViewGroup.LayoutParams params = root.generateLayoutParams(attrs);
+                if (attachToRoot) {
+                    root.addView(view, params);
                 } else {
-                    // 根据 Tag 创建 temp 
-                    final View temp = createViewFromTag(root, name, inflaterContext, attrs);
-                    ViewGroup.LayoutParams params = null;
-                    if (root != null) {
-                        params = root.generateLayoutParams(attrs);
-                        if (!attachToRoot) {
-                            temp.setLayoutParams(params);
-                        }
-                    }
-                    // 递归解析子布局
-                    rInflateChildren(parser, temp, attrs, true);
-                    
-                    // 如果 attachToRoot 为 true ，将 temp 添加到 root 中
-                    if (root != null && attachToRoot) {
-                        root.addView(temp, params);
-                    }
+                    view.setLayoutParams(params);
+                }
+            } finally {
+                parser.close();
+            }
+        }
+        return view;
+    } catch (Throwable e) {
+        ...
+    } finally {
+        ...
+    }
+    return null;
+}
+```
+代码很简单，如果 mUseCompiledView 为 true，会通过反射获取预编译的 view。然后对 view 进行处理。
 
-                    // root 为空，attachToRoot 为 false，直接返回 temp
-                    if (root == null || !attachToRoot) {
-                        result = temp;
+是否使用预编译布局主要和 mUseCompiledView 有关，我们来看下 mUseCompiledView 赋值过程。
+
+```java
+protected LayoutInflater(Context context) {
+    ....
+    initPrecompiledViews();
+}
+protected LayoutInflater(LayoutInflater original, Context newContext) {
+    ...
+    initPrecompiledViews();
+}
+
+private void initPrecompiledViews() {
+    boolean enabled = false; // 这里始终为false
+    initPrecompiledViews(enabled);
+}
+
+private void initPrecompiledViews(boolean enablePrecompiledViews) {
+    mUseCompiledView = enablePrecompiledViews; // 给 mUseCompiledView 赋值
+    if (!mUseCompiledView) {
+        mPrecompiledClassLoader = null;
+        return;
+    }
+
+    ApplicationInfo appInfo = mContext.getApplicationInfo();
+    if (appInfo.isEmbeddedDexUsed() || appInfo.isPrivilegedApp()) {
+        mUseCompiledView = false;
+        return;
+    }
+    try {
+        mPrecompiledClassLoader = mContext.getClassLoader();
+        String dexFile = mContext.getCodeCacheDir() + COMPILED_VIEW_DEX_FILE_NAME; // compiled_view.dex
+        if (new File(dexFile).exists()) { // 生成 compiled_view.dex 文件
+            mPrecompiledClassLoader = new PathClassLoader(dexFile, mPrecompiledClassLoader);
+        } else {
+            mUseCompiledView = false;
+        }
+    } catch (Throwable e) {
+        ...
+        mUseCompiledView = false;
+    }
+    if (!mUseCompiledView) {
+        mPrecompiledClassLoader = null;
+    }
+}
+```
+根据上面的代码，mUseCompiledView 始终为 false
+
+### 3.2 `inflate(parser,root,attachToRoot)` 方法
+
+如果`预编译布局`为 `null`，继续调用 `inflate(parser,root,attachToRoot)` 去加载布局
+```java
+public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean attachToRoot) {
+    synchronized (mConstructorArgs) {
+        final Context inflaterContext = mContext;
+        final AttributeSet attrs = Xml.asAttributeSet(parser);
+        Context lastContext = (Context) mConstructorArgs[0];
+        mConstructorArgs[0] = inflaterContext;
+        View result = root;
+        try {
+            advanceToRootNode(parser);
+            final String name = parser.getName();
+            if (TAG_MERGE.equals(name)) { // 如果是 merge 标签，调用 rInflate 解析
+                if (root == null || !attachToRoot) {
+                    throw new InflateException("<merge /> can be used only with a valid ViewGroup root and attachToRoot=true");
+                }
+                rInflate(parser, root, inflaterContext, attrs, false);
+            } else {
+                //不是 merge 标签则根据 tag 创建 temp view
+                final View temp = createViewFromTag(root, name, inflaterContext, attrs); 
+                ViewGroup.LayoutParams params = null;
+                if (root != null) {
+                    params = root.generateLayoutParams(attrs);
+                    if (!attachToRoot) {
+                        temp.setLayoutParams(params);
                     }
                 }
-            } catch (XmlPullParserException e) {
-                ...
-            } catch (Exception e) {
-                ...
-            } finally {
-                // Don't retain static reference on context.
-                mConstructorArgs[0] = lastContext;
-                mConstructorArgs[1] = null;
+                
+                rInflateChildren(parser, temp, attrs, true); // 核心方法
+                
+                if (root != null && attachToRoot) { // 如果 attachToRoot 为 true ，将 temp 添加到 root 中
+                    root.addView(temp, params);
+                }
+                               
+                if (root == null || !attachToRoot) { // root 为空 或者 attachToRoot 为 false，返回 temp
+                    result = temp;
+                }
             }
-            return result;
+        } catch (XmlPullParserException e) {
+            ...
+        } catch (Exception e) {
+            ...
+        } finally {
+            // Don't retain static reference on context.
+            mConstructorArgs[0] = lastContext;
+            mConstructorArgs[1] = null;
         }
+        return result; 
     }
+}
 ```
--> 3.2
-void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet attrs, boolean finishInflate) {
-    while(parser 未结束) {
-        if (TAG_INCLUDE.equals(name)) {
-            1) <include>
+在该方法中会区分 `merge` 标签和 `其他标签`。如果是 `merge` 标签，调用 `rInflate` 解析 root。如果不是 `merge`，先通过 `createViewFromTag(...)` 方法创建一个 `temp` View，再使用`rInflateChildren(parser, temp, attrs, true)`解析 temp。
+
+### 3.3 `rInflate(parser,parent,context,attrs,finishInflate)` 方法
+
+```java
+final void rInflateChildren(XmlPullParser parser, View parent, AttributeSet attrs, boolean finishInflate) throws XmlPullParserException, IOException {
+    rInflate(parser, parent, parent.getContext(), attrs, finishInflate);
+}
+
+void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet attrs, boolean finishInflate) throws XmlPullParserException, IOException {
+
+    final int depth = parser.getDepth();
+    int type;
+    boolean pendingRequestFocus = false;
+
+    while (((type = parser.next()) != XmlPullParser.END_TAG || parser.getDepth() > depth) && type != XmlPullParser.END_DOCUMENT) {
+                
+        if (type != XmlPullParser.START_TAG) {
+            continue;
+        }
+
+        final String name = parser.getName();
+
+        if (TAG_REQUEST_FOCUS.equals(name)) {
+            pendingRequestFocus = true;
+            consumeChildElements(parser);
+        } else if (TAG_TAG.equals(name)) {
+            parseViewTag(parser, parent, attrs);
+        } else if (TAG_INCLUDE.equals(name)) { 
             if (parser.getDepth() == 0) {
                 throw new InflateException("<include /> cannot be the root element");
             }
-            parseInclude(parser, context, parent, attrs);
+            parseInclude(parser, context, parent, attrs); // 1、解析 include 标签
         } else if (TAG_MERGE.equals(name)) {
-            2) <merge>
             throw new InflateException("<merge /> must be the root element");
         } else {
-            3) 创建 View 
-            final View view = createViewFromTag(parent, name, context, attrs);
+            final View view = createViewFromTag(parent, name, context, attrs); // 2、递归解析子 view
             final ViewGroup viewGroup = (ViewGroup) parent;
             final ViewGroup.LayoutParams params = viewGroup.generateLayoutParams(attrs);
-            4) 递归
             rInflateChildren(parser, view, attrs, true);
-            5) 添加到视图树
-            viewGroup.addView(view, params);
+            viewGroup.addView(view, params); // 3、将子 view 添加到 parent 
         }
     }
+
+    if (pendingRequestFocus) {
+        parent.restoreDefaultFocus();
+    }
+
+    if (finishInflate) {
+        parent.onFinishInflate();
+    }
 }
+```
+已经做了相关的注释，代码也很简单
 
--> 5. 递归执行解析
-final void rInflateChildren(XmlPullParser parser, View parent, AttributeSet attrs,
-            boolean finishInflate) throws XmlPullParserException, IOException {
-    rInflate(parser, parent, parent.getContext(), attrs, finishInflate);
-}
-关于 <include> & <merge>，我后文再说。对于参数 root & attachToRoot的不同情况，对应得到的输出不同，我总结为一张图：
-
-
-3. createViewFromTag()：从 <tag> 到 View
-在 第 2 节 主流程代码中，用到了 createViewFromTag()，它负责由 <tag> 创建 View 对象：
-
-已简化
+### 3.4 `createViewFromTag(...)` 根据 Tag 创建 View
+```java
+@UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
 View createViewFromTag(View parent, String name, Context context, AttributeSet attrs, boolean ignoreThemeAttr) {
 
-    1. 应用 ContextThemeWrapper 以支持 android:theme
+    if (name.equals("view")) {
+        name = attrs.getAttributeValue(null, "class");
+    }
+
+    // Apply a theme wrapper, if allowed and one is specified.
     if (!ignoreThemeAttr) {
         final TypedArray ta = context.obtainStyledAttributes(attrs, ATTRS_THEME);
         final int themeResId = ta.getResourceId(0, 0);
-        if (themeResId != 0) {
+        if (themeResId != 0) { // 注意这里，有时候通过 view 获取的 context 不是 Activity 类型，而是 ContextThemeWrapper 类型。
             context = new ContextThemeWrapper(context, themeResId);
         }
         ta.recycle();
     }
 
-    2. 先使用 Factory2 / Factory 实例化 View，相当于拦截
+    try {
+        View view = tryCreateView(parent, name, context, attrs); 
+
+        if (view == null) {
+            final Object lastContext = mConstructorArgs[0];
+            mConstructorArgs[0] = context;
+            try { 
+                if (-1 == name.indexOf('.')) {// 2、解析内置View 如 TextView，名字中不带 '.'
+                    view = onCreateView(context, parent, name, attrs);
+                } else {// 3、解析自定义View
+                    view = createView(context, name, null, attrs);
+                }
+            } finally {
+                mConstructorArgs[0] = lastContext;
+            }
+        }
+        
+        return view;
+    } catch (InflateException e) {
+        ...
+    } catch (ClassNotFoundException e) {
+       ...
+    } catch (Exception e) {
+        ...
+    }
+}
+```
+代码很简单，先用 `tryCreateView(parent, name, context, attrs)` 创建 `view`，获取为 `null` 再通过 `onCreateView(...)` 创建 `view`。
+
+onCreateView(context, parent, name, attrs) 和 createView(context, name, prefix, attrs) 方法最终都会调用: 
+
+```java
+createView(viewContext, name, prefix, attrs)
+```
+
+### 3.5 `tryCreateView(...)` 方法
+
+`tryCreateView(...)` 方法中会按照 `mFactory2、mFactory、mPrivateFactory` 的顺序去创建 view
+
+```java
+@Nullable
+public final View tryCreateView(@Nullable View parent, @NonNull String name, @NonNull Context context, @NonNull AttributeSet attrs) {
+    if (name.equals(TAG_1995)) {// 没啥用
+        return new BlinkLayout(context, attrs);
+    }
+
     View view;
-    if (mFactory2 != null) {
-        view = mFactory2.onCreateView(parent, name, context, attrs);
+    if (mFactory2 != null) { 
+        view = mFactory2.onCreateView(parent, name, context, attrs); // 通过 mFactory2 创建
     } else if (mFactory != null) {
-        view = mFactory.onCreateView(name, context, attrs);
+        view = mFactory.onCreateView(name, context, attrs); // 通过 mFactory 创建
     } else {
         view = null;
     }
 
-    3. 使用 mPrivateFactory 实例化 View，相当于拦截
-    if (view == null && mPrivateFactory != null) {
+    if (view == null && mPrivateFactory != null) {// 通过 mPrivateFactory 创建
         view = mPrivateFactory.onCreateView(parent, name, context, attrs);
     }
 
-    4. 调用自身逻辑
-    if (view == null) {
-        if (-1 == name.indexOf('.')) {
-            4.1 <tag> 中没有.
-            view = onCreateView(parent, name, attrs);
-        } else {
-            4.2 <tag> 中有.
-            view = createView(name, null, attrs);
-        }
-    }
-    return view;     
+    return view;
 }
+```
+
 
 -> 4.2 <tag> 中有.
 
 构造器方法签名
-static final Class<?>[] mConstructorSignature = new Class[] {
-            Context.class, AttributeSet.class};
+static final Class<?>[] mConstructorSignature = new Class[] { Context.class, AttributeSet.class };
 
 缓存 View 构造器的 Map
 private static final HashMap<String, Constructor<? extends View>> sConstructorMap =
