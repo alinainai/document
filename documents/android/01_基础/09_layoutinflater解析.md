@@ -2,7 +2,7 @@
 
 ## 1、使用方法
 
-一般通过下面这段代码去加载布局，`Activity#setContentView(layoutId)` 最后也是通过这个方法去加载布局
+追踪 LayoutInflater 加载布局重载方法，最终都会调用如下代码，同样 `Activity#setContentView(layoutId)` 也是通过这种方式去加载布局
 
 ```kotlin
  LayoutInflater.from(context).inflate(layoutId,viewGroup,attachToRoot)
@@ -223,13 +223,12 @@ public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean atta
         try {
             advanceToRootNode(parser);
             final String name = parser.getName();
-            if (TAG_MERGE.equals(name)) { // 如果是 merge 标签，调用 rInflate 解析
+            if (TAG_MERGE.equals(name)) { // 是 merge 标签，调用 rInflate 解析
                 if (root == null || !attachToRoot) {
                     throw new InflateException("<merge /> can be used only with a valid ViewGroup root and attachToRoot=true");
                 }
                 rInflate(parser, root, inflaterContext, attrs, false);
-            } else {
-                //不是 merge 标签则根据 tag 创建 temp view
+            } else {// 不是 merge 标签则根据 tag 创建 temp view
                 final View temp = createViewFromTag(root, name, inflaterContext, attrs); 
                 ViewGroup.LayoutParams params = null;
                 if (root != null) {
@@ -239,7 +238,7 @@ public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean atta
                     }
                 }
                 
-                rInflateChildren(parser, temp, attrs, true); // 核心方法
+                rInflateChildren(parser, temp, attrs, true); // 核心方法，把 temp 当成 parent 传入
                 
                 if (root != null && attachToRoot) { // 如果 attachToRoot 为 true ，将 temp 添加到 root 中
                     root.addView(temp, params);
@@ -267,13 +266,14 @@ public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean atta
 ### 3.3 `rInflate(parser,parent,context,attrs,finishInflate)` 方法
 
 ```java
+// 内部会调用 rInflate 
 final void rInflateChildren(XmlPullParser parser, View parent, AttributeSet attrs, boolean finishInflate) throws XmlPullParserException, IOException {
     rInflate(parser, parent, parent.getContext(), attrs, finishInflate);
 }
 
 void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet attrs, boolean finishInflate) throws XmlPullParserException, IOException {
 
-    final int depth = parser.getDepth();
+    final int depth = parser.getDepth(); // 获取 xml 文件的深度
     int type;
     boolean pendingRequestFocus = false;
 
@@ -298,10 +298,10 @@ void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet a
         } else if (TAG_MERGE.equals(name)) {
             throw new InflateException("<merge /> must be the root element");
         } else {
-            final View view = createViewFromTag(parent, name, context, attrs); // 2、递归解析子 view
+            final View view = createViewFromTag(parent, name, context, attrs); 
             final ViewGroup viewGroup = (ViewGroup) parent;
             final ViewGroup.LayoutParams params = viewGroup.generateLayoutParams(attrs);
-            rInflateChildren(parser, view, attrs, true);
+            rInflateChildren(parser, view, attrs, true); // 2、递归解析子 view
             viewGroup.addView(view, params); // 3、将子 view 添加到 parent 
         }
     }
@@ -311,11 +311,11 @@ void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet a
     }
 
     if (finishInflate) {
-        parent.onFinishInflate();
+        parent.onFinishInflate();// 调用 parent 的 onFinishInflate 方法
     }
 }
 ```
-已经做了相关的注释，代码也很简单
+已经做了相关的注释，代码也很简单，核心思想是：遍历 tag 标签并递归解析子 view
 
 ### 3.4 `createViewFromTag(...)` 根据 Tag 创建 View
 ```java
@@ -343,9 +343,9 @@ View createViewFromTag(View parent, String name, Context context, AttributeSet a
             final Object lastContext = mConstructorArgs[0];
             mConstructorArgs[0] = context;
             try { 
-                if (-1 == name.indexOf('.')) {// 2、解析内置View 如 TextView，名字中不带 '.'
+                if (-1 == name.indexOf('.')) {// 2、解析内置View，如 TextView，名字中不带 '.'
                     view = onCreateView(context, parent, name, attrs);
-                } else {// 3、解析自定义View
+                } else {// 3、解析自定义 View
                     view = createView(context, name, null, attrs);
                 }
             } finally {
@@ -354,26 +354,17 @@ View createViewFromTag(View parent, String name, Context context, AttributeSet a
         }
         
         return view;
-    } catch (InflateException e) {
-        ...
-    } catch (ClassNotFoundException e) {
-       ...
-    } catch (Exception e) {
-        ...
-    }
+    } catch ...
 }
 ```
 代码很简单，先用 `tryCreateView(parent, name, context, attrs)` 创建 `view`，获取为 `null` 再通过 `onCreateView(...)` 创建 `view`。
 
-onCreateView(context, parent, name, attrs) 和 createView(context, name, prefix, attrs) 方法最终都会调用: 
+ `onCreateView(context, parent, name, attrs)` 最终也会调用 ` createView(context, name, prefix, attrs)`  
 
-```java
-createView(viewContext, name, prefix, attrs)
-```
 
 ### 3.5 `tryCreateView(...)` 尝试创建 View
 
-`tryCreateView(...)` 方法中会按照 `mFactory2`、`mFactory`、`mPrivateFactory` 的顺序去创建 `View`，代码如下:
+先看下 `tryCreateView(...)` 方法的代码，该方法中会按照 `mFactory2`、`mFactory`、`mPrivateFactory` 的顺序去创建 `View`，代码如下:
 
 ```java
 @Nullable
@@ -381,7 +372,7 @@ public final View tryCreateView(@Nullable View parent, @NonNull String name, @No
     if (name.equals(TAG_1995)) {// 没啥用，一个会布灵布灵的布局
         return new BlinkLayout(context, attrs);
     }
-
+    
     View view;
     if (mFactory2 != null) { 
         view = mFactory2.onCreateView(parent, name, context, attrs); // 1、通过 mFactory2 创建
@@ -390,57 +381,53 @@ public final View tryCreateView(@Nullable View parent, @NonNull String name, @No
     } else {
         view = null;
     }
-
+    
     if (view == null && mPrivateFactory != null) {// 3、通过 mPrivateFactory 创建
         view = mPrivateFactory.onCreateView(parent, name, context, attrs);
     }
-
     return view;
 }
 ```
+### 3.6  createView(viewContext, name, prefix, attrs) 方法
 
+继续看一下 createView(viewContext, name, prefix, attrs) 方法，代码如下：
 
--> 4.2 <tag> 中有.
-
-构造器方法签名
-static final Class<?>[] mConstructorSignature = new Class[] { Context.class, AttributeSet.class };
-
-缓存 View 构造器的 Map
-private static final HashMap<String, Constructor<? extends View>> sConstructorMap =
-            new HashMap<String, Constructor<? extends View>>();
-
-public final View createView(String name, String prefix, AttributeSet attrs) {
-    1) 缓存的构造器
-    Constructor<? extends View> constructor = sConstructorMap.get(name);
-    if (constructor != null && !verifyClassLoader(constructor)) {
-        constructor = null;
-        sConstructorMap.remove(name);
-    }
-    Class<? extends View> clazz = null;
-    2) 新建构造器
-    if (constructor == null) {
-        2.1) 拼接 prefix + name 得到类全限定名
-        clazz = mContext.getClassLoader().loadClass(prefix != null ? (prefix + name) : name).asSubclass(View.class);
-        2.2) 创建构造器对象
-        constructor = clazz.getConstructor(mConstructorSignature);
-        constructor.setAccessible(true);
-        2.3) 缓存到 Map
-        sConstructorMap.put(name, constructor);
-    }
-    
-    3) 实例化 View 对象
-    final View view = constructor.newInstance(args);
-
-    4) ViewStub 特殊处理
-    if (view instanceof ViewStub) {
-        // Use the same context when inflating ViewStub later.
-        final ViewStub viewStub = (ViewStub) view;
-        viewStub.setLayoutInflater(cloneInContext((Context) args[0]));
-    }
-    return view;
+```java
+@Nullable
+public final View createView(@NonNull Context viewContext, @NonNull String name, @Nullable String prefix, @Nullable AttributeSet attrs) throws ClassNotFoundException, InflateException {
+       
+    Constructor<? extends View> constructor = sConstructorMap.get(name); // 1、从缓存获取 view 的 constructor
+    try {
+        if (constructor == null) { // 2、如果 constructor 为空，根据路径 prefix + name 去加载 class
+            clazz = Class.forName(prefix != null ? (prefix + name) : name, false, mContext.getClassLoader()).asSubclass(View.class);
+            constructor = clazz.getConstructor(mConstructorSignature);
+            sConstructorMap.put(name, constructor);
+        } else {
+            if (mFilter != null) {
+                // 这里判断一下 name 对应的class是否允许通过 inflate 的形式加载
+            }
+        }
+        ...
+        try {
+            final View view = constructor.newInstance(args); // 3、生成 view 对象
+            if (view instanceof ViewStub) { // ViewStub 优化
+                final ViewStub viewStub = (ViewStub) view;
+                viewStub.setLayoutInflater(cloneInContext((Context) args[0]));
+            }
+            return view;
+        } finally {
+            mConstructorArgs[0] = lastContext;
+        }
+    } catch ...
 }
+```
+1、先判断 `sConstructorMap` 是否有 `name` 的对应的 `Constructor`，如果没有就去通过 `prefix + name` 去加载对应的 `Class` 
+2、通过 `Class` 生成 `Constructor` 并存入 `sConstructorMap`。
+3、然后调用 `constructor.newInstance(args)` 返回 `view`
 
-----------------------------------------------------
+官方说这个方式是 `Low-level function for instantiating a view by name.`
+
+
 
 -> 4.1 <tag> 中没有.
 
