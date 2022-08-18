@@ -371,27 +371,27 @@ onCreateView(context, parent, name, attrs) 和 createView(context, name, prefix,
 createView(viewContext, name, prefix, attrs)
 ```
 
-### 3.5 `tryCreateView(...)` 方法
+### 3.5 `tryCreateView(...)` 尝试创建 View
 
-`tryCreateView(...)` 方法中会按照 `mFactory2、mFactory、mPrivateFactory` 的顺序去创建 view
+`tryCreateView(...)` 方法中会按照 `mFactory2`、`mFactory`、`mPrivateFactory` 的顺序去创建 `View`，代码如下:
 
 ```java
 @Nullable
 public final View tryCreateView(@Nullable View parent, @NonNull String name, @NonNull Context context, @NonNull AttributeSet attrs) {
-    if (name.equals(TAG_1995)) {// 没啥用
+    if (name.equals(TAG_1995)) {// 没啥用，一个会布灵布灵的布局
         return new BlinkLayout(context, attrs);
     }
 
     View view;
     if (mFactory2 != null) { 
-        view = mFactory2.onCreateView(parent, name, context, attrs); // 通过 mFactory2 创建
+        view = mFactory2.onCreateView(parent, name, context, attrs); // 1、通过 mFactory2 创建
     } else if (mFactory != null) {
-        view = mFactory.onCreateView(name, context, attrs); // 通过 mFactory 创建
+        view = mFactory.onCreateView(name, context, attrs); // 2、通过 mFactory 创建
     } else {
         view = null;
     }
 
-    if (view == null && mPrivateFactory != null) {// 通过 mPrivateFactory 创建
+    if (view == null && mPrivateFactory != null) {// 3、通过 mPrivateFactory 创建
         view = mPrivateFactory.onCreateView(parent, name, context, attrs);
     }
 
