@@ -1,4 +1,4 @@
-本文基于 android 12 (SDK 31) 源码分析
+本文基于 android 12 (SDK 31) 源码分
 
 ## 1、使用方法
 
@@ -127,14 +127,13 @@ private @Nullable View tryInflatePrecompiled(@LayoutRes int resource, Resources 
         return null;
     }
     
-    String pkg = res.getResourcePackageName(resource); //根据 resourceId 获取包名
+    String pkg = res.getResourcePackageName(resource); // 根据 resourceId 获取包名
     String layout = res.getResourceEntryName(resource);
     
     try {
-        //通过反射生成 view
-        Class clazz = Class.forName("" + pkg + ".CompiledView", false, mPrecompiledClassLoader);
+        Class clazz = Class.forName("" + pkg + ".CompiledView", false, mPrecompiledClassLoader); 
         Method inflater = clazz.getMethod(layout, Context.class, int.class);
-        View view = (View) inflater.invoke(null, mContext, resource);
+        View view = (View) inflater.invoke(null, mContext, resource); // 通过反射生成 view
         if (view != null && root != null) {
             XmlResourceParser parser = res.getLayout(resource);
             try {
@@ -151,15 +150,12 @@ private @Nullable View tryInflatePrecompiled(@LayoutRes int resource, Resources 
             }
         }
         return view;
-    } catch (Throwable e) {
-        ...
-    } finally {
-        ...
-    }
+    } catch ...
+    
     return null;
 }
 ```
-代码很简单，如果 mUseCompiledView 为 true，会通过反射获取预编译的 view。然后对 view 进行处理。
+代码很简单，如果 mUseCompiledView 为 true，会通过反射获取预编译的 CompiledView 和 layout_name 对应的 view。
 
 是否使用预编译布局主要和 mUseCompiledView 有关，我们来看下 mUseCompiledView 赋值过程。
 
@@ -272,19 +268,15 @@ final void rInflateChildren(XmlPullParser parser, View parent, AttributeSet attr
 }
 
 void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet attrs, boolean finishInflate) throws XmlPullParserException, IOException {
-
     final int depth = parser.getDepth(); // 获取 xml 文件的深度
     int type;
     boolean pendingRequestFocus = false;
-
     while (((type = parser.next()) != XmlPullParser.END_TAG || parser.getDepth() > depth) && type != XmlPullParser.END_DOCUMENT) {
-                
+    
         if (type != XmlPullParser.START_TAG) {
             continue;
         }
-
         final String name = parser.getName();
-
         if (TAG_REQUEST_FOCUS.equals(name)) {
             pendingRequestFocus = true;
             consumeChildElements(parser);
@@ -305,11 +297,9 @@ void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet a
             viewGroup.addView(view, params); // 3、将子 view 添加到 parent 
         }
     }
-
     if (pendingRequestFocus) {
         parent.restoreDefaultFocus();
     }
-
     if (finishInflate) {
         parent.onFinishInflate();// 调用 parent 的 onFinishInflate 方法
     }
@@ -321,12 +311,10 @@ void rInflate(XmlPullParser parser, View parent, Context context, AttributeSet a
 ```java
 @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
 View createViewFromTag(View parent, String name, Context context, AttributeSet attrs, boolean ignoreThemeAttr) {
-
     if (name.equals("view")) {
         name = attrs.getAttributeValue(null, "class");
     }
-
-    // Apply a theme wrapper, if allowed and one is specified.
+    
     if (!ignoreThemeAttr) {
         final TypedArray ta = context.obtainStyledAttributes(attrs, ATTRS_THEME);
         final int themeResId = ta.getResourceId(0, 0);
@@ -358,7 +346,6 @@ View createViewFromTag(View parent, String name, Context context, AttributeSet a
 }
 ```
 代码很简单，先用 `tryCreateView(parent, name, context, attrs)` 创建 `view`，获取为 `null` 再通过 `onCreateView(...)` 创建 `view`。
-
 `onCreateView(context, parent, name, attrs)` 最终也会调用 ` createView(context, name, prefix, attrs)`  
 
 
@@ -406,7 +393,7 @@ public final View createView(@NonNull Context viewContext, @NonNull String name,
             sConstructorMap.put(name, constructor);
         } else {
             if (mFilter != null) {
-                // 这里判断一下 name 对应的class是否允许通过 inflate 的形式加载
+                ... // 这里判断一下 name 对应的class是否允许通过 inflate 的形式加载
             }
         }
         ...
@@ -427,9 +414,9 @@ public final View createView(@NonNull Context viewContext, @NonNull String name,
 - 2、通过 `Class` 生成 `Constructor` 并存入 `sConstructorMap`。
 - 3、然后调用 `constructor.newInstance(args)` 返回 `view`
 
-官方说这个方式是 `Low-level function for instantiating a view by name.`
+LayoutInflater.class 中解释此方法是是 `Low-level function for instantiating a view by name`
 
-
+## 4、Factory 相关
 
 -> 4.1 <tag> 中没有.
 
