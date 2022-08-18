@@ -337,7 +337,7 @@ View createViewFromTag(View parent, String name, Context context, AttributeSet a
     }
 
     try {
-        View view = tryCreateView(parent, name, context, attrs); 
+        View view = tryCreateView(parent, name, context, attrs); // 1、 尝试创建 `view`
 
         if (view == null) {
             final Object lastContext = mConstructorArgs[0];
@@ -359,7 +359,7 @@ View createViewFromTag(View parent, String name, Context context, AttributeSet a
 ```
 代码很简单，先用 `tryCreateView(parent, name, context, attrs)` 创建 `view`，获取为 `null` 再通过 `onCreateView(...)` 创建 `view`。
 
- `onCreateView(context, parent, name, attrs)` 最终也会调用 ` createView(context, name, prefix, attrs)`  
+`onCreateView(context, parent, name, attrs)` 最终也会调用 ` createView(context, name, prefix, attrs)`  
 
 
 ### 3.5 `tryCreateView(...)` 尝试创建 View
@@ -388,7 +388,9 @@ public final View tryCreateView(@Nullable View parent, @NonNull String name, @No
     return view;
 }
 ```
-### 3.6  createView(viewContext, name, prefix, attrs) 方法
+后面在分析 Factory 相关的代码
+
+### 3.6 `createView(viewContext, name, prefix, attrs)`方法
 
 继续看一下 createView(viewContext, name, prefix, attrs) 方法，代码如下：
 
@@ -421,9 +423,9 @@ public final View createView(@NonNull Context viewContext, @NonNull String name,
     } catch ...
 }
 ```
-1、先判断 `sConstructorMap` 是否有 `name` 的对应的 `Constructor`，如果没有就去通过 `prefix + name` 去加载对应的 `Class` 
-2、通过 `Class` 生成 `Constructor` 并存入 `sConstructorMap`。
-3、然后调用 `constructor.newInstance(args)` 返回 `view`
+- 1、先判断 `sConstructorMap` 是否有 `name` 的对应的 `Constructor`，如果没有就去通过 `prefix + name` 去加载对应的 `Class` 
+- 2、通过 `Class` 生成 `Constructor` 并存入 `sConstructorMap`。
+- 3、然后调用 `constructor.newInstance(args)` 返回 `view`
 
 官方说这个方式是 `Low-level function for instantiating a view by name.`
 
