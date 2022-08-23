@@ -1,31 +1,30 @@
 ## 1.前言
 
-`app` 的启动的入口是 `ActivityThread` 的 `main` 方法。大多数UI系统会采用消息队列维护一个 `main线程` 单独控制视图的绘制，如 `win32`、`Android`、`Java Swing`。
+Android 和大多数UI操作系统（如 `win32`、`Android`、`Java Swing`）一样，会采用消息队列维护一个 `main线程` 单独控制视图的绘制。
 
-我们先看下在 ActivityThread.main 方法中 关于 Looper 的代码。
+`app` 的启动的入口是 `ActivityThread` 的 `main` 方法。我们来看下 `ActivityThread#main()` 方法中和 Looper 相关的代码。
 
 ```java
 class ActivityThread{
     public static void main(String[] args) {
-        // 1、创建主线程对应的 Looper 实例
+        // 1、创建main线程中的 Looper 实例
         Looper.prepareMainLooper();
 	//...
-	// 2、开启事件循环
+	// 2、开启 Looper 的事件循环
         Looper.loop();
     }
     static volatile Handler sMainThreadHandler;
 }
 ```
-注意两处核心代码
+和 Looper 相关的就是上面两个地方的代码，已标注。 
 
 ## 2. Looper分析
 
-Looper.prepareMainLooper 分析
+我们先看下 `Looper#prepareMainLooper` 方法
 
 ```java
 class Looper{
-    //ThreadLocal 是一个线程独有的对象，可以简单理解为线程隔离
-    static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
+    static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>(); // ThreadLocal 存放着线程隔离的数据
     @Deprecated
     public static void prepareMainLooper() {
         prepare(false); // 注意这里的传入的参数为 false，在 Looper 的构造方法中会用到
