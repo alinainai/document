@@ -2,6 +2,13 @@
 
 ASM 是一个通用的 Java 字节码操作和分析框架，它可以用来修改现有的类或直接以二进制形式动态生成类。
 
+ASM所处理对象是字节码数据，并可以对字节码:
+- 分析（analysis）: 
+- 生成（generation）: 
+- 转换（transformation）: 
+
+
+
 官方文档: [https://asm.ow2.io/](https://asm.ow2.io/)
 
 可以通过 `git clone` 下载 [https://gitlab.ow2.org/asm/asm.git](https://gitlab.ow2.org/asm/asm.git)  asm 代码
@@ -26,6 +33,7 @@ ASM库提供了两个用于生成和转换已编译类的API，一个是核心 A
 添加 ASM 依赖
 
 在 asm_lifecycle_plugin 的 build.gradle 中，添加对 ASM 的依赖，如下：
+
 
 ## 参考
 
