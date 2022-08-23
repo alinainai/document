@@ -179,7 +179,8 @@ installNewPackageLI 方法负责完成最后的 apk 安装过程，具体代码�
 >至此整个 apk 的安装过程结束，实际上安装成功之后，还会发送一个 App 安装成功的广播 ACTION_PACKAGE_ADDED。手机桌面应用注册了这个广播，当接收到应用安装成功之后，就将 apk 的启动 icon 显示在桌面上。
 
 
-
+## 参考
+- [从构建工具看 Android APK 编译打包流程](https://cloud.tencent.com/developer/article/1814090)
 
 
 
