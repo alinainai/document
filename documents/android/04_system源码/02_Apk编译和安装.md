@@ -54,7 +54,8 @@ apk 创建好之后，还不能直接使用。需要使用工具 `jarsigner` 对
 
 整个编译打包流程可以用下图来描述：
 
-<img src="https://user-images.githubusercontent.com/17560388/124059745-2f489900-da5e-11eb-9f6e-116ac03c5c4e.png" alt="图片替换文本" width="400"  align="bottom" />
+<img src="https://user-images.githubusercontent.com/17560388/186102996-7276222f-784f-41dc-b9e1-ff548b97f285.png" alt="图片替换文本" width="400"  align="bottom" />
+
 
 ## 3、PMS安装过程概览
 
