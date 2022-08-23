@@ -34,7 +34,6 @@ class_table {
     u1 tag;
     u2 index2;
     ...
-
     // 表中也可以引用其它表
     method_table mt;
     ...
@@ -75,7 +74,7 @@ public class Test implements Serializable, Cloneable{
 
 上图中都是一些 16 进制数字，每两个字符代表一个字节。乍看一下各个字符之间毫无规律，但是在 JVM 的视角里这些 16 进制字符是按照严格的规律排列的。接下来就一步一步看下 JVM 是如何解析它们的。
 
-### 4.1 魔数 magic number
+### 4.1 魔数 `magic number`
 
 <img width="400" alt="魔数" src="https://user-images.githubusercontent.com/17560388/174243033-29006d69-98ac-416e-9799-8a627e758de7.png">
 
@@ -97,7 +96,7 @@ public class Test implements Serializable, Cloneable{
 
 <img width="400" alt="常量池表类型" src="https://user-images.githubusercontent.com/17560388/174243172-db8fa569-7328-4dff-902c-94548332a98c.png">
 
-常量池中的每一项都会有一个 u1 大小的 `tag` 值。`tag` 值是表的标识，`JVM` 通过这个值来判断当前数据结构是哪一种表。这里重点说下 `CONSTANT_Class_info` 和 `CONSTANT_Utf8_info` 这两张表。
+常量池中的每一项都会有一个 u1 大小的 `tag` 值。 值是表的标识，`JVM` 通过 `tag` 来判断当前数据结构是哪一种表。这里重点说下 `CONSTANT_Class_info` 和 `CONSTANT_Utf8_info` 这两张表。
 
 首先，`CONSTANT_Class_info` 表具体结构如下所示：
 
@@ -126,7 +125,7 @@ table CONSTANT_utf8_info {
 - `length`：`length` 表示 `u1[]` 的长度，比如 `length=5`，则表示接下来的数据是 5 个连续的 u1 类型数据。
 - `bytes`：`u1` 类型数组，长度为上面第 2 个参数 `length` 的值。
 
-`String` 字符串最终在 `class` 文件中的存储格式就 `CONSTANT_utf8_info`。因此一个字符串最大长度也就是 u2 所能代表的最大值 65536 个，但是需要使用2个字节来保存 null 值，因此一个字符串的最大长度为 65536 - 2 = 65534。[参考 Java String最大长度分析](https://mp.weixin.qq.com/s/I16BlY9cJF-JZZReAjuRqg)。
+`String` 字符串最终在 `class` 文件中的存储格式就 `CONSTANT_utf8_info`。因此一个字符串最大长度也就是 u2 所能代表的最大值 65536 个，但是需要使用2个字节来保存 null 值，因此一个字符串的最大长度为 65536 - 2 = 65534。
 
 不难看出，在常量池内部的表中也有相互之间的引用。用一张图来理解 `CONSTANT_Class_info` 和 `CONSTANT_utf8_info` 表格之间的关系，如下图所示：
 
@@ -299,11 +298,12 @@ CONSTANT_Methodref_info{
 从图中我们可以看出 add 方法的以下字段的具体值：
 
 - access_flags = 0001 也就是访问权限为 public。
-- name_index = 0X0011  指向常量池中的第 17 个常量，也就是“add”。
-- type_index = 0X0012   指向常量池中的第 18 个常量，也即是 (I)。这个方法接收 int 类型参数，并返回 int 类型参数。
+- name_index = 0X0011 指向常量池中的第 17 个常量，也就是“add”。
+- type_index = 0X0012 指向常量池中的第 18 个常量，也即是 (I)。这个方法接收 int 类型参数，并返回 int 类型参数。
 
 ## 9、属性表
-在之前解析字段和方法的时候，在它们的具体结构中我们都能看到有一个叫作 attributes_info 的表，这就是属性表。
+
+在之前解析字段和方法的时候，在它们的具体结构中我们都能看到有一个叫作 `attributes_info` 的表，这就是属性表。
 
 属性表并没有一个固定的结构，各种不同的属性只要满足以下结构即可：
 
@@ -325,7 +325,7 @@ JVM 中预定义了很多属性表，这里重点讲一下 Code 属性表。
 
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/174248174-fcab8995-7c9b-4518-ba60-acc0e2076104.png">
 
-`Code 属性表`中，最主要的就是一些列的字节码。通过 `javap -v Test.class` 之后，可以看到方法的字节码，如下图显示的是 add 方法的字节码指令：
+`Code 属性表`中，最主要的就是一系列的指令字节码。通过 `javap -v Test.class` 之后，可以看到方法的字节码，如下图显示的是 add 方法的字节码指令：
 
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/174248134-19c5c26d-7fcd-4911-9512-c293c9aef423.png">
 
