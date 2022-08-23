@@ -1,8 +1,9 @@
 本文基于 android 10 (SDK 29) 代码分析
 
-## 1、Activity 的 setContentView
+## 1、Activity 的 setContentView 方法
 
 ```java
+// Activity.class
 private Window mWindow;
 
 public void setContentView(@LayoutRes int layoutResID) {
@@ -14,7 +15,7 @@ public Window getWindow() {
     return mWindow;
 }
 ```
-在 `Activity` 的 `setContentView` 方法中，直接将操作交给 `Window` 来处理。`getWindow` 返回的是 `Activity` 中的全局变量 mWindow，它是一个 `Window` 类型的对象。
+在 `setContentView` 方法中，直接将操作交给 `Window` 来处理。`getWindow` 返回的是 `Activity` 中的全局变量 mWindow，它是一个 `Window` 类型的对象。
 
 在分析 startActivity 的过程中，最终代码会调用到 ActivityThread 中的 `performLaunchActivity` 方法，通过反射创建 Activity 对象，并执行其 `attach` 方法。
 
