@@ -1,6 +1,8 @@
 本文基于 android 10 (SDK 29) 代码分析
 
-## 1、Activity 的 setContentView 方法
+## 1、从 Activity#setContentView() 开始
+
+我们在写一个新页面的时候，会通过调用 Activity 的 setContentView(layoutId) 给 Activity 设置布局。我们从这个方法作为入口，来看下标题中这三者的关系
 
 ```java
 // Activity.class
