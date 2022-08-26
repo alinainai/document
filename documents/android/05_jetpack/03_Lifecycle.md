@@ -10,30 +10,23 @@
 
 ```kotlin
 class LifeCycleObserver1 : DefaultLifecycleObserver {
-
     override fun onStart(owner: LifecycleOwner) {
         super.onStart(owner)
-        Log.e("life", "LifeCycleObserver1 onStart")
     }
-
     override fun onDestroy(owner: LifecycleOwner) {
         super.onDestroy(owner)
-        Log.e("life", "LifeCycleObserver1 onDestroy")
     }
 }
 ```
 2.实现`LifecycleObserver`接口，并通过注解来标记回调方法
 ```kotlin
 class LifeCycleObserver2 : LifecycleObserver {
-
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun start() {
-        Log.e("life", "LifeCycleObserver2 start")
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     fun destroy() {
-        Log.e("life", "LifeCycleObserver2 destroy")
     }
 }
 ```
