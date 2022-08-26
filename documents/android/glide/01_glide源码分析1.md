@@ -155,7 +155,10 @@ private static void initializeGlide(@NonNull Context context, @NonNull GlideBuil
 
 
 
-
+## 参考
+- [Glide v4 源码解析（二）](https://blog.yorek.xyz/android/3rd-library/glide2/#2-glide) 
+- [深入分析Glide源码](https://blog.csdn.net/xx326664162/article/details/107663872)
+- [Glide 源码分析解读-基于最新版Glide 4.9.0](https://www.jianshu.com/p/9bb50924d42a)
 
 
 
