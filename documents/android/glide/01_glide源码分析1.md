@@ -1,4 +1,4 @@
-本位基于 glide 4.12.0 代码分析
+基于 `glide 4.12.0` 代码分析
 
 ## 1、基本使用
 
@@ -10,20 +10,20 @@
 implementation ‘com.github.bumptech.glide:compiler:4.12.0’
 ```
 简单使用
-
 ```java
 Glide.with(fragment).load(imgUrl).into(imageView);
 ```
-## 2、源码分析
-
-## 2.1  `Glide.with(...)` 方法
+## 2、Glide.with(...)源码分析
 
 `Glide` 类实现了 `ComponentCallbacks2` 接口，`ComponentCallbacks2` 接口提供了 `lowMemory` 的监听方法。
 
 ```java
 public class Glide implements ComponentCallbacks2 {
 ```
-我们通过 `Glide.with(...)` 获取一个 `RequestManager（请求管理类）`对象，在 `Glide` 类中还有很多 `with(...)` 静态重载方法。
+
+### 2.1  `Glide.with(...)` 方法
+
+我们通过 `Glide.with(...)` 获取一个 `RequestManager（请求管理类）`对象，在 `Glide` 类中有很多 `with(...)`的静态重载方法。先看下其中3个:
 
 ```java
 @NonNull
@@ -41,7 +41,7 @@ public static RequestManager with(@NonNull Fragment fragment) {
 ```
 每个重载方法中都会调用 `getRetriever(context)` 方法获取一个 `RequestManagerRetriever` 对象，`RequestManagerRetriever` 是负责管理 `RequestManager` 的类。
 `RequestManagerRetriever`类中有一系列的静态方法用来创建或者复用 activities/fragment 中存在的 RequestManagers。
-在 `Glide` 初始化的时候由 `GlideBuilder` 设置到 `Glide`中。
+由 `GlideBuilder` 设置到 `Glide`中。
 
 ```java
 @NonNull
@@ -126,6 +126,7 @@ private static void initializeGlide(@NonNull Context context, @NonNull GlideBuil
     }
 
     GlideExperiments experiments = glideExperimentsBuilder.build();
+    // new 一个 RequestManagerRetriever 类
     RequestManagerRetriever requestManagerRetriever = new RequestManagerRetriever(requestManagerFactory, experiments);
 
     return new Glide(
