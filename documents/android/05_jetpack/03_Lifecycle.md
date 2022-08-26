@@ -74,6 +74,81 @@ public enum Event {
     ON_STOP,
     ON_DESTROY,   
     ON_ANY  //可以响应任意一个事件 
+    
+    @Nullable
+    public static Event downFrom(@NonNull State state) {
+        switch (state) {
+            case CREATED:
+                return ON_DESTROY;
+            case STARTED:
+                return ON_STOP;
+            case RESUMED:
+                return ON_PAUSE;
+            default:
+                return null;
+        }
+    }
+
+    @Nullable
+    public static Event downTo(@NonNull State state) {
+        switch (state) {
+            case DESTROYED:
+                return ON_DESTROY;
+            case CREATED:
+                return ON_STOP;
+            case STARTED:
+                return ON_PAUSE;
+            default:
+                return null;
+        }
+    }
+
+    @Nullable
+    public static Event upFrom(@NonNull State state) {
+        switch (state) {
+            case INITIALIZED:
+                return ON_CREATE;
+            case CREATED:
+                return ON_START;
+            case STARTED:
+                return ON_RESUME;
+            default:
+                return null;
+        }
+    }
+
+    @Nullable
+    public static Event upTo(@NonNull State state) {
+        switch (state) {
+            case CREATED:
+                return ON_CREATE;
+            case STARTED:
+                return ON_START;
+            case RESUMED:
+                return ON_RESUME;
+            default:
+                return null;
+        }
+    }
+
+    @NonNull
+    public State getTargetState() {
+        switch (this) {
+            case ON_CREATE:
+            case ON_STOP:
+                return State.CREATED;
+            case ON_START:
+            case ON_PAUSE:
+                return State.STARTED;
+            case ON_RESUME:
+                return State.RESUMED;
+            case ON_DESTROY:
+                return State.DESTROYED;
+            case ON_ANY:
+                break;
+        }
+        throw new IllegalArgumentException(this + " has no target state");
+    }
 }
 //生命周期状态. （Event是进入这种状态的事件）
 public enum State {
