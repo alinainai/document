@@ -1,16 +1,17 @@
-## 1、简单分析和使用
+## 1、简单使用
 
-`ViewModel` 是管理 `Activity/Fragment(View 层)` 中使用数据的并可以监听 `Activity/Fragment` 生命周期容器类。
+`ViewModel` 负责管理 MVVM 架构中 `View 层（Activity/Fragment）` 和 `Model 层`的交互。作为 Jetpack系列的一个组件，`ViewModel` 可以很好的和 `Activity/Fragment` 的生命周期相绑定，在 `ViewModel#OnClear()` 方法中处理一些解绑的操作。
 
-`ViewModel` 可以很好的和 `Activity/Fragment` 的生命周期相绑定，在 `ViewModel#OnClear()` 方法中处理一些解绑的操作。
+
+### 1.1 特点
 
 ViewModel 在 Activity 横竖屏切换时也会保持同一个对象。
 
-官方的生命周期图：
+生命周期图：
 
 <img width="400" alt="ViewModel生命周期" src="https://user-images.githubusercontent.com/17560388/141035994-bc844b3e-b496-4872-8443-4b6a79f9b8ee.png">
 
-简单的介绍一下带参数的 `ViewModel` 类基本使用：
+### 1.2 基本使用
 
 带参数的 ViewModel 类
 
@@ -21,16 +22,13 @@ class LoginViewModel(private val loginRepository: LoginRepository) : ViewModel()
     //... ...
 }
 ```
-
-通过工厂类实现带参数的 ViewModel
-
+通过工厂类创建带参数的 ViewModel
 ```kotlin
 class LoginViewModelFactory : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-            return LoginViewModel(
-                loginRepository = LoginRepository(
+            return LoginViewModel(loginRepository = LoginRepository(
                     dataSource = LoginDataSource()
                 )
             ) as T
@@ -40,32 +38,31 @@ class LoginViewModelFactory : ViewModelProvider.Factory {
 }
 ```
 
-在 Activity 中使用
+在 Activity 中初始化
 
 ```kotlin
 class LoginActivity : AppCompatActivity() {
+
     private lateinit var loginViewModel: LoginViewModel
-    //... ...
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        loginViewModel = ViewModelProvider(this, LoginViewModelFactory())
-            .get(LoginViewModel::class.java)
+        loginViewModel = ViewModelProvider(this, LoginViewModelFactory()).get(LoginViewModel::class.java)
     }
-    //... ...
 }
 ```
 ### 2.源码解读
 
-获取ViewModel实例
+我们以不带参数的 MainViewModel 的例子出发
 
 ```kotlin
 // MainActivity.kt
 val viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 ```
 
-将代码拆分成：ViewModelProvider(this) 和 get(MainViewModel::class.java)
+将代码拆分成：`ViewModelProvider(this)` 和 `get(MainViewModel::class.java)`
 
-#### 2.1 **ViewModelProvider(this)** 的构造方法
+#### 2.1 `ViewModelProvider(this)` 的构造方法
 
 构造方法的两个入参
 
@@ -73,7 +70,6 @@ val viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 - ViewModelProvider.Factory : 负责生成的 `ViewModel`
 
 ```java
-//ViewModelProvider.java
 public ViewModelProvider(@NonNull ViewModelStoreOwner owner) {
     this(owner.getViewModelStore(), owner instanceof HasDefaultViewModelProviderFactory
          ? ((HasDefaultViewModelProviderFactory) owner).getDefaultViewModelProviderFactory()
@@ -81,7 +77,7 @@ public ViewModelProvider(@NonNull ViewModelStoreOwner owner) {
 }
 ```
 
-通过 ComponentActivity # getViewModelStore() 获取 Activity 中的 ViewModelStore 对象。
+通过 `ComponentActivity#getViewModelStore()` 获取 `Activity` 中的 `ViewModelStore` 对象。
 
 ```java
 // ComponentActivity.java
@@ -120,7 +116,7 @@ static final class NonConfigurationInstances {
     ViewModelStore viewModelStore;
 }
 ```
-#### 2.2 通过 get(MainViewModel::class.java) 方法获取 ViewModel 对象
+#### 2.2 通过 `get(MainViewModel::class.java)` 方法获取 ViewModel 对象
 
 ```java
 // ViewModelProvider.java
@@ -241,14 +237,12 @@ private Activity performLaunchActivity(ActivityClientRecord r, Intent customInte
 那 retainNonConfigurationInstances() 方法又是在哪调用的呢？肯定也跟 ActivityThread 有关，在ActivityThread搜索下，代码如下：
 ```java
 // ActivityThread.java    
-ActivityClientRecord performDestroyActivity(IBinder token, boolean finishing,
-                                            int configChanges, boolean getNonConfigInstance, String reason) {
+ActivityClientRecord performDestroyActivity(IBinder token, boolean finishing, int configChanges, boolean getNonConfigInstance, String reason) {
     ActivityClientRecord r = mActivities.get(token);
     ···
         if (getNonConfigInstance) {
             try {
-                r.lastNonConfigurationInstances
-                    = r.activity.retainNonConfigurationInstances();
+                r.lastNonConfigurationInstances = r.activity.retainNonConfigurationInstances();
             } catch (Exception e) {
                 ···
             }
