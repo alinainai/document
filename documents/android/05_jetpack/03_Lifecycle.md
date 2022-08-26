@@ -1,48 +1,57 @@
-## 1. 什么是 LifeCycle
+## 1、基本使用
 
-`Lifecycle` 是 `Jetpack` 的基础的组件之一，它让开发者搭建依赖于`生命周期变化`的业务逻辑变的更简单，用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险。
+### 1.1 什么是 LifeCycle
 
-## 2. 使用方法
+`Lifecycle` 是 `Jetpack` 的基础的组件之一，它提供了开发者用来搭建依赖于 `生命周期变化` 的业务逻辑变更的能力。用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险。
 
-1.通过实现`DefaultLifecycleObserver`接口，直接使用对应的 onXXX 方法
+### 1.2 使用方法
+
+1.我们可以通过实现`DefaultLifecycleObserver`接口，直接使用对应的 onXXX 方法，代码如下:
 
 ```kotlin
 class LifeCycleObserver1 : DefaultLifecycleObserver {
 
     override fun onStart(owner: LifecycleOwner) {
         super.onStart(owner)
-        Log.e("life", "TestLifeCycleObserver1 onStart")
+        Log.e("life", "LifeCycleObserver1 onStart")
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
         super.onDestroy(owner)
-        Log.e("life", "TestLifeCycleObserver1 onDestroy")
+        Log.e("life", "LifeCycleObserver1 onDestroy")
     }
 }
 ```
-2.实现`LifecycleObserver`接口，使用注解来标记回调方法
+2.实现`LifecycleObserver`接口，并通过注解来标记回调方法
 ```kotlin
 class LifeCycleObserver2 : LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun start() {
-        Log.e("life", "TestLifeCycleObserver1 start")
+        Log.e("life", "LifeCycleObserver2 start")
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     fun destroy() {
-        Log.e("life", "TestLifeCycleObserver1 destroy")
+        Log.e("life", "LifeCycleObserver2 destroy")
     }
 }
 ```
-使用
+在Activity中使用
 ```kotlin
-LifecycleOwner.getLifecycle().addObserver(LifeCycleObserver1())
-LifecycleOwner.getLifecycle().addObserver(LifeCycleObserver2())
+class LifeCycleActivity:AppCompatActivity{
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        lifecycle.addObserver(LifeCycleObserver1())
+        lifecycle.addObserver(LifeCycleObserver2())
+    }
+}
 ```
-## 3.Lifecycle 源码分析
+## 2、源码分析
 
-`CompatActivity`类实现了`LifecycleOwner`接口，`LifecycleOwner`接口只有一个 `Lifecycle getLifecycle()` 方法。
+### 2.1 LifecycleOwner 类
+
+`LifecycleOwner` 是一个单方法接口，只有一个 `Lifecycle getLifecycle()` 方法。
 
 ```java
 public interface LifecycleOwner {
@@ -50,13 +59,18 @@ public interface LifecycleOwner {
     Lifecycle getLifecycle();
 }
 ```
+`ComponentActivity` 类实现了 `LifecycleOwner` 接口。表示 `ComponentActivity` 类中具有 `Lifecycle` 对象。
+
+### 2.2 Lifecycle 类
 
 `Lifecycle` 是一个抽象类，用于存储有关组件（如 `Activity` 或 `Fragment`）的`生命周期的状态信息`，并允许其他对象观察此状态。
 
-`Lifecycle` 使用两种枚举来表示其关联的组件的生命周期状态：
+<img width="437" alt="image" src="https://user-images.githubusercontent.com/17560388/163302734-c3cf855c-1c7e-49b5-a650-8c4724d8b326.png">
 
-- 事件 Event
-- 状态 State
+`Lifecycle`中定义了添加、移除`LifecycleObserver`的方法，并使用两种枚举来表示其关联的组件的生命周期状态：
+
+- `事件 Event`: 从框架和 Lifecycle 类分派的生命周期事件。这些事件映射到 activity 和 fragment 中的回调事件。
+- `状态 State`: 由 Lifecycle 对象跟踪的组件的当前状态。
 
 ```java
 public enum Event {
@@ -68,7 +82,6 @@ public enum Event {
     ON_DESTROY,   
     ON_ANY  //可以响应任意一个事件 
 }
-
 //生命周期状态. （Event是进入这种状态的事件）
 public enum State {
     DESTROYED,
@@ -82,18 +95,13 @@ public enum State {
     }
 }
 ```
-
-`Lifecycle`还有添加、移除` LifecycleObserver` ，以及记录 State 的功能
-
-<img width="437" alt="image" src="https://user-images.githubusercontent.com/17560388/163302734-c3cf855c-1c7e-49b5-a650-8c4724d8b326.png">
-
 构成 Activity 生命周期的状态和事件
 
 <img width="500" alt="构成 Android Activity 生命周期的状态和事件" src="https://user-images.githubusercontent.com/17560388/163300843-a79fd13a-713d-4300-9077-e40fcffb8038.png">
 
-## 4. LifecycleRegistry 对象
+### 2.3 ComponentActivity类
 
-在`CompatActivity` 中 `getLifecycle()` 返回一个 `LifecycleRegistry` 对象
+在`ComponentActivity`中 `getLifecycle()` 返回一个 `LifecycleRegistry` 对象
 
 ```java
 public class ComponentActivity extends androidx.core.app.ComponentActivity implements LifecycleOwner{
@@ -103,24 +111,68 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
     
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        // 注册生命周期监听的 ReportFragment
+        // 注入生命周期监听的 ReportFragment
         ReportFragment.injectIfNeededIn(this);
     }
     
     @Override
     public Lifecycle getLifecycle() { 
-        // 返回 LifecycleRegistry 对象
-        return mLifecycleRegistry;
+        return mLifecycleRegistry; // 返回 LifecycleRegistry 对象
     }
 }
 ```
+### 2.4 ReportFragment类
 
-可以先看下 ReportFragment 类，Activity 生命周期的回调通过该类实现：
+在 `ComponentActivity#onCreate` 方法中注入了一个 ReportFragment 对象
 
-- 在 API >= 29 通过 Application.ActivityLifecycleCallbacks 的回调分发事件
-- 在 API < 29 通过 Fragment 生命周期的回调分发事件
+```java
+public class ReportFragment extends android.app.Fragment {
+ 
+    public static void injectIfNeededIn(Activity activity) {
+        if (Build.VERSION.SDK_INT >= 29) {
+            LifecycleCallbacks.registerIn(activity);
+        }
+        android.app.FragmentManager manager = activity.getFragmentManager();
+        if (manager.findFragmentByTag(REPORT_FRAGMENT_TAG) == null) {
+            manager.beginTransaction().add(new ReportFragment(), REPORT_FRAGMENT_TAG).commit();
+            manager.executePendingTransactions();
+        }
+    }
+    
+    ...
+    @Override
+    public void onPause() {
+        super.onPause();
+        dispatch(Lifecycle.Event.ON_PAUSE);
+    }
+    ...
+    
+    @RequiresApi(29)
+    static class LifecycleCallbacks implements Application.ActivityLifecycleCallbacks {
 
-最终事件的分发通过 ReportFragment 中的静态方法 dispatch 实现，在 dispatch 方法中又调用 LifecycleRegistry#handleLifecycleEvent
+        static void registerIn(Activity activity) {
+            activity.registerActivityLifecycleCallbacks(new LifecycleCallbacks());
+        }
+
+        @Override
+        public void onActivityPostCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {
+            dispatch(activity, Lifecycle.Event.ON_CREATE);
+        }
+        ...
+    }
+    
+    private void dispatch(@NonNull Lifecycle.Event event) {
+        if (Build.VERSION.SDK_INT < 29) {
+            dispatch(getActivity(), event);
+        }
+    }
+    
+```
+- 在 `SDK_INT >= 29` 通过 Application.ActivityLifecycleCallbacks 的回调分发事件
+- 在 `SDK_INT < 29` 通过 Fragment 生命周期的回调分发事件
+
+最终事通过 `ReportFragment` 中的静态方法 `dispatch(activity,event)` 实现件的分发
+
 ```java
 static void dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event) {
     if (activity instanceof LifecycleRegistryOwner) {
@@ -136,7 +188,12 @@ static void dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event)
     }
 }
 ```
-LifecycleRegistry 是 Lifecycle 的实现类，它持有多个 LifecycleObserver 监听器。
+`dispatch(activity,event)` 方法调用 `LifecycleRegistry#handleLifecycleEvent`方法进行事件分发。
+
+
+### 2.5 LifecycleRegistry类
+
+`LifecycleRegistry` 是 `Lifecycle` 的子类，内部持有一个 `LifecycleObserver:ObserverWithState`的 Map 容器。
 
 ```java
 public class LifecycleRegistry extends Lifecycle {
@@ -233,13 +290,9 @@ public class LifecycleRegistry extends Lifecycle {
 ```
 LifecycleRegistry 事件分发的方法调用顺序 ：
 
-handleLifecycleEvent -> moveToState -> sync() -> backwardPass/forwardPass -> ObserverWithState#dispatchEvent
-
+>`handleLifecycleEvent` -> `moveToState` -> `sync()` -> `backwardPass/forwardPass` -> `ObserverWithState#dispatchEvent`
 
 ## 参考
-
-[使用生命周期感知型组件处理生命周期 ](https://developer.android.com/topic/libraries/architecture/lifecycle?hl=zh-cn#implementing-lco)
-
-[Lifecycle源码解析](https://zhuanlan.zhihu.com/p/461750106)
-
-[Lifecycle 源码分析](https://juejin.cn/post/7031787495985512461)
+- [使用生命周期感知型组件处理生命周期 ](https://developer.android.com/topic/libraries/architecture/lifecycle?hl=zh-cn#implementing-lco)
+- [Lifecycle源码解析](https://zhuanlan.zhihu.com/p/461750106)
+- [Lifecycle 源码分析](https://juejin.cn/post/7031787495985512461)
