@@ -80,7 +80,6 @@ private static void initializeGlide(@NonNull Context context, @NonNull GlideBuil
 然后通过`GlideBuilder#build(context)` 方法，配置一些必要的参数并返回一个 Glide 对象
 ```java
 Glide build(@NonNull Context context) {
-
     if (sourceExecutor == null) {
       sourceExecutor = GlideExecutor.newSourceExecutor();
     }
@@ -90,7 +89,6 @@ Glide build(@NonNull Context context) {
     if (animationExecutor == null) {
       animationExecutor = GlideExecutor.newAnimationExecutor();
     }
-    
     if (memorySizeCalculator == null) {
       memorySizeCalculator = new MemorySizeCalculator.Builder(context).build();
     }
@@ -117,14 +115,8 @@ Glide build(@NonNull Context context) {
     }
 
     if (engine == null) {
-      engine = new Engine(
-                   memoryCache,
-                   diskCacheFactory,
-                   diskCacheExecutor,
-                   sourceExecutor,
-                   GlideExecutor.newUnlimitedSourceExecutor(),
-                   animationExecutor,
-                   isActiveResourceRetentionAllowed);
+      engine = new Engine(memoryCache, diskCacheFactory, diskCacheExecutor, sourceExecutor,
+                   GlideExecutor.newUnlimitedSourceExecutor(),animationExecutor,isActiveResourceRetentionAllowed);
     }
     
     if (defaultRequestListeners == null) {
@@ -134,21 +126,13 @@ Glide build(@NonNull Context context) {
     }
 
     GlideExperiments experiments = glideExperimentsBuilder.build();
-    // new 一个 RequestManagerRetriever 类
+    // new 一个 RequestManagerRetriever 对象
     RequestManagerRetriever requestManagerRetriever = new RequestManagerRetriever(requestManagerFactory, experiments);
 
-    return new Glide(
-        context,
-        engine,
-        memoryCache,
-        bitmapPool,
-        arrayPool,
-        requestManagerRetriever,
-        connectivityMonitorFactory,
-        logLevel,
-        defaultRequestOptionsFactory,
-        defaultTransitionOptions,
-        defaultRequestListeners,
+    return new Glide(context, engine, memoryCache,
+        bitmapPool, arrayPool,
+        requestManagerRetriever,connectivityMonitorFactory,
+        logLevel,defaultRequestOptionsFactory, defaultTransitionOptions,defaultRequestListeners,
         experiments);
 }
 ```
@@ -233,6 +217,53 @@ private SupportRequestManagerFragment getSupportRequestManagerFragment(@NonNull 
 下面我们来分析一下 `RequestManager#load(...)` 方法
 
 ## 3、RequestManager.load(...) 方法分析
+
+我们例子中加载的是图片的网络url，我们先看一下 `RequestManager.load(String)` 方法。在 `RequestManager` 方法中:
+```java
+public RequestBuilder<Drawable> load(@Nullable String string) {
+    return asDrawable().load(string);
+}
+public RequestBuilder<Drawable> asDrawable() {
+    return as(Drawable.class);
+}
+public <ResourceType> RequestBuilder<ResourceType> as(@NonNull Class<ResourceType> resourceClass) {
+    return new RequestBuilder<>(glide, this, resourceClass, context);
+}
+```
+`load(string)` 方法最终会返回一个 `RequestBuilder<Drawable>` 对象。
+
+之前我们说过稍后分析 Glide 的构造方法，主要是因为 Glide 的构造方法中有很多和加载相关的配置项。我们先看一下 Glide 的构造，看下都包含了什么配置：
+```java
+Glide(
+      @NonNull Context context,
+      @NonNull Engine engine,
+      @NonNull MemoryCache memoryCache,
+      @NonNull BitmapPool bitmapPool,
+      @NonNull ArrayPool arrayPool,
+      @NonNull RequestManagerRetriever requestManagerRetriever,
+      @NonNull ConnectivityMonitorFactory connectivityMonitorFactory,
+      int logLevel,
+      @NonNull RequestOptionsFactory defaultRequestOptionsFactory,
+      @NonNull Map<Class<?>, TransitionOptions<?, ?>> defaultTransitionOptions,
+      @NonNull List<RequestListener<Object>> defaultRequestListeners,
+      GlideExperiments experiments) {
+    ...
+    registry = new Registry();
+    ...
+    registry
+        .append(ByteBuffer.class, new ByteBufferEncoder())
+        .append(InputStream.class, new StreamEncoder(arrayPool))
+        .append(Registry.BUCKET_BITMAP, ByteBuffer.class, Bitmap.class, byteBufferBitmapDecoder)
+        .append(Registry.BUCKET_BITMAP, InputStream.class, Bitmap.class, streamBitmapDecoder);
+    ...
+    ImageViewTargetFactory imageViewTargetFactory = new ImageViewTargetFactory();
+    glideContext = new GlideContext(context, arrayPool, registry, imageViewTargetFactory, defaultRequestOptionsFactory,
+            defaultTransitionOptions, defaultRequestListeners, engine, experiments, logLevel);
+}
+```
+好多配置项已经在 `GlideBuilder` 中初始化了，`Glide` 构造的核心代码是创建一个 `registry`，并给 `registry` 添加 `loading, decoding, and encoding` 的逻辑。
+
+
 
 
 
