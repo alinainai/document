@@ -23,7 +23,7 @@ public class Glide implements ComponentCallbacks2 {
 
 ### 2.1  `Glide.with(...)` 方法
 
-我们通过 `Glide.with(...)` 获取一个 `RequestManager（请求管理类）`对象，在 `Glide` 类中有很多 `with(...)`的静态重载方法。先看下其中3个:
+我们通过 `Glide.with(...)` 获取一个 `RequestManager（请求管理类）`对象，在 `Glide` 类中有很多 `with(...)`的静态重载方法。主要还是下面三个：
 
 ```java
 @NonNull
@@ -39,9 +39,8 @@ public static RequestManager with(@NonNull Fragment fragment) {
     return getRetriever(fragment.getContext()).get(fragment);
 }
 ```
-每个重载方法中都会调用 `getRetriever(context)` 方法获取一个 `RequestManagerRetriever` 对象，`RequestManagerRetriever` 是负责管理 `RequestManager` 的类。
-`RequestManagerRetriever`类中有一系列的静态方法用来创建或者复用 activities/fragment 中存在的 RequestManagers。
-由 `GlideBuilder` 设置到 `Glide`中。
+每个重载方法中都会调用 `getRetriever(context)` 方法获取一个 `RequestManagerRetriever` 对象。
+`RequestManagerRetriever` 是负责管理 `RequestManager` 的类。该类有一系列的静态方法用来创建或者复用 activities/fragment 中存在的 RequestManagers。
 
 ```java
 @NonNull
@@ -53,20 +52,33 @@ private static RequestManagerRetriever getRetriever(@Nullable Context context) {
 
 ### 2.2 GlideBuilder 
 
-这里我们不详细分析 `Glide` 生成过程的源码。只看一下 `GlideBuilder` 创建 `Glide` 相关的代码，方便咱们了解 Glide 在加载图片时用到的类。
+这里我们不详细分析 `Glide` 生成过程的源码。只看一下 `GlideBuilder` 创建 `Glide` 相关的代码，由 `GlideBuilder#build方法`会为 Glide 设置一个 RequestManagerRetriever。
 
+Glide 初始化相关的方法，我们简化了一下只看下基本过程
 ```java
-// Glide # initializeGlide(context,builder,annotationGeneratedModule): Glide 的初始化方法
+public static Glide get(@NonNull Context context) {
+    if (glide == null) {
+        checkAndInitializeGlide(context, annotationGeneratedModule);
+    }
+    return glide;
+}
+private static void checkAndInitializeGlide(@NonNull Context context, @Nullable GeneratedAppGlideModule generatedAppGlideModule) {
+    if (isInitializing) {
+      throw new IllegalStateException...
+    }
+    isInitializing = true;
+    initializeGlide(context, generatedAppGlideModule);
+    isInitializing = false;
+}
 private static void initializeGlide(@NonNull Context context, @NonNull GlideBuilder builder, @Nullable GeneratedAppGlideModule annotationGeneratedModule) {
-    ...
     // 创建一个生成 RequestManager 的 RequestManagerFactory类的对象
     RequestManagerRetriever.RequestManagerFactory factory = annotationGeneratedModule != null ? annotationGeneratedModule.getRequestManagerFactory(): null;
     builder.setRequestManagerFactory(factory);
     Glide glide = builder.build(applicationContext);
-    ...
 }
-// GlideBuilder # build(context) 方法: 返回一个 Glide 对象
-@NonNull
+```
+然后通过`GlideBuilder#build(context)` 方法，配置一些必要的参数并返回一个 Glide 对象
+```java
 Glide build(@NonNull Context context) {
 
     if (sourceExecutor == null) {
@@ -140,11 +152,12 @@ Glide build(@NonNull Context context) {
         experiments);
 }
 ```
-glide 的构造方法后面在分析。从上面代码中我们知道 `Glide` 内部持有了一个 `RequestManagerRetriever` 的对象。我们来看一下 `RequestManagerRetriever # get()` 方法
+`Glide` 内部持有了一个 `RequestManagerRetriever` 的对象，并通过静态方法 getRetriever 获取该回到 RequestManagerRetriever 对象。
+回到 Glide.with 方法中，我们将继续调用 RequestManagerRetriever.get(...) 方法处理我们传入的参数。
 
-### 2.3 RequestManagerRetriever # get() 方法
+### 2.3 RequestManagerRetriever#get(...) 方法
 
-RequestManagerRetriever # get() 虽然也有很多重载方法，单最终会根据条件调用下面的伪代码，我们去掉了一下多余的非空判断
+RequestManagerRetriever#get() 虽然也有很多重载方法，最终会根据条件调用下面的伪代码（我们去掉了一下多余的非空判断）:
 
 ```java
 // get(context) 相关
@@ -163,8 +176,8 @@ public RequestManager get(@NonNull Fragment fragment) {
 }
 ```
 在 get(...) 方法中:
-- 如果是从 `BackGround` 线程调用或者传入的 context 是 Application 类型，返回一个 ApplicationManager 
-- 如果传入的参数是 `Activity/Fragment`，使用 supportFragmentGet 方法创建一个和 FM 关联的 SupportRequestManagerFragment 对象并设置 RequestManager。
+- 如果是从 `background` 线程调用或者传入的 context 是 Application 类型，返回一个 ApplicationManager 
+- 如果传入的参数是 `Activity/Fragment`，使用 supportFragmentGet 方法获取一个和 FM 关联的 SupportRequestManagerFragment 对象并设置 RequestManager。
 
 ```java
 private RequestManager getApplicationManager(@NonNull Context context) {
@@ -213,9 +226,11 @@ private SupportRequestManagerFragment getSupportRequestManagerFragment(@NonNull 
 
 `Glide` 使用一个加载目标所在的宿主 `Activity/Fragment` 的子`Fragment(SupportRequestManagerFragment)`来安全保存一个 `RequestManager`，`RequestManager`被`Glide`用来开始、停止、管理`Glide`请求。
 
-通过 `Glide.with()`方法，我们创建了 `Glide` 单例，并成功创建且返回了一个 `RequestManager`。
+总结一下：
+在`Glide.with()`方法中，我们先通过`Glide.get`获取一个`Glide`单例。
+`Glide`单例内部持有一个 `RequestManagerRetriever` 对象，通过调用 `RequestManagerRetriever#get()` 创建并返回了一个和加载目标所在的宿主的 `FM` 绑定的 `RequestManager`。
 
-下面我们来分析一下 `RequestManager # load(...)‘ 方法
+下面我们来分析一下 `RequestManager#load(...)‘ 方法
 
 ## 3、RequestManager.load(...) 方法分析
 
