@@ -163,8 +163,8 @@ public RequestManager get(@NonNull Fragment fragment) {
 }
 ```
 在 get(...) 方法中:
-- 如果是从 BackGround 线程调用或者传入的 context 是 Application 类型，返回一个 ApplicationManager 
-- 如果传入的参数是 Activity/Fragment，则使用 supportFragmentGet 方法返回一个带有 RequestManager 的 SupportRequestManagerFragment 对象。
+- 如果是从 `BackGround` 线程调用或者传入的 context 是 Application 类型，返回一个 ApplicationManager 
+- 如果传入的参数是 `Activity/Fragment`，使用 supportFragmentGet 方法创建一个和 FM 关联的 SupportRequestManagerFragment 对象并设置 RequestManager。
 
 ```java
 private RequestManager getApplicationManager(@NonNull Context context) {
@@ -193,7 +193,7 @@ private RequestManager supportFragmentGet(@NonNull Context context, @NonNull Fra
     }
     return requestManager;
 }
-
+// 获取 SupportRequestManagerFragment 的方法，有的返回，无则添加。
 private SupportRequestManagerFragment getSupportRequestManagerFragment(@NonNull final FragmentManager fm, @Nullable Fragment parentHint) {
     SupportRequestManagerFragment current = (SupportRequestManagerFragment) fm.findFragmentByTag(FRAGMENT_TAG);
     if (current == null) {
@@ -209,6 +209,15 @@ private SupportRequestManagerFragment getSupportRequestManagerFragment(@NonNull 
     return current;
 }
 ```
+`get(Fragment)`和`get(FragmentActivity)`方法都会调用`supportFragmentGet`方法，只是传入参数不同
+
+`Glide` 使用一个加载目标所在的宿主 `Activity/Fragment` 的子`Fragment(SupportRequestManagerFragment)`来安全保存一个 `RequestManager`，`RequestManager`被`Glide`用来开始、停止、管理`Glide`请求。
+
+通过 `Glide.with()`方法，我们创建了 `Glide` 单例，并成功创建且返回了一个 `RequestManager`。
+
+下面我们来分析一下 `RequestManager # load(...)‘ 方法
+
+## 3、RequestManager.load(...) 方法分析
 
 
 
