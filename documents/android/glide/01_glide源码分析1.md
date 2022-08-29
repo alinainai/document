@@ -50,6 +50,7 @@ private static RequestManagerRetriever getRetriever(@Nullable Context context) {
 }
 ```
 在 `getRetriever(context)` 方法中 通过调用 `Glide#get(context)` 获取 `Glide` 单例对象，通过 `Glide#getRequestManagerRetriever()` 获取 `RequestManagerRetriever` 对象。
+
 ### 2.2 GlideBuilder 
 
 这里我们不详细分析 `Glide` 生成过程的源码。只看一下 `GlideBuilder` 创建 `Glide` 相关的代码，方便咱们了解 Glide 在加载图片时用到的类。
@@ -65,28 +66,25 @@ private static void initializeGlide(@NonNull Context context, @NonNull GlideBuil
     ...
 }
 // GlideBuilder#build(context) 方法: 返回一个 Glide 对象
-  @NonNull
-  Glide build(@NonNull Context context) {
+@NonNull
+Glide build(@NonNull Context context) {
+
     if (sourceExecutor == null) {
       sourceExecutor = GlideExecutor.newSourceExecutor();
     }
-
     if (diskCacheExecutor == null) {
       diskCacheExecutor = GlideExecutor.newDiskCacheExecutor();
     }
-
     if (animationExecutor == null) {
       animationExecutor = GlideExecutor.newAnimationExecutor();
     }
-
+    
     if (memorySizeCalculator == null) {
       memorySizeCalculator = new MemorySizeCalculator.Builder(context).build();
     }
-
     if (connectivityMonitorFactory == null) {
       connectivityMonitorFactory = new DefaultConnectivityMonitorFactory();
     }
-
     if (bitmapPool == null) {
       int size = memorySizeCalculator.getBitmapPoolSize();
       if (size > 0) {
@@ -95,15 +93,13 @@ private static void initializeGlide(@NonNull Context context, @NonNull GlideBuil
         bitmapPool = new BitmapPoolAdapter();
       }
     }
-
     if (arrayPool == null) {
       arrayPool = new LruArrayPool(memorySizeCalculator.getArrayPoolSizeInBytes());
     }
-
+    
     if (memoryCache == null) {
       memoryCache = new LruResourceCache(memorySizeCalculator.getMemoryCacheSize());
     }
-
     if (diskCacheFactory == null) {
       diskCacheFactory = new InternalCacheDiskCacheFactory(context);
     }
@@ -120,9 +116,9 @@ private static void initializeGlide(@NonNull Context context, @NonNull GlideBuil
     }
     
     if (defaultRequestListeners == null) {
-      defaultRequestListeners = Collections.emptyList();
+        defaultRequestListeners = Collections.emptyList();
     } else {
-      defaultRequestListeners = Collections.unmodifiableList(defaultRequestListeners);
+        defaultRequestListeners = Collections.unmodifiableList(defaultRequestListeners);
     }
 
     GlideExperiments experiments = glideExperimentsBuilder.build();
