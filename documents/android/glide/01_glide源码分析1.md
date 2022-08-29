@@ -56,16 +56,16 @@ private static RequestManagerRetriever getRetriever(@Nullable Context context) {
 这里我们不详细分析 `Glide` 生成过程的源码。只看一下 `GlideBuilder` 创建 `Glide` 相关的代码，方便咱们了解 Glide 在加载图片时用到的类。
 
 ```java
-// Glide#initializeGlide(context,builder,annotationGeneratedModule): Glide 的初始化方法
+// Glide # initializeGlide(context,builder,annotationGeneratedModule): Glide 的初始化方法
 private static void initializeGlide(@NonNull Context context, @NonNull GlideBuilder builder, @Nullable GeneratedAppGlideModule annotationGeneratedModule) {
     ...
-    // 创建一个生成 RequestManager 的工厂类
+    // 创建一个生成 RequestManager 的 RequestManagerFactory类的对象
     RequestManagerRetriever.RequestManagerFactory factory = annotationGeneratedModule != null ? annotationGeneratedModule.getRequestManagerFactory(): null;
     builder.setRequestManagerFactory(factory);
     Glide glide = builder.build(applicationContext);
     ...
 }
-// GlideBuilder#build(context) 方法: 返回一个 Glide 对象
+// GlideBuilder # build(context) 方法: 返回一个 Glide 对象
 @NonNull
 Glide build(@NonNull Context context) {
 
@@ -140,7 +140,75 @@ Glide build(@NonNull Context context) {
         experiments);
 }
 ```
+glide 的构造方法后面在分析。从上面代码中我们知道 `Glide` 内部持有了一个 `RequestManagerRetriever` 的对象。我们来看一下 `RequestManagerRetriever # get()` 方法
 
+### 2.3 RequestManagerRetriever # get() 方法
+
+RequestManagerRetriever # get() 虽然也有很多重载方法，单最终会根据条件调用下面的伪代码，我们去掉了一下多余的非空判断
+
+```java
+// get(context) 相关
+public RequestManager get(@NonNull Context context) {
+  if (Util.isOnMainThread() && !(context instanceof Application)) { // 如果是主线程并且 context 不是 Application 类型
+    FragmentManager fm = activity.getSupportFragmentManager(); // 这里忽略了 app.fragment.Fragment，只看 androidx.fragment.app.Fragment 的相关代码。
+    return supportFragmentGet(activity, fm, /*parentHint=*/ null, isActivityVisible(activity));
+  }
+  return getApplicationManager(context);
+}
+// get(fragment)
+public RequestManager get(@NonNull Fragment fragment) {
+    FragmentManager fm = fragment.getChildFragmentManager();
+    return supportFragmentGet(fragment.getContext(), fm, fragment, fragment.isVisible());
+  }
+}
+```
+在 get(...) 方法中:
+- 如果是从 BackGround 线程调用或者传入的 context 是 Application 类型，返回一个 ApplicationManager 
+- 如果传入的参数是 Activity/Fragment，则使用 supportFragmentGet 方法返回一个带有 RequestManager 的 SupportRequestManagerFragment 对象。
+
+```java
+private RequestManager getApplicationManager(@NonNull Context context) {
+  // Either an application context or we're on a background thread.
+  if (applicationManager == null) {
+    synchronized (this) {
+      if (applicationManager == null) {
+        Glide glide = Glide.get(context.getApplicationContext());
+        applicationManager = factory.build(glide, new ApplicationLifecycle(), new EmptyRequestManagerTreeNode(), context.getApplicationContext());
+      }
+    }
+  }
+  return applicationManager;
+}
+
+private RequestManager supportFragmentGet(@NonNull Context context, @NonNull FragmentManager fm, @Nullable Fragment parentHint, boolean isParentVisible) {
+    SupportRequestManagerFragment current = getSupportRequestManagerFragment(fm, parentHint); // 根据 fm 获取 SupportRequestManagerFragment 
+    RequestManager requestManager = current.getRequestManager();
+    if (requestManager == null) {
+        Glide glide = Glide.get(context);
+        requestManager = factory.build(glide, current.getGlideLifecycle(), current.getRequestManagerTreeNode(), context);
+        if (isParentVisible) {
+          requestManager.onStart();
+        }
+        current.setRequestManager(requestManager);
+    }
+    return requestManager;
+}
+
+private SupportRequestManagerFragment getSupportRequestManagerFragment(@NonNull final FragmentManager fm, @Nullable Fragment parentHint) {
+    SupportRequestManagerFragment current = (SupportRequestManagerFragment) fm.findFragmentByTag(FRAGMENT_TAG);
+    if (current == null) {
+        current = pendingSupportRequestManagerFragments.get(fm);
+        if (current == null) {
+            current = new SupportRequestManagerFragment();
+            current.setParentFragmentHint(parentHint);
+            pendingSupportRequestManagerFragments.put(fm, current);
+            fm.beginTransaction().add(current, FRAGMENT_TAG).commitAllowingStateLoss();
+            handler.obtainMessage(ID_REMOVE_SUPPORT_FRAGMENT_MANAGER, fm).sendToTarget();
+        }
+    }
+    return current;
+}
+```
 
 
 
