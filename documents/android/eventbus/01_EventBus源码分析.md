@@ -1,17 +1,15 @@
-### 1. 使用方式
+## 1、使用方式
 
-EventBus 的 github 地址
-
-[官方地址: https://github.com/greenrobot/EventBus](https://github.com/greenrobot/EventBus)
+github 地址:[https://github.com/greenrobot/EventBus](https://github.com/greenrobot/EventBus)
 
 <img width="400" alt="类图" src="https://user-images.githubusercontent.com/17560388/163953816-f7cfffd7-e2a2-4fc9-aa11-d88fe7102600.png">
 
-在 gradle 中添加依赖
+添加依赖
 
 ```groovy
 implementation("org.greenrobot:eventbus:3.3.1")
 ```
-#### 1.1 在代码中简单使用
+### 1.1 简单使用
 
 1.定义事件 和 事件接收的方法
 
@@ -44,7 +42,7 @@ public void onStop() {
 EventBus.getDefault().post(new MessageEvent());
 ```
 
-#### 1.2 进阶使用
+### 1.2 进阶使用
 
 EventBus3.0 之后,可以通过 Subscriber Index 使用 APT 技术来完成方法注册
 
@@ -101,7 +99,7 @@ public class MyEventBusIndex implements SubscriberInfoIndex {
     }
 }
 ```
-#### 在 Eventbus 中注册 index 的两种方式
+### 在 Eventbus 中注册 index 的两种方式
 
 Then, e.g. in your Application class, use EventBus.builder().addIndex(indexInstance) to pass an instance of the index class to EventBus.
 ```java
@@ -116,19 +114,18 @@ EventBus eventBus = EventBus.getDefault();
 ```
 我觉得第二种比较不错，赋值之后直接使用 getDefault()
 
-### 2. 源码分析
+## 2、源码分析
 
 咱们按照使用顺序去追踪一下源码
 
-#### 1. 注册  EventBus.getDefault().register(this)
+### 2.1 注册 register(object) 方法
 
 ```java
 public void register(Object subscriber) {
 
     if (AndroidDependenciesDetector.isAndroidSDKAvailable() && !AndroidDependenciesDetector.areAndroidComponentsAvailable()) {
         // Crash if the user (developer) has not imported the Android compatibility library.  对Android 是否导入做检测
-        throw new RuntimeException("It looks like you are using EventBus on Android, " +
-                "make sure to add the \"eventbus\" Android library to your dependencies.");
+        throw new RuntimeException("It looks like you are using EventBus on Android, make sure to add the \"eventbus\" Android library to your dependencies.");
     }
     //获取 subscriber 对象的 Class 
     Class<?> subscriberClass = subscriber.getClass();
@@ -538,9 +535,9 @@ private void unsubscribeByEventType(Object subscriber, Class<?> eventType) {
 }
 ```
 
-### 参考
+## 参考
 
-[EventBus索引分析](https://www.jianshu.com/p/25388d6446bf)
+- [EventBus索引分析](https://www.jianshu.com/p/25388d6446bf)
 
 [第三方开源库 EventBus - 源码分析和手写](https://www.jianshu.com/p/0b35f448acec)
                                  
