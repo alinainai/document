@@ -230,7 +230,7 @@ private SupportRequestManagerFragment getSupportRequestManagerFragment(@NonNull 
 在`Glide.with()`方法中，我们先通过`Glide.get`获取一个`Glide`单例。
 `Glide`单例内部持有一个 `RequestManagerRetriever` 对象，通过调用 `RequestManagerRetriever#get()` 创建并返回了一个和加载目标所在的宿主的 `FM` 绑定的 `RequestManager`。
 
-下面我们来分析一下 `RequestManager#load(...)‘ 方法
+下面我们来分析一下 `RequestManager#load(...)` 方法
 
 ## 3、RequestManager.load(...) 方法分析
 
