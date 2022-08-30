@@ -232,7 +232,6 @@ public class LifecycleRegistry extends Lifecycle {
         }
     }
 ```
-
 ### 2.6 事件分发
 ```java
 public void handleLifecycleEvent(@NonNull Lifecycle.Event event) {
@@ -271,7 +270,7 @@ private void sync() {
     mNewEventOccurred = false;
 }
 ```
-在 sync 方法中根据
+在 sync 方法中继续调用 forwardPass 和 backwardPass 方法实现事件的同步
 ```java
 private void forwardPass(LifecycleOwner lifecycleOwner) {
     Iterator<Map.Entry<LifecycleObserver, ObserverWithState>> ascendingIterator = mObserverMap.iteratorWithAdditions();
@@ -382,7 +381,7 @@ public enum Event {
     }
 }
 ```
-LifecycleRegistry 事件分发的方法调用顺序 ：
+LifecycleRegistry 事件分发的方法调用顺序：
 
 >`handleLifecycleEvent` -> `moveToState` -> `sync()` -> `backwardPass/forwardPass` -> `ObserverWithState#dispatchEvent`
 
