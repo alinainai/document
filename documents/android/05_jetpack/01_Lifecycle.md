@@ -386,7 +386,22 @@ LifecycleRegistry 事件分发的方法调用顺序 ：
 
 >`handleLifecycleEvent` -> `moveToState` -> `sync()` -> `backwardPass/forwardPass` -> `ObserverWithState#dispatchEvent`
 
+## 总结
+
+LifeCycle 让我们更好的处理和 `Activity/Fragment` 生命周期相关的代码逻辑，不用再去 `onCreate/onResume...` 中做回调。使用方式很简单，在 onCreate 方法中注册 lifecycle.addObserver(LifeCycleObserver())，然后将代码逻辑放到注册的 LifeCycleObserver 中，实现和 Activity 的解耦。
+
+源码也很简单，`Activity/Fragment` 内部维护一个 `LifecycleRegistry` 类，将注册的 `LifeCycleObserver` 添加到 `LifecycleRegistry` 的内部容器中。
+在 `Activity/Fragment` 中插入一个 `ReportFragment` 对象，当 `Activity/Fragment` 生命周期变化时调用 `ReportFragment#dispatch(activity,event)` 实现事件分发。
+
+SDK>=29时:在 Activity 中注册 `Application.ActivityLifecycleCallbacks`，然后在对应的方法中发送 Event。
+SDK<29时: 在 ReportFragment 的生命周期发送相应的 Event。
+
+`ReportFragment#dispatch(activity,event)` 内部又调用 `activity.getLifecycle().handleLifecycleEvent(event)` 将操作又回调给 `LifecycleRegistry` 类。
+
+`LifecycleRegistry` 类中的内部容器持有 `LifeCycleObserver:ObserverWithState` 的 `key-value` 映射，`LifecycleRegistry` 通过调用 `ObserverWithState#dispatchEvent(owner,event)` 方法来实现 `LifeCycleObserver` 中的方法回调。
+
+
 ## 参考
-- [使用生命周期感知型组件处理生命周期 ](https://developer.android.com/topic/libraries/architecture/lifecycle?hl=zh-cn#implementing-lco)
+- [使用生命周期感知型组件处理生命周期](https://developer.android.com/topic/libraries/architecture/lifecycle?hl=zh-cn#implementing-lco)
 - [Lifecycle源码解析](https://zhuanlan.zhihu.com/p/461750106)
 - [Lifecycle 源码分析](https://juejin.cn/post/7031787495985512461)
