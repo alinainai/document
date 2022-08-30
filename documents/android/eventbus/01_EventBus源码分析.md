@@ -118,15 +118,11 @@ EventBus eventBus = EventBus.getDefault();
 
 咱们按照使用顺序去追踪一下源码
 
-### 2.1 注册 register(object) 方法
+### 2.1 register(object) 方法
 
 ```java
 public void register(Object subscriber) {
-
-    if (AndroidDependenciesDetector.isAndroidSDKAvailable() && !AndroidDependenciesDetector.areAndroidComponentsAvailable()) {
-        // Crash if the user (developer) has not imported the Android compatibility library.  对Android 是否导入做检测
-        throw new RuntimeException("It looks like you are using EventBus on Android, make sure to add the \"eventbus\" Android library to your dependencies.");
-    }
+    ...
     //获取 subscriber 对象的 Class 
     Class<?> subscriberClass = subscriber.getClass();
     // 查找 subscriberClass 中所有可以接收 event 消息的方法存入 List，后面具体分析
@@ -154,22 +150,18 @@ public class SubscriberMethod {
 
 ```java 
 List<SubscriberMethod> findSubscriberMethods(Class<?> subscriberClass) {
-    // 先查看 METHOD_CACHE 中是否已经存储过，是对 subscriberClass 和对应 List<SubscriberMethod> 一个缓存优化
     List<SubscriberMethod> subscriberMethods = METHOD_CACHE.get(subscriberClass);
-    if (subscriberMethods != null) {
+    if (subscriberMethods != null) { // 有缓存直接返回
         return subscriberMethods;
     }
-    // ignoreGeneratedIndex 表示是否忽略注解器生成的 MyEventBusIndex，默认为 false 表示可以通过 EventBusBuilder 来设置它的值
-    if (ignoreGeneratedIndex) {
-        //如果忽略使用 MyEventBusIndex，会通过反射的形式得到 subscriberMethods
+    // ignoreGeneratedIndex 表示是否忽略注解器生成的 MyEventBusIndex，默认为 false，可以通过 EventBusBuilder 来设置它的值
+    if (ignoreGeneratedIndex) { //不使用 MyEventBusIndex，通过反射的形式获取 subscriberMethods
         subscriberMethods = findUsingReflection(subscriberClass);
     } else {
         subscriberMethods = findUsingInfo(subscriberClass);
     }
-    if (subscriberMethods.isEmpty()) { 
-        //如果注册的类中没有 SubscriberMethod 方法，直接抛出有异常
-        throw new EventBusException("Subscriber " + subscriberClass
-                + " and its super classes have no public methods with the @Subscribe annotation");
+    if (subscriberMethods.isEmpty()) { //如果注册的类中没有 SubscriberMethod 方法，直接抛出有异常
+        throw new EventBusException("Subscriber " + subscriberClass + " and its super classes have no public methods with the @Subscribe annotation");
     } else { 
         //保存并返回 List<SubscriberMethod> 对象
         METHOD_CACHE.put(subscriberClass, subscriberMethods);
@@ -185,8 +177,7 @@ private List<SubscriberMethod> findUsingReflection(Class<?> subscriberClass) {
     FindState findState = prepareFindState(); //
     findState.initForSubscriber(subscriberClass);
     while (findState.clazz != null) {
-        //核心方法，下面分析
-        findUsingReflectionInSingleClass(findState);
+        findUsingReflectionInSingleClass(findState); //核心方法，下面分析
         findState.moveToSuperclass(); //继续搜寻父类中的 @Subscriber 方法
     }
     return getMethodsAndRelease(findState); // 释放 FindState 对象到对象池
