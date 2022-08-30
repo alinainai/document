@@ -101,9 +101,7 @@ void ensureViewModelStore() {
     }
 }
 ```
-
 NonConfigurationInstances 类很简单，简单的包装了一个 ViewModelStore 对象。后面再讲它的作用
-
 ```java
 // ComponentActivity$NonConfigurationInstances.java
 static final class NonConfigurationInstances {
@@ -111,7 +109,7 @@ static final class NonConfigurationInstances {
     ViewModelStore viewModelStore;
 }
 ```
-### 2.2 通过 `get(MainViewModel::class.java)` 方法获取 ViewModel 对象
+### 2.2 通过 `get(class)` 方法获取 ViewModel 对象
 
 ViewModelProvider 类中的get方法的相关代码
 ```java
@@ -148,22 +146,51 @@ public <T extends ViewModel> T get(@NonNull String key, @NonNull Class<T> modelC
 }
 ```
 
-## 3、为什么ViewModel的生命周期比Activity长
+## 3、为什么屏幕旋转后 ViewModel 不会重建
 
-通过 ComponentActivity#onRetainNonConfigurationInstance() 方法，在屏幕旋转前存储 ViewModelStore 对象
+官方文档中有说明:ViewModel 生命周期要比 Activity 要长，并且 Activity 的重建不会导致 ViewModel 的重建。
 
+ViewModel 在 Activity 销毁的时候做的怎样的处理才能打到这种效果呢。
+
+### 3.1 Destroy中的处理
+
+Activity 的生命周期回调是通过 ActivityThread 来实现的，我们当屏幕旋转的时候会回调 Activity 的 onDestroy 方法，我们直接看 `ActivityThread#performDestroyActivity`，来看一下该方法中和 ViewModel 相关的代码逻辑。
+
+屏幕旋转前，数据在 onRetainNonConfigurationInstance()  保存。在Activity的retainNonConfigurationInstances()方法中被调用。
+那 retainNonConfigurationInstances() 方法又是在哪调用的呢？肯定也跟 ActivityThread 有关，在ActivityThread搜索下，代码如下：
 ```java
-// ComponentActivity.java
+ActivityClientRecord performDestroyActivity(IBinder token, boolean finishing, int configChanges, boolean getNonConfigInstance, String reason) {
+    ActivityClientRecord r = mActivities.get(token);
+    ...
+    if (getNonConfigInstance) {
+        try {
+            r.lastNonConfigurationInstances = r.activity.retainNonConfigurationInstances();
+        } ...
+    }
+    return r;
+}
+```
+`activity#retainNonConfigurationInstances()` 内部继续调用 `onRetainNonConfigurationInstance` 方法
+```java
+NonConfigurationInstances retainNonConfigurationInstances() {
+    Object activity = onRetainNonConfigurationInstance();
+    HashMap<String, Object> children = onRetainNonConfigurationChildInstances();
+    NonConfigurationInstances nci = new NonConfigurationInstances();
+    nci.activity = activity;
+    nci.children = children;
+    return nci;
+}
+```
+我们看下 `ComponentActivity#onRetainNonConfigurationInstance()` 方法，注意这里是 ComponentActivity 中的方法
+```java
 public final Object onRetainNonConfigurationInstance() {
     // Maintain backward compatibility.
     Object custom = onRetainCustomNonConfigurationInstance();
 
     ViewModelStore viewModelStore = mViewModelStore;
     if (viewModelStore == null) {
-        // No one called getViewModelStore(), so see if there was an existing
-        // ViewModelStore from our last NonConfigurationInstance
-        NonConfigurationInstances nc =
-            (NonConfigurationInstances) getLastNonConfigurationInstance();
+        // No one called getViewModelStore(), so see if there was an existing ViewModelStore from our last NonConfigurationInstance
+        NonConfigurationInstances nc = (NonConfigurationInstances) getLastNonConfigurationInstance();
         if (nc != null) {
             viewModelStore = nc.viewModelStore;
         }
@@ -172,7 +199,7 @@ public final Object onRetainNonConfigurationInstance() {
     if (viewModelStore == null && custom == null) {
         return null;
     }
-    // 存储的
+    
     NonConfigurationInstances nci = new NonConfigurationInstances();
     nci.custom = custom;
     nci.viewModelStore = viewModelStore;
@@ -180,13 +207,11 @@ public final Object onRetainNonConfigurationInstance() {
 }
 ```
 
-Activity 重建后，通过 Activity#getLastNonConfigurationInstance() 恢复。
+继续看一下 Activity#getLastNonConfigurationInstance() 方法
 
 ```java
-// Activity.java
 public Object getLastNonConfigurationInstance() {
-    return mLastNonConfigurationInstances != null
-        ? mLastNonConfigurationInstances.activity : null;
+    return mLastNonConfigurationInstances != null? mLastNonConfigurationInstances.activity : null;
 }
 ```
 mLastNonConfigurationInstances 赋值的地方：
@@ -201,18 +226,14 @@ final void attach(Context context, ActivityThread aThread,
             Configuration config, String referrer, IVoiceInteractor voiceInteractor,
             Window window, ActivityConfigCallback activityConfigCallback, IBinder assistToken) {
         attachBaseContext(context);
-
-        //···
+        ···
         mLastNonConfigurationInstances = lastNonConfigurationInstances;
-        //···
     }
 ```
-
-从 Activity 的启动流程可知，Activity#attach() 方法是在 ActivityThread 调用的：
+`Activity#attach()` 方法是在 ActivityThread 中被调用的：
 
 ```java
 // ActivityThread.java
-
 Activity.NonConfigurationInstances lastNonConfigurationInstances;
 
 /**  Core implementation of activity launch. */
@@ -224,32 +245,14 @@ private Activity performLaunchActivity(ActivityClientRecord r, Intent customInte
                     r.assistToken);    
 }
 ```
-通过上面代码分析我们知道，数据存储在 ActivityClientRecord 中，在 Activity 启动时将 ActivityClientRecord 中 的lastNonConfigurationInstances 通过 attach() 方法赋值到对应的Activity 中，然后通过 getLastNonConfigurationInstance() 恢复数据。
+通过上面代码分析我们知道，数据存储在 ActivityClientRecord 中，在 Activity 启动时将 ActivityClientRecord 中 的 lastNonConfigurationInstances 通过 attach() 方法赋值到对应的Activity 中，然后通过 getLastNonConfigurationInstance() 恢复数据。
 
 ### 4.屏幕旋转前数据的存储
 
-屏幕旋转前，数据在 onRetainNonConfigurationInstance()  保存。在Activity的retainNonConfigurationInstances()方法中被调用。
-那 retainNonConfigurationInstances() 方法又是在哪调用的呢？肯定也跟 ActivityThread 有关，在ActivityThread搜索下，代码如下：
-```java
-// ActivityThread.java    
-ActivityClientRecord performDestroyActivity(IBinder token, boolean finishing, int configChanges, boolean getNonConfigInstance, String reason) {
-    ActivityClientRecord r = mActivities.get(token);
-    ···
-        if (getNonConfigInstance) {
-            try {
-                r.lastNonConfigurationInstances = r.activity.retainNonConfigurationInstances();
-            } catch (Exception e) {
-                ···
-            }
-        }
-    ···
-    return r;
-}
-```
 
-performDestroyActivity() 调用了 retainNonConfigurationInstances() 方法并把数据保存到了 ActivityClientRecord 的 lastNonConfigurationInstances 中。
 
-### 5. 为什么屏幕旋转后 ViewModel 不会重建
+performDestroyActivity() 方法中调用了 `retainNonConfigurationInstances()` 方法并把数据保存到了 ActivityClientRecord 的 `lastNonConfigurationInstances` 中。
+
 
 首先看下屏幕旋转的生命周期
 
