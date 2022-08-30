@@ -58,7 +58,7 @@ public interface LifecycleOwner {
 
 ### 2.2 Lifecycle 类
 
-`Lifecycle` 是一个抽象类，用于存储有关组件（如 `Activity` 或 `Fragment`）的`生命周期的状态信息`，并允许其他对象观察此状态。
+`Lifecycle` 是一个抽象类，用于存储有关组件(Activity/Fragment) 的`生命周期的状态信息`，并允许其他对象(LifecycleObserver)观察此状态。
 
 <img width="437" alt="image" src="https://user-images.githubusercontent.com/17560388/163302734-c3cf855c-1c7e-49b5-a650-8c4724d8b326.png">
 
@@ -96,18 +96,16 @@ public enum State {
 
 ### 2.3 ComponentActivity类
 
-在`ComponentActivity`中 `getLifecycle()` 返回一个 `LifecycleRegistry` 对象
+在`ComponentActivity`中`getLifecycle()`返回一个`LifecycleRegistry`对象
 
 ```java
 public class ComponentActivity extends androidx.core.app.ComponentActivity implements LifecycleOwner{
-
-    //初始化 LifecycleRegistry 对象
-    private final LifecycleRegistry mLifecycleRegistry = new LifecycleRegistry(this);
+    
+    private final LifecycleRegistry mLifecycleRegistry = new LifecycleRegistry(this);// 初始化 LifecycleRegistry 对象
     
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        // 注入生命周期监听的 ReportFragment
-        ReportFragment.injectIfNeededIn(this);
+        ReportFragment.injectIfNeededIn(this);// 注入生命周期监听的 ReportFragment
     }
     
     @Override
@@ -182,7 +180,7 @@ static void dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event)
     }
 }
 ```
-`dispatch(activity,event)` 方法内部继续调用 `LifecycleRegistry#handleLifecycleEvent`方法进行事件分发。
+`dispatch(activity,event)` 方法内部继续调用 `LifecycleRegistry#handleLifecycleEvent(event)`方法进行事件分发。
 
 
 ### 2.5 LifecycleRegistry类
@@ -192,47 +190,86 @@ static void dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event)
 ```java
 public class LifecycleRegistry extends Lifecycle {
 
-    // 持有 LifecycleObserver 的容器，ObserverWithState 类将 State 和 LifecycleObserver 包装到一起，并通过该类的 dispatchEvent 方法实现事件的分发
+    public LifecycleRegistry(@NonNull LifecycleOwner provider) {
+        this(provider, true);
+    }
+
+    private LifecycleRegistry(@NonNull LifecycleOwner provider, boolean enforceMainThread) {
+        mLifecycleOwner = new WeakReference<>(provider);
+        mState = INITIALIZED;
+        mEnforceMainThread = enforceMainThread;
+    }
+
+    // 持有 LifecycleObserver 的容器
     private FastSafeIterableMap<LifecycleObserver, ObserverWithState> mObserverMap =  new FastSafeIterableMap<>();
            
     private State mState; // LifecycleRegistry 的当前状态
-    private final WeakReference<LifecycleOwner> mLifecycleOwner; // LifecycleOwner 的弱引用持有
-
-    public void handleLifecycleEvent(@NonNull Lifecycle.Event event) {
-        enforceMainThreadIfNeeded("handleLifecycleEvent");
-        moveToState(event.getTargetState());
+    private final WeakReference<LifecycleOwner> mLifecycleOwner; // LifecycleOwner 的弱引用，防止泄漏
+    
+    @Override
+    public void addObserver(@NonNull LifecycleObserver observer) {
+        State initialState = mState == DESTROYED ? DESTROYED : INITIALIZED;
+        ObserverWithState statefulObserver = new ObserverWithState(observer, initialState); // 将 observer 和 state 包装为 ObserverWithState 对象
+        ObserverWithState previous = mObserverMap.putIfAbsent(observer, statefulObserver); // 将 observer:ObserverWithState 存入 mObserverMap
+        ...
     }
 
-    private void moveToState(State next) {
-        if (mState == next) { //如果当前状态和 next 相同直接 return
-            return;
+    static class ObserverWithState { // ObserverWithState 类
+        State mState;
+        LifecycleEventObserver mLifecycleObserver;
+
+        ObserverWithState(LifecycleObserver observer, State initialState) {
+            // 使用 Lifecycling 的 lifecycleEventObserver 方法，将传入的 LifecycleObserver 转换为 LifecycleEventObserver 类
+            mLifecycleObserver = Lifecycling.lifecycleEventObserver(observer);
+            mState = initialState;
         }
-        mState = next;
-        if (mHandlingEvent || mAddingObserverCounter != 0) {
-            mNewEventOccurred = true;
-            // we will figure out what to do on upper level.
-            return;
+
+        void dispatchEvent(LifecycleOwner owner, Event event) {
+            State newState = event.getTargetState();
+            mState = min(mState, newState);
+            mLifecycleObserver.onStateChanged(owner, event);
+            mState = newState;
         }
-        mHandlingEvent = true;
-        sync(); //将 mState 同步给 Observer 中的 state
-        mHandlingEvent = false;
     }
+```
+
+### 2.6 事件分发
+```java
+public void handleLifecycleEvent(@NonNull Lifecycle.Event event) {
+    enforceMainThreadIfNeeded("handleLifecycleEvent");
+    moveToState(event.getTargetState());
+}
+
+private void moveToState(State next) {
+    if (mState == next) { //如果当前状态和 next 相同直接 return
+        return;
+    }
+    mState = next;
+    if (mHandlingEvent || mAddingObserverCounter != 0) {
+        mNewEventOccurred = true;
+        // we will figure out what to do on upper level.
+        return;
+    }
+    mHandlingEvent = true;
+    sync(); //将 mState 同步给 Observer 中的 state
+    mHandlingEvent = false;
+}
   
-    private void sync() {
-        LifecycleOwner lifecycleOwner = mLifecycleOwner.get();
-        while (!isSynced()) {
-            mNewEventOccurred = false;
-            // no need to check eldest for nullability, because isSynced does it for us.
-            if (mState.compareTo(mObserverMap.eldest().getValue().mState) < 0) {
-                backwardPass(lifecycleOwner); // 事件分发
-            }
-            Map.Entry<LifecycleObserver, ObserverWithState> newest = mObserverMap.newest();
-            if (!mNewEventOccurred && newest != null && mState.compareTo(newest.getValue().mState) > 0) {
-                forwardPass(lifecycleOwner); // 事件分发
-            }
-        }
+private void sync() {
+    LifecycleOwner lifecycleOwner = mLifecycleOwner.get();
+    while (!isSynced()) {
         mNewEventOccurred = false;
+        // no need to check eldest for nullability, because isSynced does it for us.
+        if (mState.compareTo(mObserverMap.eldest().getValue().mState) < 0) {
+            backwardPass(lifecycleOwner); // 事件分发
+        }
+        Map.Entry<LifecycleObserver, ObserverWithState> newest = mObserverMap.newest();
+        if (!mNewEventOccurred && newest != null && mState.compareTo(newest.getValue().mState) > 0) {
+            forwardPass(lifecycleOwner); // 事件分发
+        }
     }
+    mNewEventOccurred = false;
+}
 ```
 在 sync 方法中根据
 ```java
@@ -348,8 +385,6 @@ public enum Event {
 LifecycleRegistry 事件分发的方法调用顺序 ：
 
 >`handleLifecycleEvent` -> `moveToState` -> `sync()` -> `backwardPass/forwardPass` -> `ObserverWithState#dispatchEvent`
-
-
 
 ## 参考
 - [使用生命周期感知型组件处理生命周期 ](https://developer.android.com/topic/libraries/architecture/lifecycle?hl=zh-cn#implementing-lco)
