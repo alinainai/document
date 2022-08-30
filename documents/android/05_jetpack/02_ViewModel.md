@@ -17,23 +17,12 @@ ViewModel 对象存在的时间范围是获取 ViewModel 时传递给 ViewModelP
 
 ### 1.2 基本使用
 
-1.不带参数的 ViewModel 类
-```kotlin
-class MainViewModel() : ViewModel() 
-```
-在 Activity 中初始化
-```kotlin
-class MainActivity : AppCompatActivity() {
-    private lateinit var mainViewModel: MainViewModel
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
-    }
-}
-```
-2.带参数的 ViewModel 类，通过工厂类创建带参数的 ViewModel
 
 ```kotlin
+// 1.不带参数的 ViewModel 类
+class MainViewModel() : ViewModel()
+
+// 2.带参数的 ViewModel 类，通过工厂类创建带参数的 ViewModel
 class LoginViewModel(private val loginRepository: LoginRepository) : ViewModel() 
 class LoginViewModelFactory : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
@@ -47,23 +36,26 @@ class LoginViewModelFactory : ViewModelProvider.Factory {
 ```
 在 Activity 中初始化
 ```kotlin
-class LoginActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
+    private lateinit var mainViewModel: MainViewModel
     private lateinit var loginViewModel: LoginViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         loginViewModel = ViewModelProvider(this, LoginViewModelFactory()).get(LoginViewModel::class.java)
     }
 }
 ```
-
 ## 2、源码解读
 
-我们以不带参数的 MainViewModel 的例子出发，可以将代码拆分成：`ViewModelProvider(this)` 和 `get(MainViewModel::class.java)`
+我们以不带参数的 MainViewModel 的例子出发，可以将代码拆分成：
+
+- `ViewModelProvider(this)` 
+- `get(MainViewModel::class.java)`
 
 ### 2.1 `ViewModelProvider`的构造方法
 
-ViewModelProvider 最终的构造方法有两个入参，我们先从 ViewModelProvider(owne) 开始调用逻辑
-
+ViewModelProvider 最终的构造方法有两个入参:
 - ViewModelStore: ViewModelStore 类内部维护一个 HashMap 来存储 `Key:ViewModel` 键值对
 - ViewModelProvider.Factory: 负责生成的 `ViewModel`，带参数的 ViewModel 需要自己定义 Factory
 
@@ -81,8 +73,9 @@ public ViewModelProvider(@NonNull ViewModelStore store, @NonNull Factory factory
     mViewModelStore = store;
 }
 ```
-我们在 Activity 中使用的是 `ViewModelProvider(owne)` ，所以 Activity 实现了 ViewModelStoreOwner 接口。
-ViewModelStoreOwner 接口中只有 `getViewModelStore():ViewModelStore`一个方法，我们追踪到 ComponentActivity 类，该类实现了 ViewModelStoreOwner 接口，并且内部维护了一个 mViewModelStore 对象。 
+在例子中`ViewModelProvider(owne)`传入的 ower 是 `Activity`的 this 对象，所以 Activity 实现了 ViewModelStoreOwner 接口。ViewModelStoreOwner 接口中只有 `getViewModelStore():ViewModelStore`一个方法。
+
+我们追踪到 ComponentActivity 类，该类实现了 ViewModelStoreOwner 接口，并且内部维护了一个 ViewModelStore 对象。 
 
 ```java
 // ComponentActivity.java
@@ -90,7 +83,7 @@ public ViewModelStore getViewModelStore() {
     if (getApplication() == null) {
         throw new IllegalStateException("Your activity is not yet attached to the Application instance. You can't request ViewModel before onCreate call.");
     }
-    ensureViewModelStore();
+    ensureViewModelStore(); // 保证 ViewModelStore 不为空
     return mViewModelStore;
 }
 
@@ -109,7 +102,7 @@ void ensureViewModelStore() {
 }
 ```
 
-NonConfigurationInstances 类很简单，简单的包装了一个 ViewModelStore 对象。
+NonConfigurationInstances 类很简单，简单的包装了一个 ViewModelStore 对象。后面再讲它的作用
 
 ```java
 // ComponentActivity$NonConfigurationInstances.java
@@ -120,7 +113,7 @@ static final class NonConfigurationInstances {
 ```
 ### 2.2 通过 `get(MainViewModel::class.java)` 方法获取 ViewModel 对象
 
-ViewModelProvider类
+ViewModelProvider 类中的get方法的相关代码
 ```java
 private static final String DEFAULT_KEY ="androidx.lifecycle.ViewModelProvider.DefaultKey";
 
@@ -134,9 +127,8 @@ public <T extends ViewModel> T get(@NonNull Class<T> modelClass) {
 
 public <T extends ViewModel> T get(@NonNull String key, @NonNull Class<T> modelClass) {
     ViewModel viewModel = mViewModelStore.get(key);
-
-    if (modelClass.isInstance(viewModel)) {// 如果 mFactory 是 OnRequeryFactory 类型
-        if (mFactory instanceof OnRequeryFactory) {
+    if (modelClass.isInstance(viewModel)) {
+        if (mFactory instanceof OnRequeryFactory) { // 如果 mFactory 是 OnRequeryFactory 类型
             ((OnRequeryFactory) mFactory).onRequery(viewModel);
         }
         return (T) viewModel;
