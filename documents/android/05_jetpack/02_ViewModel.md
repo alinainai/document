@@ -111,7 +111,7 @@ static final class NonConfigurationInstances {
 ```
 ### 2.2 通过 `get(class)` 方法获取 ViewModel 对象
 
-ViewModelProvider 类中的get方法的相关代码
+ViewModelProvider 类中的`get(class)`方法的相关代码
 ```java
 private static final String DEFAULT_KEY ="androidx.lifecycle.ViewModelProvider.DefaultKey";
 
@@ -148,16 +148,14 @@ public <T extends ViewModel> T get(@NonNull String key, @NonNull Class<T> modelC
 
 ## 3、为什么屏幕旋转后 ViewModel 不会重建
 
-官方文档中有说明:ViewModel 生命周期要比 Activity 要长，并且 Activity 的重建不会导致 ViewModel 的重建。
+官方文档中有说明: ViewModel 生命周期要比 Activity 要长，并且旋转屏幕导致的 Activity 重建不会触发 ViewModel 的重建。
 
-ViewModel 在 Activity 销毁的时候做的怎样的处理才能打到这种效果呢。
+下面我们跟随源看下 ViewModel 在 Activity 销毁的时候做了怎样的处理才能达到这种效果。
 
 ### 3.1 Destroy中的处理
 
-Activity 的生命周期回调是通过 ActivityThread 来实现的，我们当屏幕旋转的时候会回调 Activity 的 onDestroy 方法，我们直接看 `ActivityThread#performDestroyActivity`，来看一下该方法中和 ViewModel 相关的代码逻辑。
+Activity 的生命周期回调是通过 ActivityThread 来触发的。我们知道当屏幕旋转之后会执行 Activity 的 onDestroy 方法，所以我们直接来看一下触发 onDestroy 的`ActivityThread#performDestroyActivity`方法，该方法中和 ViewModel 相关的代码逻辑如下:
 
-屏幕旋转前，数据在 onRetainNonConfigurationInstance()  保存。在Activity的retainNonConfigurationInstances()方法中被调用。
-那 retainNonConfigurationInstances() 方法又是在哪调用的呢？肯定也跟 ActivityThread 有关，在ActivityThread搜索下，代码如下：
 ```java
 ActivityClientRecord performDestroyActivity(IBinder token, boolean finishing, int configChanges, boolean getNonConfigInstance, String reason) {
     ActivityClientRecord r = mActivities.get(token);
@@ -173,7 +171,7 @@ ActivityClientRecord performDestroyActivity(IBinder token, boolean finishing, in
 `activity#retainNonConfigurationInstances()` 内部继续调用 `onRetainNonConfigurationInstance` 方法
 ```java
 NonConfigurationInstances retainNonConfigurationInstances() {
-    Object activity = onRetainNonConfigurationInstance();
+    Object activity = onRetainNonConfigurationInstance(); // 调用 ComponentActivity#onRetainNonConfigurationInstance() 方法
     HashMap<String, Object> children = onRetainNonConfigurationChildInstances();
     NonConfigurationInstances nci = new NonConfigurationInstances();
     nci.activity = activity;
@@ -181,14 +179,14 @@ NonConfigurationInstances retainNonConfigurationInstances() {
     return nci;
 }
 ```
-我们看下 `ComponentActivity#onRetainNonConfigurationInstance()` 方法，注意这里是 ComponentActivity 中的方法
+Activity 类中的 onRetainNonConfigurationInstance 没有方法体,直接返回了 null。所以我们直接看下 `ComponentActivity#onRetainNonConfigurationInstance()` 方法，注意这里是 ComponentActivity 中的方法
 ```java
 public final Object onRetainNonConfigurationInstance() {
     // Maintain backward compatibility.
     Object custom = onRetainCustomNonConfigurationInstance();
 
     ViewModelStore viewModelStore = mViewModelStore;
-    if (viewModelStore == null) {
+    if (viewModelStore == null) {// 如果 mViewModelStore 为空，表示没调用过 getViewModelStore() 方法
         // No one called getViewModelStore(), so see if there was an existing ViewModelStore from our last NonConfigurationInstance
         NonConfigurationInstances nc = (NonConfigurationInstances) getLastNonConfigurationInstance();
         if (nc != null) {
@@ -199,25 +197,42 @@ public final Object onRetainNonConfigurationInstance() {
     if (viewModelStore == null && custom == null) {
         return null;
     }
-    
-    NonConfigurationInstances nci = new NonConfigurationInstances();
+    // 将 ViewModelStore 包装为一个 ComponetActivity$NonConfigurationInstances 对象并返回
+    NonConfigurationInstances nci = new NonConfigurationInstances();     
     nci.custom = custom;
     nci.viewModelStore = viewModelStore;
     return nci;
 }
 ```
+当 mViewModelStore 为空的时候获取 getLastNonConfigurationInstance() 中存储的 NonConfigurationInstances 对象。如果 mViewModelStore 和 getLastNonConfigurationInstance 中的 ViewModelStore 都为空直接返回 null。
+
+ComponentActivity#onRetainNonConfigurationInstance() 方法最终会返回一个包装了 ViewModelStore 的 ComponetActivity$NonConfigurationInstances 对象。
 
 继续看一下 Activity#getLastNonConfigurationInstance() 方法
 
 ```java
-public Object getLastNonConfigurationInstance() {
+public Object getLastNonConfigurationInstance() {// 获取上次存贮在 mLastNonConfigurationInstances 的 NonConfigurationInstances 对象
     return mLastNonConfigurationInstances != null? mLastNonConfigurationInstances.activity : null;
 }
 ```
-mLastNonConfigurationInstances 赋值的地方：
+通过上面代码分析我们知道，调用 ActivityThread#performDestroyActivity的时候，会将包含 ViewModelStore 的数据存储在 ActivityClientRecord.lastNonConfigurationInstances 中。
+
+### 3.2 在启动时  
+
+在 Activity启动流程中，的我们知道Activity的启动是 ActivityThread#performLaunchActivity 触发的，在该方法内部会调用 `Activity#attach()` 方法
 
 ```java
-// Activity.java
+private Activity performLaunchActivity(ActivityClientRecord r, Intent customIntent) {
+    activity.attach(appContext, this, getInstrumentation(), r.token,
+                    r.ident, app, r.intent, r.activityInfo, title, r.parent,
+                    r.embeddedID, r.lastNonConfigurationInstances, config,
+                    r.referrer, r.voiceInteractor, window, r.configCallback,
+                    r.assistToken);    
+}
+```
+
+在 Activity#attach 方法中将 ActivityClientRecord 中的 lastNonConfigurationInstances 赋值给 Activity.mLastNonConfigurationInstances 对象。
+```java
 final void attach(Context context, ActivityThread aThread,
             Instrumentation instr, IBinder token, int ident,
             Application application, Intent intent, ActivityInfo info,
@@ -230,43 +245,22 @@ final void attach(Context context, ActivityThread aThread,
         mLastNonConfigurationInstances = lastNonConfigurationInstances;
     }
 ```
-`Activity#attach()` 方法是在 ActivityThread 中被调用的：
-
+上文中我们提到过 ComponentActivity#getViewModelStore() 方法中会调用 ensureViewModelStore()方法来保证获取的 mViewModelStore 不为空。ensureViewModelStore() 方法
+中会优先通过 getLastNonConfigurationInstance() 方法看看 mLastNonConfigurationInstances 中有没有缓存 NonConfigurationInstances 对象。这样就形成了一个闭环。
 ```java
-// ActivityThread.java
-Activity.NonConfigurationInstances lastNonConfigurationInstances;
-
-/**  Core implementation of activity launch. */
-private Activity performLaunchActivity(ActivityClientRecord r, Intent customIntent) {
-    activity.attach(appContext, this, getInstrumentation(), r.token,
-                    r.ident, app, r.intent, r.activityInfo, title, r.parent,
-                    r.embeddedID, r.lastNonConfigurationInstances, config,
-                    r.referrer, r.voiceInteractor, window, r.configCallback,
-                    r.assistToken);    
+void ensureViewModelStore() {
+    if (mViewModelStore == null) {
+        NonConfigurationInstances nc =  (NonConfigurationInstances) getLastNonConfigurationInstance();
+        if (nc != null) {
+            // Restore the ViewModelStore from NonConfigurationInstances
+            mViewModelStore = nc.viewModelStore;
+        }
+        if (mViewModelStore == null) { // 如果缓存里面没有，直接创建新的
+            mViewModelStore = new ViewModelStore();
+        }
+    }
 }
 ```
-通过上面代码分析我们知道，数据存储在 ActivityClientRecord 中，在 Activity 启动时将 ActivityClientRecord 中 的 lastNonConfigurationInstances 通过 attach() 方法赋值到对应的Activity 中，然后通过 getLastNonConfigurationInstance() 恢复数据。
-
-### 4.屏幕旋转前数据的存储
-
-
-
-performDestroyActivity() 方法中调用了 `retainNonConfigurationInstances()` 方法并把数据保存到了 ActivityClientRecord 的 `lastNonConfigurationInstances` 中。
-
-
-首先看下屏幕旋转的生命周期
-
-<img width="583" alt="image" src="https://user-images.githubusercontent.com/17560388/154606788-7435824e-8844-4bd1-8739-61d2a250b024.png">
-
-屏幕旋转前，Activity销毁时：
-
-ComponentActivity 调用 onRetainNonConfigurationInstance() 方法，将要销毁的 Activity 的 mViewModelStore 转化为 NonConfigurationInstances 对象，继续调用 Activity 的retainNonConfigurationInstances() 方法，最终在 ActivityThread 的 performDestroyActivity() 中将数据保存在 ActivityClientRecord 中。
-
-Activity重建后：
-
-在 Activity 启动时，ActivityThread 调用 performLaunchActivity() 方法，将存储在 ActivityClientRecord 中的 lastNonConfigurationInstances 通过 Activity 的 attach() 方法传递到对应的 Activity 中，然后通过 getLastNonConfigurationInstance() 恢复 mViewModelStore 实例对象，最后根据对应的 key 拿到销毁前对应的 ViewModel 实例。
-
-此外，当系统内存不足，系统将后台应用回收后，ViewModel中的数据不会恢复。
 
 
 
