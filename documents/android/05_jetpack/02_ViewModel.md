@@ -1,73 +1,71 @@
 ## 1、简单使用
 
-`ViewModel` 负责管理 MVVM 架构中 `View 层（Activity/Fragment）` 和 `Model 层`的交互。作为 Jetpack系列的一个组件，`ViewModel` 可以很好的和 `Activity/Fragment` 的生命周期相绑定，在 `ViewModel#OnClear()` 方法中处理一些解绑的操作。
+MVVM 架构的中VM，负责`View层`和`Model层`的交互。以注重生命周期的方式存储和管理界面相关数据。
 
+`ViewModel` 底层提供了和 `Activity/Fragment` 的生命周期相绑定的逻辑，在界面销毁时调用 `ViewModel#OnClear()` 方法，我们可以在该方法中处理一些解绑的操作。
 
 ### 1.1 特点
 
-ViewModel 在 Activity 横竖屏切换时也会保持同一个对象。
+特点：在 Activity 横竖屏切换时也会保持同一个对象。
+注意：内部不要持有 Activity/Fragment 对象。因为生命周期比 Activity/Fragment 长，可能会引起泄漏。
 
-生命周期图：
+ViewModel 对象存在的时间范围是获取 ViewModel 时传递给 ViewModelProvider 的 Lifecycle。ViewModel 将一直留在内存中，直到限定其存在时间范围的 Lifecycle 永久消失：
+- 对于 Activity，是在 Activity 完成时；
+- 而对于 Fragment，是在 Fragment 分离时。
 
 <img width="400" alt="ViewModel生命周期" src="https://user-images.githubusercontent.com/17560388/141035994-bc844b3e-b496-4872-8443-4b6a79f9b8ee.png">
 
 ### 1.2 基本使用
 
-带参数的 ViewModel 类
-
+1.不带参数的 ViewModel 类
 ```kotlin
-class LoginViewModel(private val loginRepository: LoginRepository) : ViewModel() {
-    private val _loginForm = MutableLiveData<LoginFormState>()
-    val loginFormState: LiveData<LoginFormState> = _loginForm
-    //... ...
+class MainViewModel() : ViewModel() 
+```
+在 Activity 中初始化
+```kotlin
+class MainActivity : AppCompatActivity() {
+    private lateinit var mainViewModel: MainViewModel
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+    }
 }
 ```
-通过工厂类创建带参数的 ViewModel
+2.带参数的 ViewModel 类，通过工厂类创建带参数的 ViewModel
+
 ```kotlin
+class LoginViewModel(private val loginRepository: LoginRepository) : ViewModel() 
 class LoginViewModelFactory : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-            return LoginViewModel(loginRepository = LoginRepository(
-                    dataSource = LoginDataSource()
-                )
-            ) as T
+            return LoginViewModel(loginRepository = LoginRepository(dataSource = LoginDataSource())) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 ```
-
 在 Activity 中初始化
-
 ```kotlin
 class LoginActivity : AppCompatActivity() {
-
     private lateinit var loginViewModel: LoginViewModel
-    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         loginViewModel = ViewModelProvider(this, LoginViewModelFactory()).get(LoginViewModel::class.java)
     }
 }
 ```
-### 2.源码解读
 
-我们以不带参数的 MainViewModel 的例子出发
+## 2、源码解读
 
-```kotlin
-// MainActivity.kt
-val viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
-```
+我们以不带参数的 MainViewModel 的例子出发，可以将代码拆分成：`ViewModelProvider(this)` 和 `get(MainViewModel::class.java)`
 
-将代码拆分成：`ViewModelProvider(this)` 和 `get(MainViewModel::class.java)`
+### 2.1 `ViewModelProvider`的构造方法
 
-#### 2.1 `ViewModelProvider(this)` 的构造方法
+ViewModelProvider 最终的构造方法有两个入参，我们先从 ViewModelProvider(owne) 开始调用逻辑
 
-构造方法的两个入参
-
-- ViewModelStore : ViewModelStore 类内部维护一个 HashMap 来存储 `Key:ViewModel` 键值对
-- ViewModelProvider.Factory : 负责生成的 `ViewModel`
+- ViewModelStore: ViewModelStore 类内部维护一个 HashMap 来存储 `Key:ViewModel` 键值对
+- ViewModelProvider.Factory: 负责生成的 `ViewModel`，带参数的 ViewModel 需要自己定义 Factory
 
 ```java
 public ViewModelProvider(@NonNull ViewModelStoreOwner owner) {
@@ -75,16 +73,22 @@ public ViewModelProvider(@NonNull ViewModelStoreOwner owner) {
          ? ((HasDefaultViewModelProviderFactory) owner).getDefaultViewModelProviderFactory()
          : NewInstanceFactory.getInstance());
 }
+public ViewModelProvider(@NonNull ViewModelStoreOwner owner, @NonNull Factory factory) {
+    this(owner.getViewModelStore(), factory);
+}
+public ViewModelProvider(@NonNull ViewModelStore store, @NonNull Factory factory) {
+    mFactory = factory;
+    mViewModelStore = store;
+}
 ```
-
-通过 `ComponentActivity#getViewModelStore()` 获取 `Activity` 中的 `ViewModelStore` 对象。
+我们在 Activity 中使用的是 `ViewModelProvider(owne)` ，所以 Activity 实现了 ViewModelStoreOwner 接口。
+ViewModelStoreOwner 接口中只有 `getViewModelStore():ViewModelStore`一个方法，我们追踪到 ComponentActivity 类，该类实现了 ViewModelStoreOwner 接口，并且内部维护了一个 mViewModelStore 对象。 
 
 ```java
 // ComponentActivity.java
 public ViewModelStore getViewModelStore() {
     if (getApplication() == null) {
-        throw new IllegalStateException("Your activity is not yet attached to the "
-                                        + "Application instance. You can't request ViewModel before onCreate call.");
+        throw new IllegalStateException("Your activity is not yet attached to the Application instance. You can't request ViewModel before onCreate call.");
     }
     ensureViewModelStore();
     return mViewModelStore;
@@ -94,20 +98,18 @@ public ViewModelStore getViewModelStore() {
 void ensureViewModelStore() {
     if (mViewModelStore == null) {
         NonConfigurationInstances nc =  (NonConfigurationInstances) getLastNonConfigurationInstance();
-        if (nc != null) { //先判断是否能从 NonConfigurationInstances 获取到 ViewModelStore 对象
+        if (nc != null) {
             // Restore the ViewModelStore from NonConfigurationInstances
-            // 从缓存中恢复
             mViewModelStore = nc.viewModelStore;
         }
-        // 如果缓存里面没有，直接创建新的
-        if (mViewModelStore == null) {
+        if (mViewModelStore == null) { // 如果缓存里面没有，直接创建新的
             mViewModelStore = new ViewModelStore();
         }
     }
 }
 ```
 
-NonConfigurationInstances 类很简单，简单的包装 ViewModelStore 对象。
+NonConfigurationInstances 类很简单，简单的包装了一个 ViewModelStore 对象。
 
 ```java
 // ComponentActivity$NonConfigurationInstances.java
@@ -116,11 +118,10 @@ static final class NonConfigurationInstances {
     ViewModelStore viewModelStore;
 }
 ```
-#### 2.2 通过 `get(MainViewModel::class.java)` 方法获取 ViewModel 对象
+### 2.2 通过 `get(MainViewModel::class.java)` 方法获取 ViewModel 对象
 
+ViewModelProvider类
 ```java
-// ViewModelProvider.java
-
 private static final String DEFAULT_KEY ="androidx.lifecycle.ViewModelProvider.DefaultKey";
 
 public <T extends ViewModel> T get(@NonNull Class<T> modelClass) {
@@ -134,7 +135,7 @@ public <T extends ViewModel> T get(@NonNull Class<T> modelClass) {
 public <T extends ViewModel> T get(@NonNull String key, @NonNull Class<T> modelClass) {
     ViewModel viewModel = mViewModelStore.get(key);
 
-    if (modelClass.isInstance(viewModel)) {
+    if (modelClass.isInstance(viewModel)) {// 如果 mFactory 是 OnRequeryFactory 类型
         if (mFactory instanceof OnRequeryFactory) {
             ((OnRequeryFactory) mFactory).onRequery(viewModel);
         }
@@ -150,12 +151,14 @@ public <T extends ViewModel> T get(@NonNull String key, @NonNull Class<T> modelC
     } else {
         viewModel = mFactory.create(modelClass);
     }
-    mViewModelStore.put(key, viewModel);
+    mViewModelStore.put(key, viewModel); // 将 viewModel 存入 mViewModelStore，缓存一下
     return (T) viewModel;
 }
 ```
 
-### 3. 通过 ComponentActivity#onRetainNonConfigurationInstance() 方法，在屏幕旋转前存储 ViewModelStore 对象
+## 3、为什么ViewModel的生命周期比Activity长
+
+通过 ComponentActivity#onRetainNonConfigurationInstance() 方法，在屏幕旋转前存储 ViewModelStore 对象
 
 ```java
 // ComponentActivity.java
