@@ -48,6 +48,10 @@ class MainActivity : AppCompatActivity() {
 ```
 ## 2、源码解读
 
+VM的类图 
+
+<img width="600" alt="vm类图 drawio" src="https://user-images.githubusercontent.com/17560388/187609608-8232b144-1a9d-4674-a6ed-2b40eca9afc5.svg">
+
 我们以不带参数的 MainViewModel 的例子出发，可以将代码拆分成：
 
 - `ViewModelProvider(this)` 
