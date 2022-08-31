@@ -1,49 +1,51 @@
 ## 1、简单介绍和使用
+LiveData 在 MVVM 中扮演着 VM 和 View 通信的角色。一般我们在 ViewModel 中针对数据会创建两个 对应的 LiveData。
+- 一个 LiveData，内部使用，
+- 一个 MutableLiveData，暴露给 Activity/Fragment。
 
-在我们的 ViewModel 中创建和属性对应的 LiveData。一个属性对应两个 LiveData，一个是内部使用，一个暴露给 Activity 或者 Fragment。代码如下：
-
-```kotlin
-// 内部更新数据使用 MutableLiveData，因为该类对外公开了 postValue 和 setValue 方法
-private val _loginLiveData = MutableLiveData<<LoginBean>>() 
-
-//对外公开的 LiveData，不提供 postValue 和 setValue。
-val loginLiveData: LiveData<Resource<LoginResponse>> 
-    get() = _loginLiveData 
-
-// LiveData 通过 setValue 赋值
-_loginLiveData.value = LoginBean()
-
-```
-
-Activity/Fragment 使用
+代码如下：
 
 ```kotlin
-loginViewModel.loginLiveData.observe(this){bean->
+class MV:ViewModle(){
+    // 该类对外公开了 postValue 和 setValue 方法，在 ViewModle 内部负责对持有数据的修改
+    private val _loginData = MutableLiveData<<LoginBean>>() 
+    //LiveData 暴露给 View 层，这个类的 postValue 和 setValue 被 protect 修饰的，可以防止从 View 层修改数据
+    val loginData: LiveData<Resource<LoginResponse>> 
+        get() = _loginData 
+    fun loadUserBean(){
+        //从数据仓库获取数据后，在主线程中调用 setValue 赋值。一般setValue 要在主线程中调用
+        _loginData.value = LoginBean()
+    }
 }
+```
+然后在 `Activity/Fragment` 使用，当数据发生变化的时候会自动回调 `observe(...)` 方法。注意注册的时机
+```kotlin
+loginViewModel.loginLiveData.observe(this){bean->}
 ```
 
 **LiveData的特点**：
 
  1. 采用观察者模式，数据发生改变，可以自动回调。
- 2. 不需要手动处理生命周期，不会因为Activity的销毁重建而丢失数据。
+ 2. 不需要手动处理生命周期，不会因为 Activity 的销毁重建而丢失数据。
 
 **LiveData 和 MultableLiveData 的区别**:
 
-MultableLiveData 是 LiveData 子类。并对外公开了 postValue 和 setValue 的方法。
+MultableLiveData 是 LiveData 子类，并对外公开了 postValue 和 setValue 的方法。
 
 ## 2、源码分析
 
-`LiveData（abstract类）` 的子类 `MutableLiveData`的源码
+### 2.1 MutableLiveData 源码
+
+`LiveData（abstract类）`的子类`MutableLiveData`的源码
 
 ```java
 public class MutableLiveData<T> extends LiveData<T> {
-    //将 protected 修饰符变为 public，这个方法一般在子线程中使用，来设置数据
+    //将 LiveData 中 protected 修饰符变为 public，对外暴露 postValue 方法
     @Override
     public void postValue(T value) { 
         super.postValue(value);
     }
-
-    //将 protected 修饰符变为 public
+    //将 LiveData 中 protected 修饰符变为 public，对外暴露 setValue 方法
     @Override
     public void setValue(T value) { 
         super.setValue(value);
@@ -51,9 +53,9 @@ public class MutableLiveData<T> extends LiveData<T> {
 }
 ```
 
-通过调用 `LiveData` 的 observe/observeForever 方法设置一个 `Observer` 回调
+### 2.2 Observer 接口
 
-Observer 接口如下：
+我们使用 LiveData 的时候会通过 `LiveData#observe(owner,observer)` 方法传入一个 `Observer` 接口。Observer 接口如下：
 
 ```java
 public interface Observer<T> {
@@ -61,87 +63,83 @@ public interface Observer<T> {
 }
 ```
 
-我们看下 LiveData 的 `observe()` 和 `observeForever()` 的区别
+### 2.3 `LiveData#observe(...)`方法
 
+LiveData 中的 `observe()` 和 `observeForever()` 都可以注册 Observer:
 ```java
 public abstract class LiveData<T> {
-    //...
-    // 只有 onStart 后，对数据的修改才会触发 observer.onChanged()
+    ...
+    // 只有在 owner onStart 后，数据发生改变才会触发 observer.onChanged()
     public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<T> observer) {}
 
     // 无论何时，只要数据发生改变，就会触发 observer.onChanged()
     public void observeForever(@NonNull Observer<T> observer) {}
-    //... 
+    ... 
 }
 ```
-`observeForever` 的实现跟 `observe` 是类似的，这里我们重点看一下 `observe()` 的实现过程
-
-####  LiveData#observe 方法
-
-2个参数：
-- LifecycleOwner: 声明周期持有类
-- Observer: 监听器
+我们重点看一下 `observe()` 的实现过程，observe() 方法的2个参数：
+- LifecycleOwner: Lifecycle的持有类，Activity/Fragment
+- Observer: 监听器，数据变化时触发 onChanged 方法
 
 ```kotlin
-@MainThread
+@MainThread // observe 方法要在主线程中调用
 public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> observer) {
     assertMainThread("observe");
-    if (owner.getLifecycle().getCurrentState() == DESTROYED) {
+    if (owner.getLifecycle().getCurrentState() == DESTROYED) { // 如果 ower 销毁了，直接返回
         return;
     }
-    LifecycleBoundObserver wrapper = new LifecycleBoundObserver(owner, observer);
+    LifecycleBoundObserver wrapper = new LifecycleBoundObserver(owner, observer); 
     ObserverWrapper existing = mObservers.putIfAbsent(observer, wrapper);
     if (existing != null && !existing.isAttachedTo(owner)) {
-        throw new IllegalArgumentException("Cannot add the same observer"
-                + " with different lifecycles");
+        throw new IllegalArgumentException("Cannot add the same observer with different lifecycles");
     }
     if (existing != null) {
         return;
     }
-    //把 wrapper 与A ctivity/Fragment 的生命周期建立关系，当UI的生命周期发生变化的时候，就会去回调 wrapper 中的 onStateChanged
+    //LifecycleBoundObserver 实现了 LifecycleEventObserver 接口，将 wrapper 和 owner 建立生命周期的订阅关系。
     owner.getLifecycle().addObserver(wrapper);
 }
 ```
-## 3. 两种方式回调 Observer#onChanged 方式
+在该方法内部将 owner 和 observer 包装为一个 LifecycleBoundObserver 对象。LifecycleBoundObserver 类实现了 LifecycleEventObserver 接口。当 owner 的生命周期变化时触发
+LifecycleBoundObserver#onStateChanged(source,event) 的回调。
 
-1. 当界面生命周期发生变化时 `LiveData` 方法的调用情况
-2. 当数据发生变化时 `LiveData` 方法的调用情况
+## 3、Observer#onChanged的回调时机 
 
-### 3.1 界面生命周期发生变化时，LiveData 方法的调用情况
+在 observe 方法中我们将 owner 和 包装为 LifecycleBoundObserver 的 observer 建立了生命周期的订阅关系。生命周期变化时会触发 LifecycleBoundObserver#onStateChanged 方法：
 
-当生命周期发生变化的时候，会调用 onStateChanged 方法，然后
-
-```kotlin
+### 3.1 LifecycleBoundObserver 类
+```java
 class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventObserver {
     @NonNull
-    final LifecycleOwner mOwner
-    
+    final LifecycleOwner mOwner;
     LifecycleBoundObserver(@NonNull LifecycleOwner owner, Observer<? super T> observer) {
         super(observer);
-        mOwner = owner
+        mOwner = owner;
     }
     
     @Override
-    boolean shouldBeActive() {
+    boolean shouldBeActive() {//判断 mOwner 是否是激活状态，即 mOwner 的 Lifecycle.state 至少是 STARTED(即 STARTED、RESUMED)
         return mOwner.getLifecycle().getCurrentState().isAtLeast(STARTED);
     }
     
-    //当生命周期发生变化时，会调用该方法
-    @Override
-    public void onStateChanged(LifecycleOwner source, Lifecycle.Event event) { 
-        if (mOwner.getLifecycle().getCurrentState() == DESTROYED) { 
-            removeObserver(mObserver); //当UI的生命周期为DESTROYED，取消对数据变化的监听，自动移除回调
+    @Override // 生命周期变化时出发该方法
+    public void onStateChanged(@NonNull LifecycleOwner source, @NonNull Lifecycle.Event event) {
+        Lifecycle.State currentState = mOwner.getLifecycle().getCurrentState();
+        if (currentState == DESTROYED) { // 当 mOwner Destroy 的时候移除 mObserver
+            removeObserver(mObserver);
             return;
         }
-        //改变数据，传递的参数是 shouldBeActive()，shouldBeActive 方法会计算看当前的状态是否是 STARTED，也就是 onStart-onPause 期间生命周期
-        activeStateChanged(shouldBeActive());
+        Lifecycle.State prevState = null;
+        while (prevState != currentState) {
+            prevState = currentState;
+            activeStateChanged(shouldBeActive()); // 继续回调 activeStateChanged 方法
+            currentState = mOwner.getLifecycle().getCurrentState();
+        }
     }
-    
     @Override
     boolean isAttachedTo(LifecycleOwner owner) {
         return mOwner == owner;
     }
-    
     @Override
     void detachObserver() {
         mOwner.getLifecycle().removeObserver(this);
@@ -149,7 +147,7 @@ class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventOb
 }
 ```
 
-我们继续看下 activeStateChanged 方法是如何对数据进行处理的，它是 ObserverWrapper 类中的一个方法。
+生命周期的状态变化时会触发父类 ObserverWrapper#activeStateChanged(newActive) 方法:
 
 ```kotlin
 private abstract class ObserverWrapper {
@@ -163,7 +161,7 @@ private abstract class ObserverWrapper {
     }
 
     void activeStateChanged(boolean newActive) {
-        // 当激活状态没有发生变化，直接返回。onStart-onPause 为 true  在这之外的生命周期为false
+        // 当激活状态没有发生变化，直接返回。
         if (newActive == mActive) {
             return;
         }
@@ -183,8 +181,17 @@ private abstract class ObserverWrapper {
     }
 }
 ```
+1. 当界面生命周期发生变化时 `LiveData` 方法的调用情况
+2. 当数据发生变化时 `LiveData` 方法的调用情况
 
-为什么在生命周期的活跃状态 从Inactive 到 Active，要去调用 livedata 设置的回调函数呢？
+### 3.1 界面生命周期发生变化时，LiveData 方法的调用情况
+
+当生命周期发生变化的时候，会调用 onStateChanged 方法，然后
+
+
+
+
+为什么在生命周期的活跃状态 从 Inactive 到 Active，要去调用 livedata 设置的回调函数呢？
 
 当界面从 Inactive 变为 Active（onStart-onPause 周期内），如果不调用回调函数，UI的界面还是显示上一次的数据。
 
@@ -311,53 +318,15 @@ private final Runnable mPostValueRunnable = new Runnable() {
 
 对于 LiveData，其初始的 version 是-1，当我们调用了其 setValue 或者 postValue，其 vesion 会+1；对于每一个观察者的封装 ObserverWrapper ，其初始 version 也为-1，也就是说，每一个新注册的观察者，其 version 为-1；当 LiveData 设置这个 ObserverWrapper 的时候，如果 LiveData的version 大于 ObserverWrapper 的 version，LiveData 就会强制把当前 value 推送给 Observer。
 
-解决：
+解决：看一下 android 官方的解决方案
 
 [SingleLiveEvent.java ](https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java)
 
 ```java
-/*
- *  Copyright 2017 Google Inc.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
-package com.example.android.architecture.blueprints.todoapp;
-
-import android.arch.lifecycle.LifecycleOwner;
-import android.arch.lifecycle.MutableLiveData;
-import android.arch.lifecycle.Observer;
-import android.support.annotation.MainThread;
-import android.support.annotation.Nullable;
-import android.util.Log;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
-/**
- * A lifecycle-aware observable that sends only new updates after subscription, used for events like
- * navigation and Snackbar messages.
- * <p>
- * This avoids a common problem with events: on configuration change (like rotation) an update
- * can be emitted if the observer is active. This LiveData only calls the observable if there's an
- * explicit call to setValue() or call().
- * <p>
- * Note that only one observer is going to be notified of changes.
- */
 public class SingleLiveEvent<T> extends MutableLiveData<T> {
 
     private static final String TAG = "SingleLiveEvent";
-
-    private final AtomicBoolean mPending = new AtomicBoolean(false);
+    private final AtomicBoolean mPending = new AtomicBoolean(false); // 通过一个原子类记录当前 value 是否被处理
 
     @MainThread
     public void observe(LifecycleOwner owner, final Observer<T> observer) {
@@ -365,7 +334,6 @@ public class SingleLiveEvent<T> extends MutableLiveData<T> {
         if (hasActiveObservers()) {
             Log.w(TAG, "Multiple observers registered but only one will be notified of changes.");
         }
-
         // Observe the internal MutableLiveData
         super.observe(owner, new Observer<T>() {
             @Override
@@ -395,9 +363,6 @@ public class SingleLiveEvent<T> extends MutableLiveData<T> {
 
 ## 参考
 
-
-[SingleLiveEvent.java ](https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java)
-
-[Activity销毁重建导致LiveData数据倒灌](https://juejin.cn/post/6986936609522319391)
-
-[Android消息总线的演进之路：用LiveDataBus替代RxBus、EventBus](https://tech.meituan.com/2018/07/26/android-livedatabus.html)
+- [SingleLiveEvent.java ](https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java)
+- [Activity销毁重建导致LiveData数据倒灌](https://juejin.cn/post/6986936609522319391)
+- [Android消息总线的演进之路：用LiveDataBus替代RxBus、EventBus](https://tech.meituan.com/2018/07/26/android-livedatabus.html)
