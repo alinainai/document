@@ -2,7 +2,7 @@
 
 ### 1.1 什么是 LifeCycle
 
-`Lifecycle` 是 `Jetpack` 的基础的组件之一，它提供了开发者用来搭建依赖于 `生命周期变化` 的业务逻辑变更的能力。用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险。
+`Lifecycle` 是 `Jetpack` 的基础组件之一，它可以帮助开发者更好的处理和 `生命周期` 相依赖的业务逻辑。用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险。
 
 ### 1.2 使用方法
 
