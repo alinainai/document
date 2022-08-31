@@ -17,7 +17,6 @@ ViewModel 对象存在的时间范围是获取 ViewModel 时传递给 ViewModelP
 
 ### 1.2 基本使用
 
-
 ```kotlin
 // 1.不带参数的 ViewModel 类
 class MainViewModel() : ViewModel()
@@ -50,7 +49,7 @@ class MainActivity : AppCompatActivity() {
 
 VM的类图 
 
-<img width="600" alt="vm类图 drawio" src="https://user-images.githubusercontent.com/17560388/187609608-8232b144-1a9d-4674-a6ed-2b40eca9afc5.svg">
+<img width="800" alt="vm类图 drawio" src="https://user-images.githubusercontent.com/17560388/187609608-8232b144-1a9d-4674-a6ed-2b40eca9afc5.svg">
 
 我们以不带参数的 MainViewModel 的例子出发，可以将代码拆分成：
 
