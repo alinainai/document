@@ -330,6 +330,14 @@ public final void clear() {
     mMap.clear();
 }
 ```
+## 5、和 onSaveInstanceStat 的区别
+
+ViewModel 并不应该取代 onSaveInstanceState的使用，它们两个是相辅相成的，当进程被关闭时，ViewModel 将被销毁，但是 onSaveInstanceState 将不会受到影响。
+
+另外，ViewModel 可以用来存储大量数据，而 onSaveInstanceState 就只可以用来存储有限的数据。
+- 我们尽可能把多一点的 UI数据往 ViewModel 内存储，以便在配置变更时不需要重新加载或生成数据，
+- 另一方面，如果进程被 Framework 关闭，我们应该用 onSaveInstanceState 来存储，足以还原 UI 状态的最少量数据。比如用户的数据库 ID。
+
 
 
 
