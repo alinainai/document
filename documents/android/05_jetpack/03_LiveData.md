@@ -1,5 +1,7 @@
 ## 1、简单介绍和使用
 
+官方说明：LiveData 是一种可观察的数据存储器类。与常规的可观察类不同，LiveData 具有生命周期感知能力，意指它遵循其他应用组件（如 activity、fragment 或 service）的生命周期。这种感知能力可确保 LiveData 仅更新处于活跃生命周期状态的应用组件观察者。
+
 `LiveData` 在 `MVVM` 中扮演着 `VM` 和 `View` 通信的角色。一般我们在 `ViewModel` 中针对数据会创建两个对应的 `LiveData`。
 - 一个是 `LiveData` 类型，内部使用，
 - 一个是 `MutableLiveData` 类型，暴露给 `Activity/Fragment`。
@@ -73,7 +75,7 @@ public abstract class LiveData<T> {
     // 只有在 owner onStart 后，数据发生改变才会触发 observer.onChanged()
     public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<T> observer) {}
 
-    // 无论何时，只要数据发生改变，就会触发 observer.onChanged()
+    // 无论何时，只要数据发生改变，就会触发 observer.onChanged()，我们不关心这个方法
     public void observeForever(@NonNull Observer<T> observer) {}
     ... 
 }
@@ -83,9 +85,9 @@ public abstract class LiveData<T> {
 - Observer: 监听器，数据变化时触发 onChanged 方法
 
 ```kotlin
-@MainThread // observe 方法要在主线程中调用
+@MainThread 
 public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> observer) {
-    assertMainThread("observe");
+    assertMainThread("observe"); // observe 方法要在主线程中调用
     if (owner.getLifecycle().getCurrentState() == DESTROYED) { // 如果 ower 销毁了，直接返回
         return;
     }
@@ -105,7 +107,7 @@ public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> 
 
 ## 3、Observer#onChanged的回调时机 
 
-在 observe 方法中我们将 owner 和 包装为 LifecycleBoundObserver 的 observer 建立了生命周期的订阅关系。生命周期变化时会触发 LifecycleBoundObserver#onStateChanged 方法
+在 observe 方法中我们将 owner 和 observer 包装为 LifecycleBoundObserver，然后又和 owner 建立了监听生命周期变化的订阅关系。生命周期变化时会触发 LifecycleBoundObserver#onStateChanged 方法。下面我们看下 LifecycleBoundObserver 类和该类中的方法。
 
 ### 3.1 LifecycleBoundObserver 类
 ```java
@@ -149,7 +151,7 @@ class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventOb
 }
 ```
 
-生命周期的状态变化时会触发抽象父类的 `ObserverWrapper#activeStateChanged(newActive)` 方法:
+在 onStateChanged 方法中，父类 `ObserverWrapper#activeStateChanged(newActive)` 方法:
 
 ```kotlin
 private abstract class ObserverWrapper {
@@ -170,10 +172,10 @@ private abstract class ObserverWrapper {
         mActive = newActive;
         boolean wasInactive = LiveData.this.mActiveCount == 0;
         LiveData.this.mActiveCount += mActive ? 1 : -1;
-        if (wasInactive && mActive) {
+        if (wasInactive && mActive) {// 从 Inactive 变为 Active 时
             onActive();//空函数，可根据需要进行重写
         }
-        if (LiveData.this.mActiveCount == 0 && !mActive) {
+        if (LiveData.this.mActiveCount == 0 && !mActive) { // 从 Active 变为 Inactive 时
             onInactive(); // 空函数，可根据需要进行重写    
         }
         if (mActive) { //结合上面的状态判断，我们知道了，生命周期状态从 Inactive 到 Active，就会调用回调函数
@@ -366,6 +368,7 @@ public class SingleLiveEvent<T> extends MutableLiveData<T> {
 
 ## 参考
 
+- [LiveData 概览](https://developer.android.com/topic/libraries/architecture/livedata?hl=zh-cn)
 - [SingleLiveEvent.java ](https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java)
 - [Activity销毁重建导致LiveData数据倒灌](https://juejin.cn/post/6986936609522319391)
 - [Android消息总线的演进之路：用LiveDataBus替代RxBus、EventBus](https://tech.meituan.com/2018/07/26/android-livedatabus.html)
