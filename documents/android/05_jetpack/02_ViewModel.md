@@ -93,7 +93,7 @@ void ensureViewModelStore() {
         NonConfigurationInstances nc =  (NonConfigurationInstances) getLastNonConfigurationInstance();
         if (nc != null) {
             // Restore the ViewModelStore from NonConfigurationInstances
-            mViewModelStore = nc.viewModelStore;
+            mViewModelStore = nc.viewModelStore; // 先看 mtLastNonConfigurationInstance 有没有存储 mViewModelStore 对象
         }
         if (mViewModelStore == null) { // 如果缓存里面没有，直接创建新的
             mViewModelStore = new ViewModelStore();
@@ -101,12 +101,43 @@ void ensureViewModelStore() {
     }
 }
 ```
-NonConfigurationInstances 类很简单，简单的包装了一个 ViewModelStore 对象。后面再讲它的作用
+ViewModelStoreOwner 是一个单一方法接口
 ```java
-// ComponentActivity$NonConfigurationInstances.java
-static final class NonConfigurationInstances {
-    Object custom;
-    ViewModelStore viewModelStore;
+public interface ViewModelStoreOwner {
+    @NonNull
+    ViewModelStore getViewModelStore(); // 对外提供一个 ViewModelStore 对象
+}
+```
+ViewModelStore 类是 ViewModels 的存储类，代码很简单。持有一个 HashMap 用来存储 Key:ViewModel 的映射。
+```java
+public class ViewModelStore {
+
+    private final HashMap<String, ViewModel> mMap = new HashMap<>();
+
+    final void put(String key, ViewModel viewModel) {
+        ViewModel oldViewModel = mMap.put(key, viewModel);
+        if (oldViewModel != null) {
+            oldViewModel.onCleared();
+        }
+    }
+
+    final ViewModel get(String key) {
+        return mMap.get(key);
+    }
+
+    Set<String> keys() {
+        return new HashSet<>(mMap.keySet());
+    }
+
+    /**
+     *  Clears internal storage and notifies ViewModels that they are no longer used.
+     */
+    public final void clear() {
+        for (ViewModel vm : mMap.values()) {
+            vm.clear();
+        }
+        mMap.clear();
+    }
 }
 ```
 ### 2.2 通过 `get(class)` 方法获取 ViewModel 对象
@@ -206,6 +237,15 @@ public final Object onRetainNonConfigurationInstance() {
 ```
 当 mViewModelStore 为空的时候获取 getLastNonConfigurationInstance() 中存储的 NonConfigurationInstances 对象。如果 mViewModelStore 和 getLastNonConfigurationInstance 中的 ViewModelStore 都为空直接返回 null。
 
+NonConfigurationInstances 类很简单，简单的包装了一个 ViewModelStore 对象。
+```java
+// ComponentActivity$NonConfigurationInstances.java
+static final class NonConfigurationInstances {
+    Object custom;
+    ViewModelStore viewModelStore;
+}
+```
+
 ComponentActivity#onRetainNonConfigurationInstance() 方法最终会返回一个包装了 ViewModelStore 的 ComponetActivity$NonConfigurationInstances 对象。
 
 继续看一下 Activity#getLastNonConfigurationInstance() 方法
@@ -261,6 +301,37 @@ void ensureViewModelStore() {
     }
 }
 ```
+## 4、ViewModel的onCleared()
+
+分析过了 ViewModel 的创建过程，再来看看 ViewModel 的销毁过程。
+
+在 ComponentActivity 构造方法中，注册一个匿名的 LifecycleEventObserver 对象。当页面不是因为 ChangingConfiguration 引起的销毁，调用 ViewModelStore 中的 clear() 方法。
+```java
+public ComponentActivity() {
+    ...
+    getLifecycle().addObserver(new LifecycleEventObserver() {
+        @Override
+        public void onStateChanged(@NonNull LifecycleOwner source, @NonNull Lifecycle.Event event) {
+            if (event == Lifecycle.Event.ON_DESTROY) {
+                if (!isChangingConfigurations()) { // 不是因为 ChangingConfiguration 引起的销毁
+                    getViewModelStore().clear();
+                }
+            }
+        }
+    });
+}
+```
+在 ViewModelStore 中，调用 Map 中每个 ViewModel 实例的 clear()方法，最后将 map 清空，至此，完成了 ViewModel 的销毁工作。
+```java
+public final void clear() {
+    for (ViewModel vm : mMap.values()) {
+        vm.clear();
+    }
+    mMap.clear();
+}
+```
+
+
 
 
 
