@@ -1,7 +1,8 @@
 ## 1、简单介绍和使用
-LiveData 在 MVVM 中扮演着 VM 和 View 通信的角色。一般我们在 ViewModel 中针对数据会创建两个 对应的 LiveData。
-- 一个 LiveData，内部使用，
-- 一个 MutableLiveData，暴露给 Activity/Fragment。
+
+`LiveData` 在 `MVVM` 中扮演着 `VM` 和 `View` 通信的角色。一般我们在 `ViewModel` 中针对数据会创建两个对应的 `LiveData`。
+- 一个是 `LiveData` 类型，内部使用，
+- 一个是 `MutableLiveData` 类型，暴露给 `Activity/Fragment`。
 
 代码如下：
 
@@ -55,7 +56,7 @@ public class MutableLiveData<T> extends LiveData<T> {
 
 ### 2.2 Observer 接口
 
-我们使用 LiveData 的时候会通过 `LiveData#observe(owner,observer)` 方法传入一个 `Observer` 接口。Observer 接口如下：
+我们在 通过 `LiveData#observe(owner,observer)` 方法传入一个 `Observer` 接口。Observer 接口如下：
 
 ```java
 public interface Observer<T> {
@@ -77,7 +78,7 @@ public abstract class LiveData<T> {
     ... 
 }
 ```
-我们重点看一下 `observe()` 的实现过程，observe() 方法的2个参数：
+我们重点看一下 `observe(...)` 的实现过程，`observe(...)` 方法的2个参数：
 - LifecycleOwner: Lifecycle的持有类，Activity/Fragment
 - Observer: 监听器，数据变化时触发 onChanged 方法
 
@@ -100,12 +101,11 @@ public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> 
     owner.getLifecycle().addObserver(wrapper);
 }
 ```
-在该方法内部将 owner 和 observer 包装为一个 LifecycleBoundObserver 对象。LifecycleBoundObserver 类实现了 LifecycleEventObserver 接口。当 owner 的生命周期变化时触发
-LifecycleBoundObserver#onStateChanged(source,event) 的回调。
+在该方法内部将 owner 和 observer 包装为一个 `LifecycleBoundObserver` 对象。LifecycleBoundObserver 类实现了 `LifecycleEventObserver` 接口。当 owner 的生命周期变化时触发 `LifecycleBoundObserver#onStateChanged(source,event)` 的回调。
 
 ## 3、Observer#onChanged的回调时机 
 
-在 observe 方法中我们将 owner 和 包装为 LifecycleBoundObserver 的 observer 建立了生命周期的订阅关系。生命周期变化时会触发 LifecycleBoundObserver#onStateChanged 方法：
+在 observe 方法中我们将 owner 和 包装为 LifecycleBoundObserver 的 observer 建立了生命周期的订阅关系。生命周期变化时会触发 LifecycleBoundObserver#onStateChanged 方法
 
 ### 3.1 LifecycleBoundObserver 类
 ```java
@@ -122,7 +122,7 @@ class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventOb
         return mOwner.getLifecycle().getCurrentState().isAtLeast(STARTED);
     }
     
-    @Override // 生命周期变化时出发该方法
+    @Override // 生命周期变化时触发该方法
     public void onStateChanged(@NonNull LifecycleOwner source, @NonNull Lifecycle.Event event) {
         Lifecycle.State currentState = mOwner.getLifecycle().getCurrentState();
         if (currentState == DESTROYED) { // 当 mOwner Destroy 的时候移除 mObserver
@@ -136,10 +136,12 @@ class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventOb
             currentState = mOwner.getLifecycle().getCurrentState();
         }
     }
+    
     @Override
     boolean isAttachedTo(LifecycleOwner owner) {
         return mOwner == owner;
     }
+    
     @Override
     void detachObserver() {
         mOwner.getLifecycle().removeObserver(this);
@@ -147,7 +149,7 @@ class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventOb
 }
 ```
 
-生命周期的状态变化时会触发父类 ObserverWrapper#activeStateChanged(newActive) 方法:
+生命周期的状态变化时会触发抽象父类的 `ObserverWrapper#activeStateChanged(newActive)` 方法:
 
 ```kotlin
 private abstract class ObserverWrapper {
@@ -161,8 +163,7 @@ private abstract class ObserverWrapper {
     }
 
     void activeStateChanged(boolean newActive) {
-        // 当激活状态没有发生变化，直接返回。
-        if (newActive == mActive) {
+        if (newActive == mActive) { // 当激活状态没有发生变化，直接返回。
             return;
         }
         // immediately set active state, so we'd never dispatch anything to inactive owner
@@ -181,12 +182,14 @@ private abstract class ObserverWrapper {
     }
 }
 ```
+所以当 Ower 的生命周期从 Inactive 变为 Active，会触发 `LiveData#dispatchingValue(ObserverWrapper)` 方法
+
 1. 当界面生命周期发生变化时 `LiveData` 方法的调用情况
 2. 当数据发生变化时 `LiveData` 方法的调用情况
 
 ### 3.1 界面生命周期发生变化时，LiveData 方法的调用情况
 
-当生命周期发生变化的时候，会调用 onStateChanged 方法，然后
+
 
 
 
