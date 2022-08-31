@@ -42,7 +42,7 @@ class LifeCycleActivity:AppCompatActivity{
 ```
 ## 2、源码分析
 
-<img width="600" alt="UML" src="https://user-images.githubusercontent.com/17560388/187358017-6c6abd0b-4e03-4207-a49a-812007b55e24.png">
+<img width="800" alt="UML" src="https://user-images.githubusercontent.com/17560388/187358017-6c6abd0b-4e03-4207-a49a-812007b55e24.png">
 
 ### 2.1 LifecycleOwner 类
 
