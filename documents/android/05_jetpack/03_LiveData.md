@@ -112,7 +112,7 @@ public abstract class LiveData<T> {
     ... 
 }
 ```
-我们重点看一下 `observe(...)` 的实现过程，`observe(...)` 方法的2个参数：
+我们重点看一下 `LiveData#observe(...)` 的实现过程，`observe(...)` 方法的2个参数：
 - LifecycleOwner: `Lifecycle`的持有类，一般是 `Activity/Fragment`
 - Observer: 监听器，通过 onChanged 方法监听数据变化
 
@@ -202,7 +202,7 @@ private abstract class ObserverWrapper {
         }
         // immediately set active state, so we'd never dispatch anything to inactive owner
         mActive = newActive;
-        boolean wasInactive = LiveData.this.mActiveCount == 0;
+        boolean wasInactive = LiveData.this.mActiveCount == 0; // mActiveCount: how many observers are in active state
         LiveData.this.mActiveCount += mActive ? 1 : -1;
         if (wasInactive && mActive) { 
             onActive();//从 Inactive 变为 Active 时回调该方法，LiveData中是空函数，可根据需要进行重写
@@ -210,50 +210,34 @@ private abstract class ObserverWrapper {
         if (LiveData.this.mActiveCount == 0 && !mActive) { // 
             onInactive(); //从 Active 变为 Inactive 时回调该方法，LiveData中是空函数，可根据需要进行重写 
         }
-        if (mActive) { //如果是 mActive 状态才进行事件分发
-            dispatchingValue(this);
+        if (mActive) { //如果是 mActive 状态才 调用 LiveData#dispatchingValue(ObserverWrapper) 进行事件分发
+            dispatchingValue(this); // 将 ObserverWrapper 传入
         }
     }
 }
 ```
-当 Ower 是 active 状态时才会触发 `LiveData#dispatchingValue(ObserverWrapper)` 方法。
+当 Ower 是 从 inactive 变为 active 状态时才会调用 `LiveData#dispatchingValue(ObserverWrapper)` 方法，并将 `this` 作为参数传入。我们继续往下看
 
-### 3.2 数据发生发生变化时，LiveData的方法调用情况
+### 3.2 LiveData#dispatchingValue 方法
 
-当数据发生变化，需要调用 LiveData 的 setValue/postValue 方法
-
-从setValue入手，看一下流程
+进入到 `LiveData#dispatchingValueObserverWrapper(ObserverWrapper)` 方法
 
 ```kotlin
-protected void setValue(T value) {
-    assertMainThread("setValue");
-    mVersion++; // 更新 LiveData 数据版本号mVersion
-    mData = value; // 保存这次变化的数据
-    dispatchingValue(null); //调用回调函数
-}
-```
-
-进入到 LiveData # dispatchingValue 方法
-
-```kotlin
-void dispatchingValue(@Nullable ObserverWrapper initiator) {
-    if (mDispatchingValue) { //如果此时正在进行数据分发
-        mDispatchInvalidated = true; //标记一下tag，这次数据变化没有进入分发操作
+void dispatchingValue(@Nullable ObserverWrapper initiator) { // 1、从 ObserverWrapper#activeStateChanged 调用时会传入 ObserverWrapper 对象
+    if (mDispatchingValue) { //如果已经开始分发数据
+        mDispatchInvalidated = true; //标记一下无效的 tag，return 
         return;
     }  
     mDispatchingValue = true; //进入while 循环前，设置为true，如果此时又来了一个数据变化，需要在上面 if 判断中进行拦截。
     do {      
         mDispatchInvalidated = false; //开始for循环前，设置为false，for循环完，也会退出while循环
-        if (initiator != null) { //如果 initiator 不为空，通知指定的回调函数
-            considerNotify(initiator);
+        if (initiator != null) { //2、如果 initiator 不为空，调用 considerNotify(initiator) 方法。
+            considerNotify(initiator);// 3、
             initiator = null;
         } else { //initiator为空，循环通知 LiveData 中所有的回调函数
             for (Iterator<Map.Entry<Observer<? super T>, ObserverWrapper>> iterator =  mObservers.iteratorWithAdditions(); iterator.hasNext();) {
                 considerNotify(iterator.next().getValue());
-                //这里 mDispatchInvalidated 为 true，表示在 while 循环未结束的时候，有其他数据发生变化，并调用了该函数
-                //在上面的if判断中设置了 mDispatchInvalidated = true，
-                // 结束本次for循环，但是没有退出 while 循环，开始下一次for循环
-                if (mDispatchInvalidated) {
+                if (mDispatchInvalidated) {// 注意这里，正在分发的时候 dispatchingValue 方法又被调用，mDispatchInvalidated 会被置为 true。
                     break;
                 }
             }
@@ -262,12 +246,9 @@ void dispatchingValue(@Nullable ObserverWrapper initiator) {
     mDispatchingValue = false;  //退出while 后，设置为false，正常处理数据变化
 }
 ```
+`ObserverWrapper#activeStateChanged` 调用 `LiveData#dispatchingValueObserverWrapper` 方法时
 
-注意上面的两个变量
-
-1. mDispatchingValue 这个变量用来控制是否进入while 循环，以及 while 循环是否已经结束
-2. mDispatchInvalidated 这个变量用来控制 for 循环是否要重新开始
-
+### 3.4 继续跟踪 
 看下 considerNotify 的函数，调用了之前livedata设置的observer的onChanged函数
 
 ```kotlin
@@ -287,6 +268,29 @@ private void considerNotify(ObserverWrapper observer) {
     observer.mObserver.onChanged((T) mData);
 }
 ```
+
+### 3.2 数据发生发生变化时，LiveData的方法调用情况
+
+当数据发生变化，需要调用 LiveData 的 setValue/postValue 方法
+
+从setValue入手，看一下流程
+
+```kotlin
+protected void setValue(T value) {
+    assertMainThread("setValue");
+    mVersion++; // 更新 LiveData 数据版本号mVersion
+    mData = value; // 保存这次变化的数据
+    dispatchingValue(null); //调用回调函数
+}
+```
+
+
+
+注意上面的两个变量
+
+
+
+
 
 看完了 setValue，postValue 就很简单了：
 
