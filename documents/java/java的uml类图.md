@@ -14,7 +14,7 @@
 
 ## 2、关系表示
 
-<img width="600" alt="uml类图" src="https://user-images.githubusercontent.com/17560388/148050551-48d8a212-2636-4e4f-a1bc-925b61cab13c.png">
+<img width="600" alt="uml类图" src="https://user-images.githubusercontent.com/17560388/187892386-16a36cfa-a98c-48da-b849-b3a683d0bc5a.jpg">
 
 ## 3、其他
 
