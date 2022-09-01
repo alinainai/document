@@ -6,7 +6,7 @@
 - 一个是 `LiveData` 类型，内部使用，
 - 一个是 `MutableLiveData` 类型，暴露给 `Activity/Fragment`。
 
-代码如下：
+### 1.1 使用代码
 
 ```kotlin
 class MV:ViewModle(){
@@ -21,18 +21,19 @@ class MV:ViewModle(){
     }
 }
 ```
-然后在 `Activity/Fragment` 使用，当数据发生变化的时候会自动回调 `observe(...)` 方法。注意注册的时机，一般在 onCreate 的中注册订阅事件
+然后在 `Activity/Fragment` 使用，当数据发生变化的时候会自动回调 `observe(owner,observer)` 方法，2个具体参数后面分析的源码的时候在讲。
 ```kotlin
 loginViewModel.loginLiveData.observe(this){bean->}
 ```
+注意注册的时机，一般在 onCreate 的中注册订阅事件
 
-**LiveData的特点**：
+### 1.2 LiveData的特点
 
  1. 采用观察者模式，数据发生改变，可以自动回调。
  2. 不需要手动处理生命周期，不会因为 Activity 的销毁重建而丢失数据。
  3. 可以使用单例模式扩展 LiveData 对象以封装系统服务，以便在应用共享资源。
 
-### 数据发送时机
+### 1.3 数据回调时机
 - LiveData 在数据发生更改时给`活跃的观察者`发送更新。
 - 观察者从`非活跃状态更改为活跃状态时`也会收到更新。如果观察者`第二次从非活跃状态更改为活跃状态`，则`只有在自上次变为活跃状态以来值发生了更改时，才会收到更新`。
 
@@ -66,7 +67,7 @@ public abstract class LiveData<T> {
     ...
 }
 ```
-`LiveData（abstract类）`的子类`MutableLiveData`的源码
+`LiveData(abstract类)`的子类`MutableLiveData`的源码
 
 ```java
 public class MutableLiveData<T> extends LiveData<T> {
@@ -85,7 +86,7 @@ public class MutableLiveData<T> extends LiveData<T> {
 
 ### 2.2 Observer 接口
 
-我们在 通过 `LiveData#observe(owner,observer)` 方法传入一个 `Observer` 接口。Observer 接口如下：
+我们在通过 `LiveData#observe(owner,observer)` 方法传入一个 `Observer` 接口。Observer 接口如下：
 
 ```java
 public interface Observer<T> {
@@ -97,9 +98,8 @@ public interface Observer<T> {
 
 LiveData 中的 `observe()` 和 `observeForever()` 都可以完成 Observer 的注册。
 
-observe(owner,observer) 方法只有在 owner 是 active 之后 ，数据发生改变才会触发 observer.onChanged()
-
-observeForever(observer) 方法没有传入 owner 对象，
+- observe(owner,observer) 方法只有在 owner 是 active 之后 ，数据发生改变才会触发 observer.onChanged()
+- observeForever(observer) 方法没有传入 owner 对象，
 
 ```java
 public abstract class LiveData<T> {
@@ -139,8 +139,7 @@ public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> 
 
 ## 3、LifecycleBoundObserver 类中的逻辑
 
-LifecycleBoundObserver 类实现了 `LifecycleEventObserver` 接口。所以当 owner 的生命周期变化时触发 `LifecycleBoundObserver#onStateChanged(source,event)` 的回调。
-下面我们看下 LifecycleBoundObserver 类和该类中的方法。
+LifecycleBoundObserver 继承自 `ObserverWrapper` 并实现了 `LifecycleEventObserver` 接口。当 owner 的生命周期变化时会触发 `LifecycleBoundObserver#onStateChanged(source,event)` 的回调。我们看下 LifecycleBoundObserver 类和该类中的方法。
 
 ### 3.1 LifecycleBoundObserver 类
 ```java
@@ -183,7 +182,7 @@ class LifecycleBoundObserver extends ObserverWrapper implements LifecycleEventOb
     }
 }
 ```
-我们主要看下 `onStateChanged(...)`，在该方法中会继续调用父类的 `ObserverWrapper#activeStateChanged(newActive)` 方法:
+在 `onStateChanged(...)` 方法中会继续调用`父类(ObserverWrapper)`的 `ObserverWrapper#activeStateChanged(newActive)` 方法:
 
 ```kotlin
 private abstract class ObserverWrapper {
@@ -197,26 +196,26 @@ private abstract class ObserverWrapper {
     }
 
     void activeStateChanged(boolean newActive) {
-        if (newActive == mActive) { // 当激活状态没有发生变化，直接返回。
+        if (newActive == mActive) { // 1、当激活状态没有发生变化，直接返回。
             return;
         }
-        // immediately set active state, so we'd never dispatch anything to inactive owner
+        // immediately set active state, so we'd never dispatch anything to inactive owner 立即更新 active 状态 
         mActive = newActive;
         boolean wasInactive = LiveData.this.mActiveCount == 0; // mActiveCount: how many observers are in active state
         LiveData.this.mActiveCount += mActive ? 1 : -1;
         if (wasInactive && mActive) { 
-            onActive();//从 Inactive 变为 Active 时回调该方法，LiveData中是空函数，可根据需要进行重写
+            onActive(); // 从 Inactive 变为 Active 时回调该方法，LiveData中是空函数，可根据需要进行重写
         }
         if (LiveData.this.mActiveCount == 0 && !mActive) { // 
-            onInactive(); //从 Active 变为 Inactive 时回调该方法，LiveData中是空函数，可根据需要进行重写 
+            onInactive(); // 从 Active 变为 Inactive 时回调该方法，LiveData中是空函数，可根据需要进行重写 
         }
-        if (mActive) { //如果是 mActive 状态才 调用 LiveData#dispatchingValue(ObserverWrapper) 进行事件分发
-            dispatchingValue(this); // 将 ObserverWrapper 传入
+        if (mActive) { //如果是 active 状态才调用 LiveData#dispatchingValue(ObserverWrapper) 进行分发，并将 ObserverWrapper 传入。
+            dispatchingValue(this);
         }
     }
 }
 ```
-当 Ower 是 从 inactive 变为 active 状态时才会调用 `LiveData#dispatchingValue(ObserverWrapper)` 方法，并将 `this` 作为参数传入。我们继续往下看
+当 Ower 是 从 inactive 变为 active 状态时才会继续调用 `LiveData#dispatchingValue(ObserverWrapper)` 方法，并将 `this` 作为参数传入。我们继续往下看
 
 ### 3.2 LiveData#dispatchingValue 方法
 
@@ -224,11 +223,11 @@ private abstract class ObserverWrapper {
 
 ```kotlin
 void dispatchingValue(@Nullable ObserverWrapper initiator) { // 1、从 ObserverWrapper#activeStateChanged 调用时会传入 ObserverWrapper 对象
-    if (mDispatchingValue) { //如果已经开始分发数据
-        mDispatchInvalidated = true; //标记一下无效的 tag，return 
+    if (mDispatchingValue) { //如果已经开始分发，标记一下无效的 tag，return
+        mDispatchInvalidated = true;
         return;
     }  
-    mDispatchingValue = true; //进入while 循环前，设置为true，如果此时又来了一个数据变化，需要在上面 if 判断中进行拦截。
+    mDispatchingValue = true; //进入while 循环前，设置 mDispatchingValue 为 true 。
     do {      
         mDispatchInvalidated = false; //开始for循环前，设置为false，for循环完，也会退出while循环
         if (initiator != null) { //2、如果 initiator 不为空，调用 considerNotify(initiator) 方法。
@@ -243,31 +242,34 @@ void dispatchingValue(@Nullable ObserverWrapper initiator) { // 1、从 Observer
             }
         }
     } while (mDispatchInvalidated);
-    mDispatchingValue = false;  //退出while 后，设置为false，正常处理数据变化
+    mDispatchingValue = false;  // 退出 while 后，将 mDispatchingValue 设置为 false，逻辑很严谨
 }
 ```
-`ObserverWrapper#activeStateChanged` 调用 `LiveData#dispatchingValueObserverWrapper` 方法时
+`ObserverWrapper#activeStateChanged` 继续调用 `LiveData#dispatchingValue` 方法，
 
-### 3.4 继续跟踪 
-看下 considerNotify 的函数，调用了之前livedata设置的observer的onChanged函数
+### 3.4 继续跟踪 considerNotify
+
+看下 `considerNotify(observer)` 方法:
 
 ```kotlin
 private void considerNotify(ObserverWrapper observer) {
-    if (!observer.mActive) {
+    if (!observer.mActive) { // 继续拦截不是 active 的 observer
         return;
     }
-    if (!observer.shouldBeActive()) { // 如果当前的生命周期是非活跃，就不回调 onChanged 函数，并在 LifecycleBoundObserver 中记录状态
+    if (!observer.shouldBeActive()) { // 如果生命周期变为非活跃，回调 observer 的 activeStateChanged 方法，入参为 false
         observer.activeStateChanged(false);
         return;
     }
-    if (observer.mLastVersion >= mVersion) { //如果 observer 中的数据版本已经是最新了
+    if (observer.mLastVersion >= mVersion) { // 根据 observer 中的数据版本判断是否需要更新，如果 observer.mLastVersion 小于 LiveData.mVersion
         return;
     }
-    observer.mLastVersion = mVersion;
+    observer.mLastVersion = mVersion; // 更新一下 observer.mLastVersion
     //noinspection unchecked
-    observer.mObserver.onChanged((T) mData);
+    observer.mObserver.onChanged((T) mData); // 调用 Observer 的 onChanged(T)，数据源变化
 }
 ```
+经过一些列的判断后，最终在 `considerNotify` 方法中实现了 `Observer#onChanged(T)` 的回调。
+
 
 ### 3.2 数据发生发生变化时，LiveData的方法调用情况
 
@@ -283,14 +285,6 @@ protected void setValue(T value) {
     dispatchingValue(null); //调用回调函数
 }
 ```
-
-
-
-注意上面的两个变量
-
-
-
-
 
 看完了 setValue，postValue 就很简单了：
 
