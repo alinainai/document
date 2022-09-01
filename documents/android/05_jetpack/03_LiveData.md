@@ -39,13 +39,13 @@ class MainActivity:AppCompatActivity(){
  2. 不需要手动处理生命周期，不会因为 Activity 的销毁重建而丢失数据。
  3. 可以使用单例模式扩展 LiveData 对象以封装系统服务，以便在应用共享资源。
 
-### 1.3 数据回调时机
+### 1.3 数据变化回调的时机
 - LiveData 在数据发生更改时给`活跃的观察者`发送更新。
 - 观察者从`非活跃状态更改为活跃状态时`也会收到更新。如果观察者`第二次从非活跃状态更改为活跃状态`，则`只有在自上次变为活跃状态以来值发生了更改时，才会收到更新`。
 
 ## 2、源码分析
 
-LiveData 和 MultableLiveData 的区别:MultableLiveData 是 LiveData 子类，并对外公开了 postValue 和 setValue 的方法。
+
 
 ### 2.1 LiveData 源码
 
@@ -63,7 +63,7 @@ public abstract class LiveData<T> {
     }
 }
 ```
-`LiveData(abstract类)`的子类`MutableLiveData`的源码
+MultableLiveData 是 LiveData 子类，并对外公开了 postValue 和 setValue 的方法。
 
 ```java
 public class MutableLiveData<T> extends LiveData<T> {
