@@ -1,12 +1,12 @@
-## 1、基本使用
+本文源码基于 `Android SDK 32` 版本
 
-### 1.1 什么是 LifeCycle
+## 1、简单使用
 
 `Lifecycle` 是 `Jetpack` 的基础组件之一，它可以帮助开发者更好的处理和 `生命周期` 相依赖的业务逻辑。用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险。
 
-### 1.2 使用方法
+### 1.1 使用方法
 
-1.我们可以通过实现`DefaultLifecycleObserver`接口，直接使用对应的 onXXX 方法，代码如下:
+1.我们可以通过实现`DefaultLifecycleObserver`接口，直接使用对应的生命周期回调方法，代码如下:
 
 ```kotlin
 class LifeCycleObserver1 : DefaultLifecycleObserver {
@@ -18,7 +18,7 @@ class LifeCycleObserver1 : DefaultLifecycleObserver {
     }
 }
 ```
-2.实现`LifecycleObserver`接口，并通过注解来标记回调方法
+2.实现`LifecycleObserver`接口，并通过注解来标记回调方法。在 SDK 32 中已标记为废弃，酌情使用。
 ```kotlin
 class LifeCycleObserver2 : LifecycleObserver {
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
@@ -30,6 +30,14 @@ class LifeCycleObserver2 : LifecycleObserver {
     }
 }
 ```
+3.实现 LifecycleEventObserver 接口，在 onStateChanged 方法中监听。
+ ```kotlin
+class LifeCycleObserver3 : LifecycleEventObserver {
+    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+        
+    }
+}
+```
 在Activity中使用
 ```kotlin
 class LifeCycleActivity:AppCompatActivity{
@@ -37,12 +45,13 @@ class LifeCycleActivity:AppCompatActivity{
         super.onCreate(savedInstanceState)
         lifecycle.addObserver(LifeCycleObserver1())
         lifecycle.addObserver(LifeCycleObserver2())
+        lifecycle.addObserver(LifeCycleObserver3())
     }
 }
 ```
 ## 2、源码分析
 
-<img width="800" alt="UML" src="https://user-images.githubusercontent.com/17560388/187358017-6c6abd0b-4e03-4207-a49a-812007b55e24.png">
+<img width="800" alt="UML" src="https://user-images.githubusercontent.com/17560388/188046104-3fbd27c2-0d0c-485f-8b4b-63ecace70512.png">
 
 ### 2.1 LifecycleOwner 类
 
