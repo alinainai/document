@@ -468,17 +468,14 @@ LifecycleRegistry 事件分发的方法调用顺序：
 
 ## 总结
 
-LifeCycle 让我们更好的处理和 `Activity/Fragment` 生命周期相关的代码逻辑，不用再去 `onCreate/onResume...` 中做回调。使用方式很简单，在 onCreate 方法中注册 lifecycle.addObserver(LifeCycleObserver())，然后将代码逻辑放到注册的 LifeCycleObserver 中，实现和 Activity 的解耦。
+LifeCycle 让我们更好的处理和 `Activity/Fragment` 生命周期相关的代码逻辑，不用再去 `onCreate/onResume...` 中做回调。使用方式很简单，在 onCreate 方法中注册 lifecycle.addObserver(LifeCycleObserver)，然后将代码逻辑放到 LifeCycleObserver 中，实现和 Activity 代码上的解耦。
 
-源码也很简单，`Activity/Fragment` 内部维护一个 `LifecycleRegistry` 类，将注册的 `LifeCycleObserver` 添加到 `LifecycleRegistry` 的内部容器中。
-在 `Activity/Fragment` 中插入一个 `ReportFragment` 对象，当 `Activity/Fragment` 生命周期变化时调用 `ReportFragment#dispatch(activity,event)` 实现事件分发。
-
-SDK>=29时:在 Activity 中注册 `Application.ActivityLifecycleCallbacks`，然后在对应的方法中发送 Event。
-SDK<29时: 在 ReportFragment 的生命周期发送相应的 Event。
-
-`ReportFragment#dispatch(activity,event)` 内部又调用 `activity.getLifecycle().handleLifecycleEvent(event)` 将操作又回调给 `LifecycleRegistry` 类。
-
-`LifecycleRegistry` 类中的内部容器持有 `LifeCycleObserver:ObserverWithState` 的 `key-value` 映射，`LifecycleRegistry` 通过调用 `ObserverWithState#dispatchEvent(owner,event)` 方法来实现 `LifeCycleObserver` 中的方法回调。
+源码也很简单：
+1. `Activity/Fragment` 内部维护一个 `LifecycleRegistry`，可以通过 getLifecycle() 获取该对象。
+2. 将注册的 `LifeCycleObserver` 包装成一个 ObserverWithState，并添加到 `LifecycleRegistry` 的内部容器中 `<LifeCycleObserver:ObserverWithState>`。
+3. 在`ComponentActivity` 类中，onCreate 方法中插入一个 `ReportFragment` 对象，当 `Activity/Fragment` 生命周期变化时会调用 `ReportFragment#dispatch(activity,event)`。 
+4. `ReportFragment#dispatch(activity,event)` 内部又调用 `activity.getLifecycle().handleLifecycleEvent(event)`-> `moveToState` -> `sync()`。
+5. 最终在调用 `ObserverWithState#dispatchEvent(owner,event)` 方法来实现了 `LifeCycleObserver` 中的方法回调。
 
 
 ## 参考
