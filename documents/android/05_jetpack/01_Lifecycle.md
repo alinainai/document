@@ -55,26 +55,25 @@ class LifeCycleActivity:AppCompatActivity{
 
 ### 2.1 LifecycleOwner 类
 
-`LifecycleOwner` 是一个单方法接口，只有一个 `Lifecycle getLifecycle()` 方法。
+`LifecycleOwner` 是一个单方法接口，只有一个 `Lifecycle getLifecycle()` 方法。`ComponentActivity` 类实现了 `LifecycleOwner` 接口，Fragment 也实现了 LifecycleOwner 接口，`getLifecycle()`方法返回的都是 `Lifecycle` 的子类 `LifecycleRegistry` 实例。
 
 ```java
 public interface LifecycleOwner {
     @NonNull
-    Lifecycle getLifecycle();
+    Lifecycle getLifecycle(); // 对外提供一个 Lifecycle 对象
 }
 ```
-`ComponentActivity` 类实现了 `LifecycleOwner` 接口。表示 `ComponentActivity` 类中具有 `Lifecycle` 对象。
 
 ### 2.2 Lifecycle 类
 
-`Lifecycle` 是一个抽象类，用于存储有关组件(Activity/Fragment) 的`生命周期的状态信息`，并允许其他对象(LifecycleObserver)观察此状态。
+`Lifecycle` 是一个抽象类，提供了处理 `LifecycleObserver` 的相关方法，截图如下
 
 <img width="437" alt="image" src="https://user-images.githubusercontent.com/17560388/163302734-c3cf855c-1c7e-49b5-a650-8c4724d8b326.png">
 
-`Lifecycle`中定义了添加、移除`LifecycleObserver`的方法，并使用两种枚举来表示其关联的组件的生命周期状态：
+另外，Lifecycle 中还有两个内部类：
 
-- `事件 Event`: 从框架和 Lifecycle 类分派的生命周期事件。这些事件映射到 activity 和 fragment 中的回调事件。
-- `状态 State`: 由 Lifecycle 对象跟踪的组件的当前状态。
+- `事件 Event`: 当 Activity/Fragment 生命周期变化时会发送响应的事件
+- `状态 State`: Lifecycle 根据事件修改持有 Lifecycle 的组件的当前状态。
 
 ```java
 public enum Event {
@@ -103,9 +102,13 @@ public enum State {
 
 <img width="500" alt="构成 Android Activity 生命周期的状态和事件" src="https://user-images.githubusercontent.com/17560388/163300843-a79fd13a-713d-4300-9077-e40fcffb8038.png">
 
+我们主要看一下 ComponentActivity 类中 Lifecycle 的相关逻辑。
+
 ### 2.3 ComponentActivity类
 
-在`ComponentActivity`中`getLifecycle()`返回一个`LifecycleRegistry`对象
+在`ComponentActivity`中`getLifecycle()`返回一个`LifecycleRegistry`对象，LifecycleRegistry 是 Lifecycle 的子类。
+
+在 ComponentActivity 的 onCreate 方法中会注入一个监听生命周期变化的 ReportFragment 类。
 
 ```java
 public class ComponentActivity extends androidx.core.app.ComponentActivity implements LifecycleOwner{
@@ -125,7 +128,7 @@ public class ComponentActivity extends androidx.core.app.ComponentActivity imple
 ```
 ### 2.4 ReportFragment类
 
-在 `ComponentActivity#onCreate` 方法中注入了一个 ReportFragment 对象
+ReportFragment 是一个透明的Fragment，我们看一下 ReportFragment 类的相关代码
 
 ```java
 public class ReportFragment extends android.app.Fragment {
@@ -140,7 +143,6 @@ public class ReportFragment extends android.app.Fragment {
             manager.executePendingTransactions();
         }
     }
-    
     ...
     @Override
     public void onPause() {
@@ -169,10 +171,12 @@ public class ReportFragment extends android.app.Fragment {
     }
 }
 ```
+在 ReportFragment 类中，会根据 SDK_INT 的版本采用不同的方案来监听 Activity 生命周期变化的回调
+
 - 在 `SDK_INT >= 29` 通过 Application.ActivityLifecycleCallbacks 的回调分发事件
 - 在 `SDK_INT < 29` 通过 Fragment 生命周期的回调分发事件
 
-不管哪种方式最终都是通过 `ReportFragment` 中的静态方法 `dispatch(activity,event)` 实现件的分发
+不管哪种方式最终都是通过 `ReportFragment` 中的静态方法 `ReportFragment#dispatch(activity,event)` 实现件的分发
 
 ```java
 static void dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event) {
@@ -191,29 +195,24 @@ static void dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event)
 ```
 `dispatch(activity,event)` 方法内部继续调用 `LifecycleRegistry#handleLifecycleEvent(event)`方法进行事件分发。
 
-
 ### 2.5 LifecycleRegistry类
 
-`LifecycleRegistry` 是 `Lifecycle` 的子类，内部持有一个 `LifecycleObserver:ObserverWithState`的 Map 容器。
+`LifecycleRegistry` 是 `Lifecycle` 的子类，内部持有一个 `LifecycleObserver:ObserverWithState`的 Map 容器用来存储 `addObserver` 的 `LifecycleObserver`。
 
 ```java
 public class LifecycleRegistry extends Lifecycle {
-
-    public LifecycleRegistry(@NonNull LifecycleOwner provider) {
-        this(provider, true);
-    }
-
-    private LifecycleRegistry(@NonNull LifecycleOwner provider, boolean enforceMainThread) {
-        mLifecycleOwner = new WeakReference<>(provider);
-        mState = INITIALIZED;
-        mEnforceMainThread = enforceMainThread;
-    }
 
     // 持有 LifecycleObserver 的容器
     private FastSafeIterableMap<LifecycleObserver, ObserverWithState> mObserverMap =  new FastSafeIterableMap<>();
            
     private State mState; // LifecycleRegistry 的当前状态
     private final WeakReference<LifecycleOwner> mLifecycleOwner; // LifecycleOwner 的弱引用，防止泄漏
+
+    private LifecycleRegistry(@NonNull LifecycleOwner provider, boolean enforceMainThread) {
+        mLifecycleOwner = new WeakReference<>(provider);
+        mState = INITIALIZED;
+        mEnforceMainThread = enforceMainThread;
+    }
     
     @Override
     public void addObserver(@NonNull LifecycleObserver observer) {
@@ -222,26 +221,97 @@ public class LifecycleRegistry extends Lifecycle {
         ObserverWithState previous = mObserverMap.putIfAbsent(observer, statefulObserver); // 将 observer:ObserverWithState 存入 mObserverMap
         ...
     }
+```
+在 LifecycleRegistry#addObserver 方法中将 observer 和 state 包装成一个 ObserverWithState 对象，再把它 put 到 mObserverMap 中。创建一个 observer:ObserverWithState 的映射。
 
-    static class ObserverWithState { // ObserverWithState 类
-        State mState;
-        LifecycleEventObserver mLifecycleObserver;
+```java
+static class ObserverWithState { // ObserverWithState 类
+    State mState;
+    LifecycleEventObserver mLifecycleObserver;
+    
+    ObserverWithState(LifecycleObserver observer, State initialState) {
+        // 使用 Lifecycling 的 lifecycleEventObserver 方法，将传入的 LifecycleObserver 转换为 LifecycleEventObserver 类
+        mLifecycleObserver = Lifecycling.lifecycleEventObserver(observer);
+        mState = initialState;
+    }
+    
+    void dispatchEvent(LifecycleOwner owner, Event event) {
+        State newState = event.getTargetState();
+        mState = min(mState, newState);
+        mLifecycleObserver.onStateChanged(owner, event);
+        mState = newState;
+    }
+}
+```
+`ObserverWithState` 构造中，使用 `Lifecycling#lifecycleEventObserver(LifecycleObserver)` 方法，将传入的 LifecycleObserver 转换为一个 LifecycleEventObserver 对象。 
 
-        ObserverWithState(LifecycleObserver observer, State initialState) {
-            // 使用 Lifecycling 的 lifecycleEventObserver 方法，将传入的 LifecycleObserver 转换为 LifecycleEventObserver 类
-            mLifecycleObserver = Lifecycling.lifecycleEventObserver(observer);
-            mState = initialState;
+LifecycleEventObserver 是一个接口，Owner 生命周期变化的的时候触发 onStateChanged 方法。
+
+```java
+public interface LifecycleEventObserver extends LifecycleObserver {
+    void onStateChanged(@NonNull LifecycleOwner source, @NonNull Lifecycle.Event event);
+}
+```
+我们再看一下 Lifecycling#lifecycleEventObserver 方法，我们简化一下，只看 object 是 FullLifecycleObserver 类型的情况：
+```java
+public class Lifecycling {
+    @NonNull
+    static LifecycleEventObserver lifecycleEventObserver(Object object) {
+        boolean isLifecycleEventObserver = object instanceof LifecycleEventObserver;
+        boolean isFullLifecycleObserver = object instanceof FullLifecycleObserver;
+        ...
+        if (isFullLifecycleObserver) { // 采用适配器模式将传入的 FullLifecycleObserver 转换为一个 LifecycleEventObserver对象
+            return new FullLifecycleObserverAdapter((FullLifecycleObserver) object, null); 
         }
+    }
+}
+```
+FullLifecycleObserverAdapter 代码，典型的适配器模式
+```java
+class FullLifecycleObserverAdapter implements LifecycleEventObserver {
+    private final FullLifecycleObserver mFullLifecycleObserver;
+    private final LifecycleEventObserver mLifecycleEventObserver;
+    
+    FullLifecycleObserverAdapter(FullLifecycleObserver fullLifecycleObserver, LifecycleEventObserver lifecycleEventObserver) {
+        mFullLifecycleObserver = fullLifecycleObserver;
+        mLifecycleEventObserver = lifecycleEventObserver;
+    }
 
-        void dispatchEvent(LifecycleOwner owner, Event event) {
-            State newState = event.getTargetState();
-            mState = min(mState, newState);
-            mLifecycleObserver.onStateChanged(owner, event);
-            mState = newState;
+    @Override
+    public void onStateChanged(@NonNull LifecycleOwner source, @NonNull Lifecycle.Event event) {
+        switch (event) {
+            case ON_CREATE:
+                mFullLifecycleObserver.onCreate(source);
+                break;
+            case ON_START:
+                mFullLifecycleObserver.onStart(source);
+                break;
+            case ON_RESUME:
+                mFullLifecycleObserver.onResume(source);
+                break;
+            case ON_PAUSE:
+                mFullLifecycleObserver.onPause(source);
+                break;
+            case ON_STOP:
+                mFullLifecycleObserver.onStop(source);
+                break;
+            case ON_DESTROY:
+                mFullLifecycleObserver.onDestroy(source);
+                break;
+            case ON_ANY:
+                throw new IllegalArgumentException("ON_ANY must not been send by anybody");
+        }
+        if (mLifecycleEventObserver != null) {
+            mLifecycleEventObserver.onStateChanged(source, event);
         }
     }
 ```
-### 2.6 事件分发
+
+
+##  3、事件分发
+
+在 Re
+
 ```java
 public void handleLifecycleEvent(@NonNull Lifecycle.Event event) {
     enforceMainThreadIfNeeded("handleLifecycleEvent");
