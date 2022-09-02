@@ -7,13 +7,14 @@ MVVM 架构的中VM，负责`View层`和`Model层`的交互。以注重生命周
 ### 1.1 特点
 
 特点：在 Activity 横竖屏切换时也会保持同一个对象。
-注意：内部不要持有 Activity/Fragment 对象。因为生命周期比 Activity/Fragment 长，可能会引起泄漏。
 
-ViewModel 对象存在的时间范围是获取 ViewModel 时传递给 ViewModelProvider 的 Lifecycle。ViewModel 将一直留在内存中，直到限定其存在时间范围的 Lifecycle 永久消失：
+ViewModel 对象存在的时间范围和 ViewModelProvider 相绑定的 Lifecycle 有关。ViewModel 将一直留在内存中，直到限定其存在时间范围的 Lifecycle 永久消失：
 - 对于 Activity，是在 Activity 完成时；
 - 而对于 Fragment，是在 Fragment 分离时。
 
 <img width="400" alt="ViewModel生命周期" src="https://user-images.githubusercontent.com/17560388/141035994-bc844b3e-b496-4872-8443-4b6a79f9b8ee.png">
+
+>注意：内部不要持有 Activity/Fragment 对象。因为生命周期比 Activity/Fragment 长，可能会引起泄漏。
 
 ### 1.2 基本使用
 
