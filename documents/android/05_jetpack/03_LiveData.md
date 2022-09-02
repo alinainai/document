@@ -45,7 +45,7 @@ class MainActivity:AppCompatActivity(){
 
 ## 2、源码分析
 
-
+<img width="800" alt="livedata类图" src="https://user-images.githubusercontent.com/17560388/188040726-c07ae779-883c-47f7-b053-7ea1d33841bc.svg">
 
 ### 2.1 LiveData 源码
 
