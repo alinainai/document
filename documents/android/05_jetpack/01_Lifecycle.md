@@ -310,7 +310,7 @@ class FullLifecycleObserverAdapter implements LifecycleEventObserver {
 
 ##  3、事件分发
 
-在 Re
+当 Activity 的生命周期发生变化后，RejectFragment 会调用 dispatch(activity,event) 进行事件分发。在 dispatch(activity,event) 内部又调用 LifecycleRegistry#handleLifecycleEvent(Lifecycle.Event) 方法。
 
 ```java
 public void handleLifecycleEvent(@NonNull Lifecycle.Event event) {
@@ -349,7 +349,9 @@ private void sync() {
     mNewEventOccurred = false;
 }
 ```
+
 在 sync 方法中继续调用 forwardPass 和 backwardPass 方法实现事件的同步
+
 ```java
 private void forwardPass(LifecycleOwner lifecycleOwner) {
     Iterator<Map.Entry<LifecycleObserver, ObserverWithState>> ascendingIterator = mObserverMap.iteratorWithAdditions();
