@@ -468,7 +468,7 @@ LifecycleRegistry 事件分发的方法调用顺序：
 
 ## 总结
 
-LifeCycle 让我们更好的处理和 `Activity/Fragment` 生命周期相关的代码逻辑，不用再去 `onCreate/onResume...` 中做回调。使用方式很简单，在 onCreate 方法中注册 lifecycle.addObserver(LifeCycleObserver)，然后将代码逻辑放到 LifeCycleObserver 中，实现和 Activity 代码上的解耦。
+Lifecycle 让我们更好的处理和 `Activity/Fragment` 生命周期相关的代码逻辑，不用再去 `onCreate/onResume...` 中做回调。使用方式很简单，在 onCreate 方法中注册 lifecycle.addObserver(LifecycleObserver)，然后将代码逻辑放到 LifecycleObserver 中，实现和 Activity 代码上的解耦。
 
 源码也很简单：
 1. `Activity/Fragment` 内部维护一个 `LifecycleRegistry`，可以通过 getLifecycle() 获取该对象。
@@ -479,6 +479,7 @@ LifeCycle 让我们更好的处理和 `Activity/Fragment` 生命周期相关的�
 
 
 ## 参考
+- [【AAC 系列三】深入理解架构组件：LiveData](https://juejin.cn/post/6844903849161949198#heading-11)
 - [使用生命周期感知型组件处理生命周期](https://developer.android.com/topic/libraries/architecture/lifecycle?hl=zh-cn#implementing-lco)
 - [Lifecycle源码解析](https://zhuanlan.zhihu.com/p/461750106)
 - [Lifecycle 源码分析](https://juejin.cn/post/7031787495985512461)
