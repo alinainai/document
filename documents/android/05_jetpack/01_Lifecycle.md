@@ -2,7 +2,7 @@
 
 ## 1、简单使用
 
-`Lifecycle` 是 `Jetpack` 的基础组件之一，它可以帮助开发者更好的处理和 `生命周期` 相依赖的业务逻辑。用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险。
+`Lifecycle` 是 `Jetpack` 的基础组件之一。用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险，使和 `生命周期` 相依赖的业务逻辑解耦出来。
 
 ### 1.1 使用方法
 
@@ -18,24 +18,20 @@ class LifeCycleObserver1 : DefaultLifecycleObserver {
     }
 }
 ```
-2.实现`LifecycleObserver`接口，并通过注解来标记回调方法。在 SDK 32 中已标记为废弃，酌情使用。
+2.实现`LifecycleObserver`接口，并通过注解来标记回调方法。因为用到反射，在 SDK32 中已标记为废弃。
 ```kotlin
 class LifeCycleObserver2 : LifecycleObserver {
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun start() {
-    }
+    fun start() {//todo}
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    fun destroy() {
-    }
+    fun destroy() {//todo}
 }
 ```
 3.实现 LifecycleEventObserver 接口，在 onStateChanged 方法中监听。
  ```kotlin
 class LifeCycleObserver3 : LifecycleEventObserver {
-    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-        
-    }
+    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {//todo }
 }
 ```
 在Activity中使用
