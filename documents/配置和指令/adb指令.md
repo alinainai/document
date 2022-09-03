@@ -16,3 +16,7 @@ adb shell dumpsys activity | grep mFocusedActivity
 ```shell
 adb logcat -e time > /Users/lijiaxing/Downloads/log.txt
 ```
+5、查看应用进程
+```shell
+adb shell ps | grep 包名
+```
