@@ -1,10 +1,12 @@
-### Serializable vs Parcelable
+## 1、Serializable vs Parcelable
 
 这两者都是 Android 的序列化方式:
 
-Serializable 的底层是通过 IO 来实现的，序列化是通过 ObjectOutputStream 来实现，比如字符串的序列化方法，就是标准的 IO 方法
+### 1.1 Serializable 相关
 
-java.io.ObjectOutputStream
+Serializable 是通过 IO 来实现的，使用 ObjectOutputStream 将 Java 对象序列化
+
+我们可以看下 java.io.ObjectOutputStream 中的 writeString 方法
 
 ```java
 /**                                                                        
@@ -24,9 +26,11 @@ private void writeString(String str, boolean unshared) throws IOException {
 }
 ```
 
-Parcelable 的内部，是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好，在 Android 中尽量避免使用 Serializable 来序列化
+### 1.1 Parcelable 相关
 
-#### parcel 的 Java 层只是一个壳
+Parcelable 的内部是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好，在 Android 中尽量使用 Parcelable 来序列化
+
+### parcel 的 Java 层只是一个壳
 
 先看下Java层的代码，首先通过 Parce.obtain() 来获取一个 parcel 对象
 
