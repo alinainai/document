@@ -4,6 +4,8 @@
 
 ### 1.1 Serializable 相关
 
+Parcelable
+
 Serializable 是通过 IO 来实现的，使用 ObjectOutputStream 将 Java 对象序列化
 
 我们可以看下 java.io.ObjectOutputStream 中的 writeString 方法
@@ -25,10 +27,16 @@ private void writeString(String str, boolean unshared) throws IOException {
     }                                                                      
 }
 ```
+对于Serializable，类只需要实现 Serializable 接口，并提供一个序列化版本 id(serialVersionUID) 即可。
 
 ### 1.1 Parcelable 相关
 
 Parcelable 的内部是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好，在 Android 中尽量使用 Parcelable 来序列化
+
+
+
+
+## 2、Parcel 源码分析
 
 ### parcel 的 Java 层只是一个壳
 
