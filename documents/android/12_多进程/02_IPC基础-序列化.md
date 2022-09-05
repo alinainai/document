@@ -4,42 +4,29 @@
 
 ### 1.1 Serializable 相关
 
-Parcelable
+Serializable 是底层通过 IO 来实现的
 
-Serializable 是通过 IO 来实现的，使用 ObjectOutputStream 将 Java 对象序列化
+对于 Serializable，类只需要实现 Serializable 接口，并提供一个序列化版本 id(serialVersionUID) 即可。其他的事情系统都帮我们完成了
 
-我们可以看下 java.io.ObjectOutputStream 中的 writeString 方法
+当然也可以通过实现下面两个方法来重写系统默认的序列化和反序列化过程。
 
 ```java
-/**                                                                        
- * Writes given string to stream, using standard or long UTF format        
- * depending on string length.                                             
- */                                                                        
-private void writeString(String str, boolean unshared) throws IOException {
-    handles.assign(unshared ? null : str);                                 
-    long utflen = bout.getUTFLength(str);                                  
-    if (utflen <= 0xFFFF) {                                                
-        bout.writeByte(TC_STRING);                                         
-        bout.writeUTF(str, utflen);                                        
-    } else {                                                               
-        bout.writeByte(TC_LONGSTRING);                                     
-        bout.writeLongUTF(str, utflen);                                    
-    }                                                                      
+private void writeObject(java.io.ObjectOutputStream out) throws IOException{
+    // write 'this' to 'out'...
+}
+private void readObject(java.io.ObjectInputStream in) throws IOException{
+    // populate the fields of 'this' from the data in 'in'...
 }
 ```
-对于Serializable，类只需要实现 Serializable 接口，并提供一个序列化版本 id(serialVersionUID) 即可。
-
 ### 1.1 Parcelable 相关
 
-Parcelable 的内部是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好，在 Android 中尽量使用 Parcelable 来序列化。
+Parcelable 的是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好。
 
 使用 Parcelable 需要实现 `writeToParcel`、`describeContents` 函数以及静态的 `CREATOR` 变量，实际上就是将如何打包和解包的工作自己来定义，而序列化的这些操作完全由底层实现。
 
 ```java
-
 public class User implements Parcelable{
 
-    // 当前实体类的三个属性
     public int userId;
     public String userName;
     public boolean isMale;
@@ -101,7 +88,6 @@ public class User implements Parcelable{
     }
 
 }
-
 ```
 
 ## 2、Parcel 源码分析
