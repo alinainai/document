@@ -152,3 +152,40 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
 3.touch 事件到达 DecorView 后，是如何一步步传递到内部的子 View 中的。
 
 
+## 其他
+
+- 1、手势滑出子View区域，子view不在响应点击事件。但还是有个 up 事件。
+
+```shell
+(MyButton.java:32) -->ACTION_DOWN
+(MyButton.java:36) -->ACTION_MOVE
+(MyButton.java:36) -->ACTION_MOVE
+(MyButton.java:36) -->ACTION_MOVE
+(MyButton.java:39) -->ACTION_UP
+```
+在view的onTouchEvent()中： 
+```java
+case MotionEvent.ACTION_MOVE:
+    // Be lenient about moving outside of buttons
+    // 判断是否超出view的边界
+    if (!pointInView(x, y, mTouchSlop)) {
+        // Outside button
+        if ((mPrivateFlags & PRESSED) != 0) {
+            // 这里改变状态为 not PRESSED
+            // Need to switch from pressed to not pressed
+            mPrivateFlags &= ~PRESSED;
+        }
+    }
+    break;
+
+case MotionEvent.ACTION_UP:
+    boolean prepressed = (mPrivateFlags & PFLAG_PREPRESSED) != 0;
+    // 可以看到当move出view范围后，这里走不进去了
+    if ((mPrivateFlags & PFLAG_PRESSED) != 0 || prepressed) {
+        ...
+        performClick();
+        ...
+    }
+    mIgnoreNextUpEvent = false;
+    break;
+```
