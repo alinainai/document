@@ -11,7 +11,7 @@
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> 
 ```
 
-创建一个 ForegroundService，前台服务运行时必须展示和服务绑定的 notification。
+创建一个 ForegroundService，前台服务运行时必须设置一个和服务绑定的 notification。
 
 ```java
 public class ForegroundService extends Service {
