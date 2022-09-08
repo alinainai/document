@@ -9,19 +9,19 @@
 
 ## 2、新版架在旧版的基础上的调整和建议
 
-1、将LiveData组件改成了StateFlow
+#### 1、将 LiveData 组件改成了 StateFlow
 
 对协程的使用更友好。并且更能体现面向数据流开发的思想。
 
 实际上，依然使用LiveData也没毛病。
 
-2、ViewModel传递给View的数据限制为View的UIState
+#### 2、ViewModel传递给View的数据限制为View的UIState
 
-ViewModel从Model层获取数据后，转换为UIState数据，通过StateFlow流向View层。
+ViewModel 从 Model层获取数据后，转换为 UIState 数据，通过 StateFlow 流向 View 层。
 
-UIState的数据面向界面组件而定义的，是能直接控制View组件如何显示的数据。
+UIState 的数据面向界面组件而定义的，是能直接控制 View 组件如何显示的数据。
 
-所以我们也可以称UIState为界面的状态或者View的状态。
+所以我们也可以称 UIState 为界面的状态或者 View 的状态。
 
 如下：
 
@@ -33,7 +33,7 @@ data class NewsUiState(
 )
 ```
 
-3、单数据流还是多数据流的选择
+#### 3、单数据流还是多数据流的选择
 
 官方指南并没有强制我们使用单流。
 
@@ -54,18 +54,15 @@ https://developer.android.com/jetpack/guide/ui-layer#additional-considerations
 ## 3、Jetpack 包
 
 ### 3.1 ViewModle
-
-1.ViewModel 以生命周期的方式存储和管理界面相关的数据。
-
-2.Activity 通过更改配置（如旋转）重建后，ViewModel 的生命周期不会影响。可以直接复用 ViewModel 以保存的数据。
-
-3.不用再像原先一样在 Activit 的 Destroy 方法中做 ViewModel 的 clear 回调。
-
-4.多个 Fragment 共享数据。
+- 1.ViewModel 以生命周期的方式存储和管理界面相关的数据。
+- 2.Activity 通过更改配置（如旋转）重建后，ViewModel 的生命周期不会影响。可以直接复用 ViewModel 以保存的数据。
+- 3.不用再像原先一样在 Activit 的 Destroy 方法中做 ViewModel 的 clear 回调。
+- 4.多个 Fragment 共享数据。
 
 ### 3.2 LiveData 和 MultableLiveData 的区别
 
 MultableLiveData 是 LiveData 子类。并对外公开了 postValue 和 setValue 的方法。
 
 ## 参考
+
 - [刚刚开源的 Android 官方 App，了解一下？](https://mp.weixin.qq.com/s/GDfC1J9rm3TtmP5gc_eXfA)
