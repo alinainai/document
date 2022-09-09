@@ -1,19 +1,18 @@
 
-本文基于 android 12 (SDK 31) 源码
+本文基于 android 12 (SDK 31) 进行源码分析
 
 ## 1、使用方法
 
-追踪 `LayoutInflater` 加载布局重载方法，最终都会调用如下代码，同样 `Activity#setContentView(layoutId)` 也是通过这种方式去加载布局
+我们一般采用下面的代码去加载布局，`Activity#setContentView(layoutId)` 最终也会调用该方法进行布局加载。
 
 ```kotlin
  LayoutInflater.from(context).inflate(layoutId,root,attachToRoot)
 ```
-- `context`: 是上下文对象
-- `layoutId`: 是要加载的布局的 id
-- `root`: 是布局要加载到的根布局，是一个 ViewGroup。
-- `attachToRoot`: 要加载的布局是否 attach 到 root 中 (`root.addView(view)`)。
+- `layoutId`: 要加载的布局的 id
+- `root`: 一个 ViewGroup，加载的布局要添加到该 ViewGroup 中
+- `attachToRoot`: 要加载的布局是否直接 attach 到 root 中。
 
-使用 merge 加载布局的时候可以把 attachToRoot 设置为 true。
+在设置 RecycleView 的 ViewHolder 的布局的时候我们将 attachToRoot 设置为false。在使用 merge 加载布局的时候可以把该值设置为 true。
 
 ## 2、获取 LayoutInflater 对象
 
@@ -29,7 +28,10 @@ public static LayoutInflater from(Context context) {
 }
 ```
 而 `context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)` 其实是调用 ContextImpl 类的`getSystemService(name)` 方法。
-`ContextImpl` 是 `Context` 的实现类。在 `ContextImpl` 内部会继续调用 `SystemServiceRegistry.getSystemService(this, name)` 方法获取 LayoutInflater 服务对象。
+
+**`ContextImpl` 是 `Context` 的实现类，封装了很多 Context 相关的方法。**
+
+在 `ContextImpl` 内部会继续调用 `SystemServiceRegistry.getSystemService(this, name)` 方法获取 LayoutInflater 服务对象。
 
 ```java
 @Override
