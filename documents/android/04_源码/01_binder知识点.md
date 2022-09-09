@@ -1,13 +1,10 @@
 ## 一、Binder 概述
 
-Binder 是一种 Android 系统的进程间通信机制，基于开源的 OpenBinder 实现；
+Binder 是 Android 系统的一种 IPC，基于开源的 OpenBinder 实现；
 
-### 1.1 为什么必须理解Binder？
+- Android 的四大组件之间的通信依赖于 Binder 机制。
+- 应用层的各种服务如：AMS、PMS 等也基于 Binder 机制。
 
-- Android 四大组件之间的通信依赖于 Binder 机制。
-- 应用层的各种服务如：AMS、PMS 等也是基于 Binder 机制实现的。
-
-### 1.2 为什么用 Binder ?
 Android 系统是基于 Linux 内核的，Linux 已经提供了管道、消息队列、共享内存和 Socket 等 IPC 机制。那为什么 Android 还要提供 Binder 来实现 IPC 呢？主要是基于**性能、稳定性**和**安全性**几方面的原因。
 
 #### 性能
@@ -24,7 +21,7 @@ Android 系统是基于 Linux 内核的，Linux 已经提供了管道、消息�
 
 #### 稳定性
 Binder 基于 C/S 架构，客户端（Client）有什么需求就丢给服务端（Server）去完成，架构清晰、职责明确又相互独立，自然稳定性更好。
-共享内存虽然无需拷贝，但是控制负责，难以使用。从稳定性的角度讲，Binder 机制是优于内存共享的。
+共享内存虽然无需拷贝，但是控制复杂，难以使用。从稳定性的角度讲，Binder 机制是优于内存共享的。
 
 #### 安全性
 
@@ -46,11 +43,10 @@ Android 为每个安装好的 APP 分配了自己的 UID，故而进程的 UID �
 了解 Linux IPC 相关的概念和原理有助于我们理解 Binder 通信原理。因此，在介绍 Binder 跨进程通信原理之前，我们先聊聊 Linux 系统下传统的进程间通信是如何实现。
 
 ### 2.1 基本概念介绍
-这里我们先从 Linux 中进程间通信涉及的一些基本概念开始介绍，然后逐步展开，向大家说明传统的进程间通信的原理。
+
+我们先看一下Liunx跨进程通信涉及到几个基本概念
 
 <img width="400" alt="Linux 背景知识" src="https://user-images.githubusercontent.com/17560388/182273725-ec3e14ca-9c9e-4f7e-8d55-5363ae25dde8.png">
-
-上图展示了 Liunx 中跨进程通信涉及到的一些基本概念：
 
 - 进程隔离
 - 进程空间划分：用户空间(User Space)/内核空间(Kernel Space)
