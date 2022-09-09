@@ -1,30 +1,13 @@
-
-https://mp.weixin.qq.com/s/NBm5lh8_ZLfodOXT8Ph5iA
-
-## 前言
-这篇文章我酝酿了很久，参考了很多资料，读了很多源码，却依旧不敢下笔。生怕自己理解上还有偏差，对大家造成误解，贻笑大方。又怕自己理解不够透彻，无法用清晰直白的文字准确的表达出 Binder 的设计精髓。直到今天提笔写作时还依旧战战兢兢。
-
-Binder 之复杂远远不是一篇文章就能说清楚的，本文想站在一个更高的维度来俯瞰 Binder 的设计，最终帮助大家形成一个完整的概念。对于应用层开发的同学来说，理解到本文这个程度也就差不多了。希望更加深入理解 Binder 实现机制的，可以阅读文末的参考资料以及相关源码。
-
 ## 一、Binder 概述
 
-简单介绍下什么是 Binder。Binder 是一种进程间通信机制，基于开源的 OpenBinder 实现；OpenBinder 起初由 Be Inc. 开发，后由 Plam Inc. 接手。从字面上来解释 Binder 有胶水、粘合剂的意思，顾名思义就是粘和不同的进程，使之实现通信。对于 Binder 更全面的定义，等我们介绍完 Binder 通信原理后再做详细说明。
+Binder 是一种进程间通信机制，基于开源的 OpenBinder 实现；
 
-### 1.1 为什么必须理解 Binder ？
+### 1.1 为什么必须理解Binder？
 
-作为 Android 工程师的你，是不是常常会有这样的疑问：
+- Android 应用程序是由四大组件中的一个或者多个组成的。当这些组件运行不同的进程时，这些进程间的通信就依赖于 Binder IPC 机制。
+- Android 系统对应用层提供的各种服务如：AMS、PMS 等都是基于 Binder IPC 机制来实现的。
 
-- 为什么 Activity 间传递对象需要序列化？
-- Activity 的启动流程是什么样的？
-- 四大组件底层的通信机制是怎样的？
-- AIDL 内部的实现原理是什么？
-- 插件化编程技术应该从何学起？等等…
-
-这些问题的背后都与 Binder 有莫大的关系，要弄懂上面这些问题理解 Bidner 通信机制是必须的。
-
-我们知道 Android 应用程序是由 Activity、Service、Broadcast Receiver 和 Content Provide 四大组件中的一个或者多个组成的。有时这些组件运行在同一进程，有时运行在不同的进程。这些进程间的通信就依赖于 Binder IPC 机制。不仅如此，Android 系统对应用层提供的各种服务如：ActivityManagerService、PackageManagerService 等都是基于 Binder IPC 机制来实现的。Binder 机制在 Android 中的位置非常重要，毫不夸张的说理解 Binder 是迈向 Android 高级工程的第一步。
-
-### 1.2 为什么是 Binder ?
+### 1.2 为什么用 Binder ?
 Android 系统是基于 Linux 内核的，Linux 已经提供了管道、消息队列、共享内存和 Socket 等 IPC 机制。那为什么 Android 还要提供 Binder 来实现 IPC 呢？主要是基于**性能、稳定性**和**安全性**几方面的原因。
 
 #### 性能
@@ -339,6 +322,8 @@ public class Proxy implements BookManager {
 本文在写作过程中参考了很多文章、书籍和源码，其中有很多描述和图片都借鉴了下面的文章，在这里感谢大佬们的无私分享！
 
 ## 参考资料如下：
+
+https://mp.weixin.qq.com/s/NBm5lh8_ZLfodOXT8Ph5iA
 
 Android Binder 设计与实现 - 设计篇
 
