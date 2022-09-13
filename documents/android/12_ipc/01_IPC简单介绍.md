@@ -48,7 +48,7 @@ u0_a911   26217   701 5272876  77828 0  0 S com.egas.demo.remote
 3. SharedPreferences 的可靠性下降
 4. Application 会多次创建
 
-解决 Application 会多次创建的问题
+### 2.3 解决 Application 会多次创建的问题
 
 ```java
 class App:Application() {
