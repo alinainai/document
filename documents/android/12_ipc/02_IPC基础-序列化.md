@@ -92,7 +92,7 @@ public class User implements Parcelable{
 
 ## 2、Parcel 源码分析
 
-### parcel 的 Java 层只是一个壳
+### Parcel 的 Java 层只是一个壳
 
 先看下Java层的代码，首先通过 Parce.obtain() 来获取一个 parcel 对象
 
@@ -412,13 +412,13 @@ const char* Parcel::readString8Inplace(size_t* outLen) const
 
 读上面源码可以发现，parcel的写跟读，都是按照顺序去操作的，所以这里也可以解释，为什么在实现 parcelable 接口的时候，writeToParcel 和 createFromParcel 顺序一定要相匹配，比如先写入 int，再写入 strign，读取的时候，也要先读取 int，再读取 string
 
-### parcel作为IPC通信的数据媒介
+### Parcel作为IPC通信的数据媒介
 
-不同的进程，数据本身是无法互通的，parcel的数据虽然是存在native层，属于用户空间，也是不能直接跟其他进程直接通信的
+不同的进程，数据本身是无法互通的，parcel 的数据虽然是存在 native 层，属于用户空间，也是不能直接跟其他进程直接通信的
 
 Android是基于Linux系统，有一个mmap函数，可以把用户空间映射到内核空间，在用户空间的修改直接映射到内核空间，内核空间全局只有一个，
 为所有进程共享，从而可以实现跨进程通信，微信开源的MMKV也是基于类似的机制实现的
 
-### 参考
+## 参考
 
 https://zhuanlan.zhihu.com/p/402790867
