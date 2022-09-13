@@ -52,7 +52,11 @@ B界面: onStop -> onDestroy
 
 
 ## 4.onActivityResult 调用时机
-onActivityResult 方法的注释：You will receive this call immediately before onResume() when your activity is re-starting. 跟一下代码（TransactionExecutor.execute 有兴趣的可以自己打断点跟一下），会发现 onActivityResult 回调先于该 Activity 的所有生命周期回调，从 B Activity 返回 A Activity 的生命周期调用为： B.onPause -> A.onActivityResult -> A.onRestart -> A.onStart -> A.onResume
+onActivityResult 方法的注释：You will receive this call immediately before onResume() when your activity is re-starting. 
 
+跟一下代码（TransactionExecutor.execute 有兴趣的可以自己打断点跟一下），会发现 onActivityResult 回调先于该 Activity 的所有生命周期回调，从 B Activity 返回 A Activity 的生命周期调用为： 
+```shell
+B.onPause -> A.onActivityResult -> A.onRestart -> A.onStart -> A.onResume
+```
 
 
