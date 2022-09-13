@@ -5,7 +5,7 @@ Binder 是 Android 系统的一种 IPC，基于开源的 OpenBinder 实现；
 - Android 的四大组件之间的通信依赖于 Binder 机制。
 - 应用层的各种服务如：AMS、PMS 等也基于 Binder 机制。
 
-Android 系统是基于 Linux 内核的，Linux 已经提供了管道、消息队列、共享内存和 Socket 等 IPC 机制。那为什么 Android 还要提供 Binder 来实现 IPC 呢？主要是基于**性能、稳定性**和**安全性**几方面的原因。
+Android 系统是基于 Linux 内核的，Linux 已经提供了管道、消息队列、共享内存和 Socket 等 IPC 机制。为什么还要搞一套 Binder 来实现 IPC 呢？主要是基于**性能、稳定性**和**安全性**几方面的原因。
 
 #### 性能
 
