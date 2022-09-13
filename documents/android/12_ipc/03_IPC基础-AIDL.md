@@ -1,8 +1,6 @@
-## 1、Binder 使用
+## 1、AIDL 简单介绍
 
-直观来说 Binder 是 Android 中的一个类，它实现了 IBinder 接口。
-
-从 IPC 角度来说，Binder 是 Android 中的一种跨进程通信方式，可以理解为一种虚拟的物理设备。
+】
 
 
 ## 参考
