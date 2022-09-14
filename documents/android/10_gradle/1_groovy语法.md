@@ -8,6 +8,8 @@
 
 翻译过来就是：Gradle 是一个开源的自动化构建工具，专注于灵活性和性能。Gradle 构建脚本是使用 Groovy 或 Kotlin DSL 编写的。
 
+我们先学习一下 Groovy 的语法，方便咱们看一些老项目的的 gradle 配置。当然还是推荐大家使用 Kotlin 去编写相关的 gradle 文件。
+
 ### 1.2 Groovy 是什么
 
 Groovy 是基于 JVM 的脚本语言，它是基于Java扩展的动态语言。动态语言可以在运行时再去确认对象的类型，静态语言在编译时就需要确定好对象的类型。我们通过 Groovy 编写 Gradle 脚本。
@@ -88,6 +90,7 @@ list.eachWIthIndex { value, index ->}
 ## 3、闭包 Closure
 
 Groovy 闭包是一个匿名代码块，可以作为值传递给变量或函数参数，也可以接收参数和提供返回值，形式上与 Java/Kotlin 的 lambda 表达式类似。
+
 ```groove
 { 123 }                                          
 { name -> println name }                            
