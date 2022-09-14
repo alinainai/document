@@ -1,20 +1,219 @@
 ## 1、AIDL 简单介绍
 
-上面我们学习一下 Binder 的实现原理，而通常我们在做IPC开发时，用的最多的就是 AIDL。当我们定义好 AIDL 文件，在编译时编译器会帮我们生成代码实现 IPC 通信。借助 AIDL 编译以后的代码能帮助我们进一步理解 Binder 的通信原理。当然，AIDL 也是基于 Binder 实现的。
+上篇文章我们学习一下 Binder 的相关知识，通常我们在做 IPC 开发时，用的最多的就是 AIDL。当然，AIDL 也是基于 Binder 实现的。
 
-AIDL 的全称是 Android 接口自定义语言，和其他接口语言 (IDL) 类似。利用它定义客户端与服务均认可的编程接口，以便二者使用进程间通信 (IPC) 进行相互通信。简单点说 AIDL 就是 Android 提供的一种方便定义 IPC 的技术。SDK 会将 .aidl 文件编译为 .java 文件，我们将在下面的分析中结合例子讲解一下 .java 文件中的方法。
+AIDL 的全称是 Android 接口自定义语言，和其他接口语言 (IDL) 类似。利用它定义客户端与服务均认可的编程接口，以便二者使用进程间通信 (IPC) 进行相互通信。简单点说 AIDL 就是 Android 提供的一种方便定义 IPC 的技术。SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分析中结合例子讲解一下 .java 文件中的方法。
 
 ## 2、使用
 
 我们新建一个 Android项目，然后 new 一个 .aidl 文件。我们参考 《Android 开发艺术探索》的例子，在我们的 demo 中也实现一套。
 
-但是无论是从可读性还是可理解性上来看，编译器生成的代码对开发者并不友好。比如一个 BookManager.aidl 文件对应会生成一个 BookManager.java 文件，这个 java 文件包含了一个 BookManager 接口、一个 Stub 静态的抽象类和一个 Proxy 静态类。Proxy 是 Stub 的静态内部类，Stub 又是 BookManager 的静态内部类，这就造成了可读性和可理解性的问题。
+先看一下demo的主要文件，已经做了相关的标注。我们 aidl 是在一个项目中实现的，当然你也可以写一个 client 项目单独去实现客户端的代码，代码都是一样的，调用的时候注意要让 Service 所在的项目启动。
 
-Android 之所以这样设计其实是有道理的，因为当有多个 AIDL 文件的时候把 BookManager、Stub、Proxy 放在同一个文件里能有效避免 Stub 和 Proxy 重名的问题。
+<img width="468" alt="demo 文件" src="https://user-images.githubusercontent.com/17560388/190108369-ec427526-e7a1-465b-8112-3fe0940cef8c.png">
 
-因此便于大家理解，下面我们来手动编写代码来实现跨进程调用。
+我们看一下 Aidl 文件的代码
+```java
+//IUserAidlInterface.aidl
+package com.egas.demo;
+
+import com.egas.demo.bean.User; //注意这里要引入 data 类
+
+interface IUserAidlInterface {
+     List<User> getUsers();
+     boolean addUser(in User user);
+}
+
+//User.aidl: 这里要注意一下，要和 Java 中的 User 类包名要保持一致
+package com.egas.demo.bean;
+
+parcelable User;
+```
+在简单看下 Java 类的相关代码
+
+```java
+// 我们引入了 id("kotlin-parcelize") 插件，通过注解直接实现 Parcelable 相关的代码，在第二篇文章中有讲解
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+data class User(val uId:Int,var name:String,var des:String) : Parcelable {
+}
+```
+
+我们 rebuild 一下项目，在 app/build/generated/aidl_source_output_dir 会生成 IUserAidlInterface.aidl 的 Java 代码
+
+我们先简单看下 IUserAidlInterface.java 的结构
+
+<img width="461" alt="image" src="https://user-images.githubusercontent.com/17560388/190111480-13f3a8c7-4968-426c-a6d0-1a760bb964c9.png">
+
+具体代码如下：
+
+```java
+package com.egas.demo;
+//引入data类
+public interface IUserAidlInterface extends android.os.IInterface
+{
+  /** Default implementation for IUserAidlInterface. */
+  public static class Default implements com.egas.demo.IUserAidlInterface ...// 默认实现，返回了 null
+
+  /** Local-side IPC implementation stub class. */
+  public static abstract class Stub extends android.os.Binder implements com.egas.demo.IUserAidlInterface
+  {
+    private static final java.lang.String DESCRIPTOR = "com.egas.demo.IUserAidlInterface";
+    /** Construct the stub at attach it to the interface. */
+    public Stub()
+    {
+      this.attachInterface(this, DESCRIPTOR);
+    }
+    /**
+     * Cast an IBinder object into an com.egas.demo.IUserAidlInterface interface,generating a proxy if needed.
+     */
+    public static com.egas.demo.IUserAidlInterface asInterface(android.os.IBinder obj)
+    {
+      if ((obj==null)) {
+        return null;
+      }
+      android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
+      if (((iin!=null)&&(iin instanceof com.egas.demo.IUserAidlInterface))) {
+        return ((com.egas.demo.IUserAidlInterface)iin);
+      }
+      return new com.egas.demo.IUserAidlInterface.Stub.Proxy(obj);
+    }
+    @Override public android.os.IBinder asBinder()
+    {
+      return this;
+    }
+    @Override public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags) throws android.os.RemoteException
+    {
+      java.lang.String descriptor = DESCRIPTOR;
+      switch (code)
+      {
+        case INTERFACE_TRANSACTION:
+        {
+          reply.writeString(descriptor);
+          return true;
+        }
+        case TRANSACTION_getUsers:
+        {
+          data.enforceInterface(descriptor);
+          java.util.List<com.egas.demo.bean.User> _result = this.getUsers();
+          reply.writeNoException();
+          reply.writeTypedList(_result);
+          return true;
+        }
+        case TRANSACTION_addUser:
+        {
+          data.enforceInterface(descriptor);
+          com.egas.demo.bean.User _arg0;
+          if ((0!=data.readInt())) {
+            _arg0 = com.egas.demo.bean.User.CREATOR.createFromParcel(data);
+          }
+          else {
+            _arg0 = null;
+          }
+          boolean _result = this.addUser(_arg0);
+          reply.writeNoException();
+          reply.writeInt(((_result)?(1):(0)));
+          return true;
+        }
+        default:
+        {
+          return super.onTransact(code, data, reply, flags);
+        }
+      }
+    }
+    private static class Proxy implements com.egas.demo.IUserAidlInterface
+    {
+      private android.os.IBinder mRemote;
+      Proxy(android.os.IBinder remote)
+      {
+        mRemote = remote;
+      }
+      @Override public android.os.IBinder asBinder()
+      {
+        return mRemote;
+      }
+      public java.lang.String getInterfaceDescriptor()
+      {
+        return DESCRIPTOR;
+      }
+      @Override public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException
+      {
+        android.os.Parcel _data = android.os.Parcel.obtain();
+        android.os.Parcel _reply = android.os.Parcel.obtain();
+        java.util.List<com.egas.demo.bean.User> _result;
+        try {
+          _data.writeInterfaceToken(DESCRIPTOR);
+          boolean _status = mRemote.transact(Stub.TRANSACTION_getUsers, _data, _reply, 0);
+          if (!_status && getDefaultImpl() != null) {
+            return getDefaultImpl().getUsers();
+          }
+          _reply.readException();
+          _result = _reply.createTypedArrayList(com.egas.demo.bean.User.CREATOR);
+        }
+        finally {
+          _reply.recycle();
+          _data.recycle();
+        }
+        return _result;
+      }
+      @Override public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteException
+      {
+        android.os.Parcel _data = android.os.Parcel.obtain();
+        android.os.Parcel _reply = android.os.Parcel.obtain();
+        boolean _result;
+        try {
+          _data.writeInterfaceToken(DESCRIPTOR);
+          if ((user!=null)) {
+            _data.writeInt(1);
+            user.writeToParcel(_data, 0);
+          }
+          else {
+            _data.writeInt(0);
+          }
+          boolean _status = mRemote.transact(Stub.TRANSACTION_addUser, _data, _reply, 0);
+          if (!_status && getDefaultImpl() != null) {
+            return getDefaultImpl().addUser(user);
+          }
+          _reply.readException();
+          _result = (0!=_reply.readInt());
+        }
+        finally {
+          _reply.recycle();
+          _data.recycle();
+        }
+        return _result;
+      }
+      public static com.egas.demo.IUserAidlInterface sDefaultImpl;
+    }
+    static final int TRANSACTION_getUsers = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
+    static final int TRANSACTION_addUser = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+    public static boolean setDefaultImpl(com.egas.demo.IUserAidlInterface impl) {
+      // Only one user of this interface can use this function
+      // at a time. This is a heuristic to detect if two different
+      // users in the same process use this function.
+      if (Stub.Proxy.sDefaultImpl != null) {
+        throw new IllegalStateException("setDefaultImpl() called twice");
+      }
+      if (impl != null) {
+        Stub.Proxy.sDefaultImpl = impl;
+        return true;
+      }
+      return false;
+    }
+    public static com.egas.demo.IUserAidlInterface getDefaultImpl() {
+      return Stub.Proxy.sDefaultImpl;
+    }
+  }
+  public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException;
+  public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteException;
+}
+```
+
 
 ### 5.1 各 Java 类职责描述
+
 在正式编码实现跨进程调用之前，先介绍下实现过程中用到的一些类。了解了这些类的职责，有助于我们更好的理解和实现跨进程通信。
 
 - IBinder : IBinder 是一个接口，代表了一种跨进程通信的能力。只要实现了这个借口，这个对象就能跨进程传输。
@@ -121,12 +320,6 @@ public class Proxy implements BookManager {
 - 如果是远程调用，Client 想要调用 Server 的方法就需要通过 Binder 代理来完成，也就是上面的 Proxy。
 
 在 Proxy 中的 addBook() 方法中首先通过 Parcel 将数据序列化，然后调用 remote.transact()。正如前文所述 Proxy 是在 Stub 的 asInterface 中创建，能走到创建 Proxy 这一步就说明 Proxy 构造函数的入参是 BinderProxy，即这里的 remote 是个 BinderProxy 对象。最终通过一系列的函数调用，Client 进程通过系统调用陷入内核态，Client 进程中执行 addBook() 的线程挂起等待返回；驱动完成一系列的操作之后唤醒 Server 进程，调用 Server 进程本地对象的 onTransact()。最终又走到了 Stub 中的 onTransact() 中，onTransact() 根据函数编号调用相关函数（在 Stub 类中为 BookManager 接口中的每个函数中定义了一个编号，只不过上面的源码中我们简化掉了；在跨进程调用的时候，不会传递函数而是传递编号来指明要调用哪个函数）；我们这个例子里面，调用了 Binder 本地对象的 addBook() 并将结果返回给驱动，驱动唤醒 Client 进程里刚刚挂起的线程并将结果返回。
-
-这样一次跨进程调用就完成了。
-
-完整的代码我放到 GitHub 上了，有兴趣的小伙伴可以去看看。源码地址：https://github.com/BaronZ88/HelloBinder
-
-最后建议大家在不借助 AIDL 的情况下手写实现 Client 和 Server 进程的通信，加深对 Binder 通信过程的理解。
 
 
 ## 参考
