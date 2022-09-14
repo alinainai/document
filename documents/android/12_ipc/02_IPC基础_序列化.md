@@ -1,4 +1,4 @@
-## 1、Serializable vs Parcelable
+## 一、Serializable vs Parcelable
 
 这两者都是 Android 的序列化方式:
 
@@ -18,7 +18,7 @@ private void readObject(java.io.ObjectInputStream in) throws IOException{
     // populate the fields of 'this' from the data in 'in'...
 }
 ```
-### 1.1 Parcelable 相关
+### 1.2 Parcelable 相关
 
 Parcelable 的是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好。
 
@@ -90,11 +90,11 @@ public class User implements Parcelable{
 }
 ```
 
-## 2、Parcel 源码分析
+## 二、Parcel 源码分析
 
-### Parcel 的 Java 层只是一个壳
+### 2.1 Parcel 的 Java 层只是一个壳
 
-先看下Java层的代码，首先通过 Parce.obtain() 来获取一个 parcel 对象
+Parcel 的 Java 层代码只是一个壳，先看下Java层的代码，首先通过 Parce.obtain() 来获取一个 parcel 对象
 
 ```java
 /**                                                           
@@ -152,7 +152,7 @@ public final void writeLong(long val) {
 
 可以发现，parcel 的 Java 层，只是一个壳，具体的实现，都是在native层处理的
 
-### native层Parcel的初始化
+### 2.2 native层Parcel的初始化
 
 ```c++
 #frameworks/base/core/jni/android_os_Parcel.cpp
@@ -186,7 +186,7 @@ int main() {
 
 **parcel 的本质其实是一个连续的内存空间**
 
-### 先看下parcel的一些本地变量
+### 2.3 先看下parcel的一些本地变量
 
 ```c++
 #frameworks/native/libs/binder/include/binder/Parcel.h
