@@ -1,10 +1,12 @@
-## 1、AIDL 简单介绍
+## 一、AIDL 简单介绍
 
-上篇文章我们学习一下 Binder 的相关知识，通常我们在做 IPC 开发时，用的最多的就是 AIDL。当然，AIDL 也是基于 Binder 实现的。
+上篇文章我们学习了 Binder 的相关知识，通常我们做 IPC 开发时，用的最多的就是 AIDL。当然，AIDL 也是基于 Binder 实现的。
 
-AIDL 的全称是 Android 接口自定义语言，和其他接口语言 (IDL) 类似。利用它定义客户端与服务均认可的编程接口，以便二者使用进程间通信 (IPC) 进行相互通信。简单点说 AIDL 就是 Android 提供的一种方便定义 IPC 的技术。SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分析中结合例子讲解一下 .java 文件中的方法。
+AIDL 的全称是 Android 接口自定义语言，和其他接口语言 (IDL) 类似。利用它定义客户端与服务均认可的编程接口，以便二者使用进程间通信 (IPC) 进行相互通信。简单点说 AIDL 就是 Android 提供的一种方便定义 IPC 的技术。
 
-## 2、使用
+SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分析中结合例子讲解一下 .java 文件中的方法。
+
+## 二、主要代码
 
 我们新建一个 Android项目，然后 new 一个 .aidl 文件。我们参考 《Android 开发艺术探索》的例子，在我们的 demo 中也实现一套。
 
@@ -12,7 +14,7 @@ AIDL 的全称是 Android 接口自定义语言，和其他接口语言 (IDL) �
 
 <img width="468" alt="demo 文件" src="https://user-images.githubusercontent.com/17560388/190108369-ec427526-e7a1-465b-8112-3fe0940cef8c.png">
 
-我们看一下 Aidl 文件的代码
+我们看一下 Aidl 包文件的代码
 ```java
 //IUserAidlInterface.aidl
 package com.egas.demo;
@@ -29,7 +31,7 @@ package com.egas.demo.bean;
 
 parcelable User;
 ```
-在简单看下 Java 类的相关代码
+在简单看下 Java 包的相关代码
 
 ```java
 // 我们引入了 id("kotlin-parcelize") 插件，通过注解直接实现 Parcelable 相关的代码，在第二篇文章中有讲解
@@ -41,9 +43,9 @@ data class User(val uId:Int,var name:String,var des:String) : Parcelable {
 }
 ```
 
-我们 rebuild 一下项目，在 app/build/generated/aidl_source_output_dir 会生成 IUserAidlInterface.aidl 的 Java 代码
+我们 `rebuild` 一下，在 `app/build/generated/aidl_source_output_dir` 会生成 `IUserAidlInterface.java` 代码
 
-我们先简单看下 IUserAidlInterface.java 的结构
+我们先简单看下 `IUserAidlInterface.java` 的结构
 
 <img width="461" alt="image" src="https://user-images.githubusercontent.com/17560388/190111480-13f3a8c7-4968-426c-a6d0-1a760bb964c9.png">
 
@@ -211,10 +213,12 @@ public interface IUserAidlInterface extends android.os.IInterface
 }
 ```
 
+在 `IUserAidlInterface.java` 设计到了很多和 Binder 相关的类，如，IBinder、IInterface、Binder、Stub等，再下一节中我们先看一下这些类的作用和相关的方法。
 
-### 5.1 各 Java 类职责描述
 
-在正式编码实现跨进程调用之前，先介绍下实现过程中用到的一些类。了解了这些类的职责，有助于我们更好的理解和实现跨进程通信。
+## 三、Java类职责描述
+
+`IUserAidlInterface.java` 涉及到相关类如下：
 
 - IBinder : IBinder 是一个接口，代表了一种跨进程通信的能力。只要实现了这个借口，这个对象就能跨进程传输。
 - IInterface :  IInterface 代表的就是 Server 进程对象具备什么样的能力（能提供哪些方法，其实对应的就是 AIDL 文件中定义的接口）
