@@ -133,21 +133,10 @@ Client 通过名字，在 Binder 驱动的帮助下从 ServiceManager 中获取�
 
 ## 参考资料如下：
 
-https://mp.weixin.qq.com/s/NBm5lh8_ZLfodOXT8Ph5iA
-
-Android Binder 设计与实现 - 设计篇
-
-Android 进程间通信（IPC）机制 Binder 简要介绍和学习计划、《Android 系统源代码情景分析》
-
-Binder 学习指南
-
-Binder 系列文章
-
-Android 图文详解 Binder 跨进程通信原理
-
+- [写给 Android 应用工程师的 Binder 原理剖析](https://mp.weixin.qq.com/s/NBm5lh8_ZLfodOXT8Ph5iA)
+- [Android Binder 设计与实现 - 设计篇](https://blog.csdn.net/universus/article/details/6211589)
+- Android 进程间通信（IPC）机制 Binder 简要介绍和学习计划、《Android 系统源代码情景分析》
+- [Binder 学习指南](https://weishu.me/2016/01/12/binder-index-for-newer/)
 Android 深入浅出之 Binder 机制
-
-用户空间与内核空间
-
 认真分析 mmap ：是什么 为什么 怎么用
 
