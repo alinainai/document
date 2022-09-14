@@ -1,6 +1,6 @@
-## 一、Serializable vs Parcelable
+## 一、序列化的实现方式
 
-这两者都是 Android 的序列化方式:
+Serializable 和 Parcelable 都可以实现 Android 中的序列化
 
 ### 1.1 Serializable 相关
 
@@ -20,7 +20,7 @@ private void readObject(java.io.ObjectInputStream in) throws IOException{
 ```
 ### 1.2 Parcelable 相关
 
-Parcelable 的是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好。
+Parcelable 底层是通过 Parcel 来实现的，本质是 native 层的共享内存，不涉及IO，性能更好。
 
 使用 Parcelable 需要实现 `writeToParcel`、`describeContents` 函数以及静态的 `CREATOR` 变量，实际上就是将如何打包和解包的工作自己来定义，而序列化的这些操作完全由底层实现。
 
@@ -66,16 +66,14 @@ public class User implements Parcelable{
      */
     public static final Parcelable.Creator<User> CREATOR = new Creator<User>() {
 
-        // 创建指定长度的原始对象数组
         @Override
         public User[] newArray(int size) {
-            return new User[size];
+            return new User[size]; // 创建指定长度的原始对象数组
         }
 
-        // 从序列化后的对象中创建原始对象
         @Override
         public User createFromParcel(Parcel source) {
-            return new User(source);
+            return new User(source); // 从序列化后的对象中创建原始对象
         }
     };
 
@@ -86,7 +84,25 @@ public class User implements Parcelable{
         // 由于book是一个可序列化的对象，所以它的反序列化过程需要传递当前线程的上下文加载器，否则会报无法找到类的错误。
         book = source.readParcelable(Thread.currentThread().getContextClassLoader());
     }
+}
+```
+### 1.3 kotlin代码实现Parcelable
 
+kotlin 提供了一个更方便的方式实现 Parcelable
+
+我们在 app 的 build.gradle 添加依赖 
+
+```groovy
+id("kotlin-parcelize")
+```
+然后在类中实现 Parcelable 接口并添加注解
+
+```kotlin
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+data class User(val uId:Int,var name:String,var des:String) : Parcelable {
 }
 ```
 
