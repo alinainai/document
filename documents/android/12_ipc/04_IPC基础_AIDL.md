@@ -14,7 +14,7 @@ SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分�
 
 <img width="468" alt="demo 文件" src="https://user-images.githubusercontent.com/17560388/190108369-ec427526-e7a1-465b-8112-3fe0940cef8c.png">
 
-我们看一下 Aidl 包文件的代码
+Aidl 包中文件的代码
 ```java
 //IUserAidlInterface.aidl
 package com.egas.demo;
@@ -31,7 +31,7 @@ package com.egas.demo.bean;
 
 parcelable User;
 ```
-在简单看下 Java 包的相关代码
+Java 包中的相关代码
 
 ```java
 // 我们引入了 id("kotlin-parcelize") 插件，通过注解直接实现 Parcelable 相关的代码，在第二篇文章中有讲解
@@ -43,9 +43,7 @@ data class User(val uId:Int,var name:String,var des:String) : Parcelable {
 }
 ```
 
-我们 `rebuild` 一下，在 `app/build/generated/aidl_source_output_dir` 会生成 `IUserAidlInterface.java` 代码
-
-我们先简单看下 `IUserAidlInterface.java` 的结构
+我们 `rebuild` 一下，在 `app/build/generated/aidl_source_output_dir` 会生成 `IUserAidlInterface.java` 代码，我们先简单看下 `IUserAidlInterface.java` 的结构:
 
 <img width="461" alt="image" src="https://user-images.githubusercontent.com/17560388/190111480-13f3a8c7-4968-426c-a6d0-1a760bb964c9.png">
 
@@ -215,6 +213,7 @@ public interface IUserAidlInterface extends android.os.IInterface
 
 在 `IUserAidlInterface.java` 设计到了很多和 Binder 相关的类，如，IBinder、IInterface、Binder、Stub等，再下一节中我们先看一下这些类的作用和相关的方法。
 
+由于 Aidl 要配合 Service 使用，其他的代码直接参考 Demo 。
 
 ## 三、Java类职责描述
 
