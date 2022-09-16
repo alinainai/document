@@ -1,8 +1,8 @@
 ## 1、Gradle 插件简介 
 
-`Gradle插件`帮助我们`打包可重用的构建逻辑，方便在不同的项目中使用`。
+`Gradle插件`帮助我们`封装可重用的构建逻辑，方便在不同的项目中使用`。
 
-我们可以使用多种语言来实现`Gradle插件`，常用的有`Groovy、Java、Kotlin`。通常，使用 `Java/Kotlin（静态类型语言`）实现的插件比使用 `Groovy(动态类型语言)` 实施的插件性能更好。
+可以使用多种语言来编写一个`Gradle插件`，如 Groovy、Java、Kotlin。通常，使用 `Java/Kotlin（静态类型语言`）实现的插件比使用 `Groovy(动态类型语言)` 实施的插件性能更好。
 
 `android`官方提供了很多可用的 gradle 插件，比如:
 
@@ -11,9 +11,9 @@
 
 ## 2、实现 Gradle 插件
 
-我们通过新建一个`单独的项目`去`实现 gradle 插件`，并发布到本地 `maven_repo` 仓库。基于 `gradle 7.3.3` 开发。
+有三种方式构建插件：使用单独的项目、`脚本` 和 `buildSrc` 。
 
-除了使用单独的项目，还可以通过 `脚本` 和 `buildSrc` 创建插件。
+这里，我们使用`单独项目`的方式去构建插件，然后发布到本地 `maven_repo` 仓库，并在 app 中依赖它。我们的 demo 基于 `gradle 7.3.3` 开发。
 
 ### 2.1 新建插件 module
 
@@ -121,7 +121,6 @@ buildscript {
     }
 }
 
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     id 'com.android.application' version '7.2.1' apply false
     id 'com.android.library' version '7.2.1' apply false
