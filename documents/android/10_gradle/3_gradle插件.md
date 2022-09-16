@@ -81,6 +81,8 @@ publishing {
 
 ### 2.2 实现 CustomPlugin
 
+我们创建一个简单 CustomPlugin 类，该类需要继承 Plugin 类。我们在 CustomPlugin 类中添加一个打印日志的代码，如下
+
 ```kotlin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -92,7 +94,9 @@ class CustomPlugin : Plugin<Project> {
 }
 ```
 
-在项目的 `gradle task` 列表中执行 `pulish` task 将插件发布到本地。
+在项目的 `gradle task` 列表中找到 `pulish` 并执行，将插件发布到本地。
+
+<img width="279" alt="image" src="https://user-images.githubusercontent.com/17560388/190604721-d09c1136-3fc8-45be-9d7a-a6869d0bcf89.png">
 
 如果 `gradle task` 列表中没有 task 任务，可以先执行一下 `File -> Sync Project with Gradle Files`
 
@@ -140,9 +144,39 @@ plugins {
 
 ## 4、Extension 拓展
 
-Extension 为外部构建脚本提供的配置项，比如 `android{}` 就是 `Android Gradle Plugin` 提供的扩展。
+使用 Extension 可以为插件提供配置项，比如 `android{}` 就是 `Android Gradle Plugin` 的扩展。我们可以在 `android{}`中配置项目所依赖的SDK版本和一些其他的配置
+
+```groovy
+android {
+    compileSdk 32
+
+    defaultConfig {
+        applicationId "com.egas.demo"
+        minSdk 23
+```
+
+
 
 ### 4.1 创建 Extension
+
+我们可以借助 ExtensionContainer 来创建我们自定义的 Extension。ExtensionContainer 是管理 Extension 的一个容器，我们可以通过 ExtensionContainer 去对 Extension 进行相应的操作。
+
+我们可以通过下面代码获取 Project 中的 ExtensionContainer 对象。
+
+```groovy
+//当前在 app 的 build.gradle 文件中
+extensions //方式1
+project.extensions //方式2
+getExtensions() //方式3
+project.getExtensions() //方式4
+```
+ExtensionContainer 可以通过 add/create 方法添加 Extension
+
+我们先看一下 两种方法的 API 说明
+
+```groovy
+
+```
 
 1、首先定义一个类来接收我们的配置项
 2、创建并添加扩展对象
