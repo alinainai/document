@@ -1,4 +1,6 @@
-## 4、Extension 介绍
+## 1、Extension 介绍
+
+Extension 拓展项
 
 使用 Extension 可以为插件提供配置项，比如 `android{}` 就是 `Android Gradle Plugin` 的扩展。我们可以在 `android{}`中配置项目所依赖的SDK版本和一些其他的配置
 
@@ -11,9 +13,7 @@ android {
         minSdk 23
 ```
 
-
-
-### 4.1 创建 Extension
+### 1.1 创建一个 Extension
 
 我们可以借助 ExtensionContainer 来创建我们自定义的 Extension。ExtensionContainer 是管理 Extension 的一个容器，我们可以通过 ExtensionContainer 去对 Extension 进行相应的操作。
 
@@ -34,5 +34,4 @@ ExtensionContainer 可以通过 add/create 方法添加 Extension
 
 ```
 
-1、首先定义一个类来接收我们的配置项
-2、创建并添加扩展对象
+
