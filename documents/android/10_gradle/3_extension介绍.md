@@ -232,7 +232,7 @@ OuterExt[ msg = this is a outer message.] InnerExt[ msg = This is a inner messag
 
 ## 3、可命名的配置项
 
-我们可以在 gradle 中通过定义 buildTypes 来打不同类型的包，如下：
+可命名的配置项：NamedDomainObjectContainer，在 app 的 build.gradle 中通过定义 buildTypes 配置项生成不同类型的包，如下：
 
 ```groovy
 android {
@@ -251,7 +251,7 @@ android {
 }
 ```
 
-buildTypes 是一个 NamedDomainObjectContainer 对象，可以看下下面的代码截图
+buildTypes 就是一个 NamedDomainObjectContainer<T> 对象。
 
 <img width="773" alt="image" src="https://user-images.githubusercontent.com/17560388/190983485-7ced6512-4f37-4866-8f1b-e45bc2a9fc80.png">
 
@@ -301,8 +301,116 @@ project.tasks.create("namedDomainTask"){
 google: false 
 wechat: true 
 ```
+    
+## 4、变体
+    
+变体属于 AGP（Android Gradle Plugin）中的知识点，AGP 给 android 对象提供了三种类型变体（Variants）：
 
+1、applicationVariants：只适用于 app plugin
+2、libraryVariants：只适用于 library plugin
+3、testVariants：在 app plugin 与 libarary plugin 中都适用，这个一般很少用
 
+其中我们最常用的便是 applicationVariants
+    
+### 4.1 打印 applicationVariants 
+ 
+我们可以通过 Project 对象获取 android 属性，然后通过 android 获取变体：
+    
+//当前在 app 的 build.gradle 文件中，3 种方式获取的都是同一个变体
+android.applicationVariants
+project.android.applicationVariants
+project.property('android').applicationVariants
+
+为了更好的演示，我们在 app 的 build.gradle 增加如下内容：
+```groovy
+android {
+    ...
+    buildTypes {
+        debug{
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    productFlavors{
+        flavorDimensions 'isFree'
+        google{
+            dimension 'isFree'
+        }
+        winxin{
+            dimension 'isFree'
+        }
+    }
+}
+```
+上述配置会产生 4 个变体，通过 buildTypes 和 productFlavors 的排列组合所产生，我们遍历打印一下每个变体的 name 和 baseName
+    
+注意：
+1、从 AGP 3.0 开始，必须至少明确指定一个 flavor dimension
+2、通过 android 对象获取的 applicationVariants 或 libraryVariants 是所有的变体，我们可以通过遍历取出每一个变体
+
+```groovy
+//当前在 app 的 build.gradle 文件中
+afterEvaluate {
+    project.android.applicationVariants.all{ variant ->
+        println "$variant.name $variant.baseName"
+    }
+}
+```
+打印结果
+```shell
+> Configure project :app
+googleDebug google-debug
+winxinDebug winxin-debug
+googleRelease google-release
+winxinRelease winxin-release
+```
+
+### 4.2 对 applicationVariants 中的 Task 进行 Hook
+
+通常我们会使用变体来对构建过程中的 Task 进行 hook，如下：
+
+```groovy
+//当前在 app 的 build.gradle 文件中
+afterEvaluate {
+    project.android.applicationVariants.all{ variant ->
+        def task = variant.mergeResources
+        println "$task.name"
+    }
+}
+```
+打印结果
+```shell   
+> Configure project :app
+packageGoogleDebugResources
+packageWinxinDebugResources
+packageGoogleReleaseResources
+packageWinxinReleaseResources
+```   
+
+上述操作我们拿到了所有变体对应的 mergeResources Task 并打印了它的名称
+    
+### 4.3 使用 applicationVariants 对 APK 进行重命名
+    
+applicationVariants 中每一个变体对应的输出文件便是一个 APK，因此我们可以通过 applicationVariants 对 APK 进行重命名，如下：
+```groovy
+//当前在 app 的 build.gradle 文件中
+project.android.applicationVariants.all{ variant ->
+    variant.outputs.all{
+        outputFileName = "${variant.baseName}" + ".apk"
+        println outputFileName
+    }
+}
+```
+打印结果
+```shell    
+> Configure project :app
+google-debug.apk
+winxin-debug.apk
+google-release.apk
+winxin-release.apk
+``` 
 
 ## 参考
 
