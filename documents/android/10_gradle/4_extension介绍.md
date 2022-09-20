@@ -315,12 +315,12 @@ wechat: true
 ### 4.1 打印 applicationVariants 
  
 我们可以通过 Project 对象获取 android 属性，然后通过 android 获取变体：
-    
+```groovy   
 //当前在 app 的 build.gradle 文件中，3 种方式获取的都是同一个变体
 android.applicationVariants
 project.android.applicationVariants
 project.property('android').applicationVariants
-
+```
 为了更好的演示，我们在 app 的 build.gradle 增加如下内容：
 ```groovy
 android {
@@ -347,8 +347,8 @@ android {
 上述配置会产生 4 个变体，通过 buildTypes 和 productFlavors 的排列组合所产生，我们遍历打印一下每个变体的 name 和 baseName
     
 注意：
-1、从 AGP 3.0 开始，必须至少明确指定一个 flavor dimension
-2、通过 android 对象获取的 applicationVariants 或 libraryVariants 是所有的变体，我们可以通过遍历取出每一个变体
+1. 从 AGP 3.0 开始，必须至少明确指定一个 flavor dimension
+2. 通过 android 对象获取的 applicationVariants 或 libraryVariants 是所有的变体，我们可以通过遍历取出每一个变体
 
 ```groovy
 //当前在 app 的 build.gradle 文件中
