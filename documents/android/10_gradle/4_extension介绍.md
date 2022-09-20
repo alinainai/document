@@ -1,6 +1,6 @@
 ## 1、Extension 介绍
 
-拓展项：使用 Extension 可以为插件提供配置项，比如 `android{}` 就是 `Android Gradle Plugin` 的扩展。我们可以在 `android{}`中配置项目所依赖的SDK版本和一些其他的配置
+使用 Extension 可以为插件提供配置项，比如 `android{}` 就是 `Android Gradle Plugin` 的扩展。我们可以在 `android{}`中配置项目所依赖的SDK版本和一些其他的配置
 
 ```groovy
 android {
