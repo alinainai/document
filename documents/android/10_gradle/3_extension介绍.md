@@ -187,14 +187,122 @@ This Tag is tag4 Its des is 5.
 
 在开头 android 的例子中，android 内部还有嵌套的 defaultConfig 配置，这种就是嵌套的的 Extension。
 
-我们可以通过下面的代码创建一个嵌套的的 Extension
+我们可以通过下面方式创建一个嵌套的的 Extension。
 
+```groovy
+class Outer {
+    String msg
+    Inner inner = new Inner()
+    
+    void inner(Action<Inner> action) { //创建内部Extension，名称为方法名 inner
+        action.execute(inner)
+    }
+    String toString() {
+        return "OuterExt[ msg = ${msg}] " + inner
+    }
+}
+class Inner {
+    String msg
+    String toString() {
+        return "InnerExt[ msg = ${msg}]"
+    }
+}
 
+def outExt = project.extensions.create("outer", Outer)
 
+outer {
+    msg "this is a outer message."
+    inner {
+        msg = "This is a inner message."
+    }
+}
 
+project.task('nestedExtension') {
+    doLast {
+        println outExt
+    }
+}
+```
+日志如下
+```shell
+> Task :app:nestedExtension
+OuterExt[ msg = this is a outer message.] InnerExt[ msg = This is a inner message.]
+```
+我们可在 `Inner` 类中定义一个 `msg(string):void` 方法，然后在 `inner` 配置中去掉等号。
 
+## 3、可命名的配置项
+
+我们可以在 gradle 中通过定义 buildTypes 来打不同类型的包，如下：
+
+```groovy
+android {
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            ...
+        }
+        preview {// 支持任意命名
+            ...
+        }
+    }
+}
+```
+
+buildTypes 是一个 NamedDomainObjectContainer 对象，可以看下下面的代码截图
 
 <img width="773" alt="image" src="https://user-images.githubusercontent.com/17560388/190983485-7ced6512-4f37-4866-8f1b-e45bc2a9fc80.png">
+
+NamedDomainObjectContainer 直译是命名领域对象容器，是一个支持配置不固定数量配置的容器。主要功能分为 3 点：
+
+- Set 容器： 支持添加多个 T 类型对象，并且不允许命名重复；
+- 命名 DSL： 支持以 DSL 的方式配置 T 类型对象，T 类型必须带有 String name 属性，且必须有以 name 为参数的 public 构造函数；
+- SortSet 容器： 容器将保证元素以 name 自然顺序排序。
+
+我们继续通过一个简单的例子实现一下
+```groovy
+class FlavorConfig{
+    String name //注意：必须要有 name 属性进行标识
+    boolean isDebug
+    FlavorConfig(String name) {
+        this.name = name
+    }
+    //配置与属性同名的方法
+    void isDebug(boolean isDebug) {
+        this.isDebug = isDebug
+    }
+}
+
+NamedDomainObjectContainer<FlavorConfig> container = project.container(FlavorConfig)
+project.extensions.add('flavorConfig',container)
+
+flavorConfig {
+    google {
+        isDebug false
+    }
+    wechat {
+        isDebug true
+    }
+}
+
+project.tasks.create("namedDomainTask"){
+    doLast {
+        project.flavorConfig.each{
+            println "$it.name: $it.isDebug "
+        }
+    }
+}
+```
+打印日志如下
+```shell
+> Task :app:namedDomainTask
+google: false 
+wechat: true 
+```
+
+
 
 ## 参考
 
