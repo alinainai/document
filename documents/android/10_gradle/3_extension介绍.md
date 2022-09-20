@@ -33,7 +33,7 @@ ExtensionContainer 可以通过 add/create 方法添加 Extension
 我们先看一下两种API说明和使用，先看一下 create 的重载方法
 ```groovy
 /**
- * publicType: 对外公开的 Extension 类型
+ * publicType: 对外公布的 Extension 类型
  * name: Extension 的 name，不能重复，重复会抛出异常
  * instanceType: Extension 使用的类
  * constructionArguments: 构造 instanceType 默认使用的参数，可省略
@@ -45,7 +45,7 @@ ExtensionContainer 可以通过 add/create 方法添加 Extension
 在看一下 add 相关方法
 ```groovy
 /**
- * publicType: 对外公开的 Extension 类型
+ * publicType: 对外公布的 Extension 类型
  * name: Extension 的 name，不能重复，重复会抛出异常
  * extension: Extension 使用的对象，这里要传入对象
  */
