@@ -19,14 +19,14 @@ android {
 
 我们可以借助 ExtensionContainer 来创建我们自定义的 Extension。ExtensionContainer 是管理 Extension 的一个容器，我们可以通过 ExtensionContainer 去对 Extension 进行相应的操作。
 
-我们可以通过下面代码获取 Project 中的 ExtensionContainer 对象。
+我们可以通过下面4种方式获取 Project 中的 ExtensionContainer 对象。
 
 ```groovy
 //当前在 app 的 build.gradle 文件中
-extensions //方式1
-project.extensions //方式2
-getExtensions() //方式3
-project.getExtensions() //方式4
+extensions 
+project.extensions
+getExtensions()
+project.getExtensions()
 ```
 ExtensionContainer 可以通过 add/create 方法添加 Extension
 
