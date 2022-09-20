@@ -5,7 +5,6 @@
 ```groovy
 android {
     compileSdk 32
-
     defaultConfig {
         applicationId "com.egas.demo"
         minSdk 23
@@ -19,7 +18,7 @@ android {
 
 我们可以借助 ExtensionContainer 来创建我们自定义的 Extension。ExtensionContainer 是管理 Extension 的一个容器，我们可以通过 ExtensionContainer 去对 Extension 进行相应的操作。
 
-我们可以通过下面4种方式获取 Project 中的 ExtensionContainer 对象。
+我们可以通过下面4种方式获取 Project 的 ExtensionContainer 对象。
 
 ```groovy
 //当前在 app 的 build.gradle 文件中
@@ -57,18 +56,14 @@ ExtensionContainer 可以通过 add/create 方法添加 Extension
 ```groovy
 class Tag {
     String name
-
     Tag() {}
-
     Tag(String name) {
         this.name = name
     }
-
     String toString() {
         return "This Tag is $name"
     }
 }
-
 class IDCard extends Tag {
     int des = 5
     IDCard() {
@@ -80,7 +75,6 @@ class IDCard extends Tag {
         return super.toString() + " Its des is $des."
     }
 }
-
 //create
 project.extensions.create('tag1', Tag)
 Tag a1 = project.extensions.create(Tag, 'tag2', IDCard, 10) // create 创建的 Extension 会返回创建的 instance
@@ -131,7 +125,7 @@ This Tag is tag5 Its des is 10.
 This Tag is tag6 Its des is 15.
 ```
 
-和 create 的区别 
+add 和 create 的区别 
 
 1. create 创建的 Extension 对象都默认实现了 ExtensionAware 接口，可以强转为 ExtensionAware。
 2. create 创建的 Extension 会返回创建的 instance，add 系列方法没有返回值
@@ -185,7 +179,7 @@ This Tag is tag4 Its des is 5.
 ```
 ## 2、嵌套的的 Extension
 
-在开头 android 的例子中，android 内部还有嵌套的 defaultConfig 配置，这种就是嵌套的的 Extension。
+在开头 android 配置的例子中，内部还有嵌套的 defaultConfig 配置，这种就是嵌套的的 Extension。
 
 我们可以通过下面方式创建一个嵌套的的 Extension。
 
@@ -232,7 +226,7 @@ OuterExt[ msg = this is a outer message.] InnerExt[ msg = This is a inner messag
 
 ## 3、可命名的配置项
 
-可命名的配置项：NamedDomainObjectContainer，在 app 的 build.gradle 中通过定义 buildTypes 配置项生成不同类型的包，如下：
+在 app 的 build.gradle 中可以通过定义 buildTypes 配置来生成不同 build 类型的包，如下：
 
 ```groovy
 android {
@@ -250,7 +244,6 @@ android {
     }
 }
 ```
-
 buildTypes 就是一个 NamedDomainObjectContainer<T> 对象。
 
 <img width="773" alt="image" src="https://user-images.githubusercontent.com/17560388/190983485-7ced6512-4f37-4866-8f1b-e45bc2a9fc80.png">
@@ -261,7 +254,7 @@ NamedDomainObjectContainer 直译是命名领域对象容器，是一个支持�
 - 命名 DSL： 支持以 DSL 的方式配置 T 类型对象，T 类型必须带有 String name 属性，且必须有以 name 为参数的 public 构造函数；
 - SortSet 容器： 容器将保证元素以 name 自然顺序排序。
 
-我们继续通过一个简单的例子实现一下
+我们继续通过一个简单的例子实现一个 NamedDomainObjectContainer
 ```groovy
 class FlavorConfig{
     String name //注意：必须要有 name 属性进行标识
@@ -286,7 +279,7 @@ flavorConfig {
         isDebug true
     }
 }
-
+//创建 task
 project.tasks.create("namedDomainTask"){
     doLast {
         project.flavorConfig.each{
@@ -411,7 +404,55 @@ winxin-debug.apk
 google-release.apk
 winxin-release.apk
 ``` 
-
+## 5、插件中使用Extension
+在本系列的第三篇文档中，我们简单的实现了一个 gradle 插件。在上面的章节中我们学习了 Extension 的使用，在下面的例子中我们在自定义的插件中实现一个嵌套的 Extension。
+    
+直接贴下我们实现的代码，首先在 CustomPlugin.kt 中注册我们的 extensions
+```kotlin
+class CustomPlugin : Plugin<Project> {
+    companion object {
+        const val UPLOAD_EXTENSION_NAME = "outer"
+    }
+    override fun apply(project: Project) {
+        println("Hello CustomPlugin")
+        project.extensions.create(UPLOAD_EXTENSION_NAME, Outer::class.java) //使用 create 注册一个 Extension
+        project.afterEvaluate {
+         val outer = project.extensions.findByName(UPLOAD_EXTENSION_NAME) as Outer?
+            outer?.let {
+                println("outer.name =${it.name?:"null"} outer.inner.name =${it.inner?.name?:"null"}")
+            }
+        }
+    }
+}
+// Outer 类代码如下
+open class Outer {
+    var name: String? = ""
+    var inner = Inner()
+    fun inner(innerAct:Action<Inner>){
+        innerAct.execute(inner)
+    }
+}
+open class Inner {
+    var name: String? = ""
+} 
+```
+然后在我们 app 的 build.gradle 中添加相关配置
+```groovy
+outer{
+    name = "outer_name"
+    inner{
+        name = "inner_name"
+    }
+}
+```    
+重新发布插件，然后 Rebuild 项目，会有如下日志
+```shell   
+> Configure project :app
+Hello CustomPlugin
+outer.name =outer_name outer.inner.name =inner_name
+```   
+ok... 
+    
 ## 参考
 
 - [Android Gradle学习(五)：Extension详解](https://www.jianshu.com/p/58d86b4c0ee5)
