@@ -44,29 +44,22 @@ parcelable User;
 
 <img width="461" alt="image" src="https://user-images.githubusercontent.com/17560388/190111480-13f3a8c7-4968-426c-a6d0-1a760bb964c9.png">
 
-具体代码：
+具体代码，去掉了一些无用代码：
 
 ```java
 package com.egas.demo;
 
 public interface IUserAidlInterface extends android.os.IInterface {
  
-    /**
-     * Local-side IPC implementation stub class.
-     */
     public static abstract class Stub extends android.os.Binder implements com.egas.demo.IUserAidlInterface {
         private static final java.lang.String DESCRIPTOR = "com.egas.demo.IUserAidlInterface";
 
-        /**
-         * Construct the stub at attach it to the interface.
-         */
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);
         }
 
         /**
-         * Cast an IBinder object into an com.egas.demo.IUserAidlInterface interface,
-         * generating a proxy if needed.
+         * Cast an IBinder object into an com.egas.demo.IUserAidlInterface interface,generating a proxy if needed.
          */
         public static com.egas.demo.IUserAidlInterface asInterface(android.os.IBinder obj) {
             if ((obj == null)) {
@@ -185,24 +178,6 @@ public interface IUserAidlInterface extends android.os.IInterface {
 
         static final int TRANSACTION_getUsers = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
         static final int TRANSACTION_addUser = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
-
-        public static boolean setDefaultImpl(com.egas.demo.IUserAidlInterface impl) {
-            // Only one user of this interface can use this function
-            // at a time. This is a heuristic to detect if two different
-            // users in the same process use this function.
-            if (Stub.Proxy.sDefaultImpl != null) {
-                throw new IllegalStateException("setDefaultImpl() called twice");
-            }
-            if (impl != null) {
-                Stub.Proxy.sDefaultImpl = impl;
-                return true;
-            }
-            return false;
-        }
-
-        public static com.egas.demo.IUserAidlInterface getDefaultImpl() {
-            return Stub.Proxy.sDefaultImpl;
-        }
     }
 
     public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException;
@@ -218,10 +193,26 @@ public interface IUserAidlInterface extends android.os.IInterface {
 
 `IUserAidlInterface.java` 涉及到相关类如下：
 
-- IBinder : IBinder 是一个接口，代表了一种跨进程通信的能力。只要实现了这个借口，这个对象就能跨进程传输。
-- IInterface :  IInterface 代表的就是 Server 进程对象具备什么样的能力（能提供哪些方法，其实对应的就是 AIDL 文件中定义的接口）
-- Binder : Java 层的 Binder 类，代表的其实就是 Binder 本地对象。BinderProxy 类是 Binder 类的一个内部类，它代表远程进程的 Binder 对象的本地代理；这两个类都继承自 IBinder, 因而都具有跨进程传输的能力；实际上，在跨越进程的时候，Binder 驱动会自动完成这两个对象的转换。
-- Stub : AIDL 的时候，编译工具会给我们生成一个名为 Stub 的静态内部类；这个类继承了 Binder, 说明它是一个 Binder 本地对象，它实现了 IInterface 接口，表明它具有 Server 承诺给 Client 的能力；Stub 是一个抽象类，具体的 IInterface 的相关实现需要开发者自己实现。
+1、IBinder 接口
+
+它代表了一种跨进程传输的能力；只要实现了这个接口，就能将这个对象进行跨进程传递；这是驱动底层支持的；在跨进程数据流经驱动的时候，驱动会识别IBinder类型的数据，从而自动完成不同进程Binder本地对象以及Binder代理对象的转换。
+
+2、IInterface 接口
+
+IBinder负责数据传输，那么client与server端的调用契约（这里不用接口避免混淆）呢？这里的 IInterface 代表的就是远程 server 对象具有什么能力。具体来说，就是aidl里面的接口。
+
+3、Java层的Binder类
+
+代表的其实就是 Binder 本地对象。BinderProxy 类是 Binder 类的一个内部类，它代表远程进程的 Binder 对象的本地代理；
+这两个类都继承自IBinder, 因而都具有跨进程传输的能力；实际上，在跨越进程的时候，Binder驱动会自动完成这两个对象的转换。
+
+4、Stub 类
+在使用AIDL的时候，编译工具会给我们生成一个Stub的静态内部类；
+这个类继承了 Binder, 说明它是一个 Binder 本地对象，它实现了 IInterface 接口，表明它具有远程 Server 承诺给 Client 的能力；
+Stub是一个抽象类，具体的 IInterface 的相关实现需要我们手动完成，这里使用了策略模式。
+
+
+
 
 ### 5.2 实现过程讲解
 一次跨进程通信必然会涉及到两个进程，在这个例子中 RemoteService 作为服务端进程，提供服务；ClientActivity 作为客户端进程，使用 RemoteService 提供的服务。如下图：
