@@ -198,6 +198,7 @@ public interface IUserAidlInterface extends android.os.IInterface {
 ### 3.2 IInterface 接口
 
 ```java
+// Base class for Binder interfaces. When defining a new interface, you must derive it from IInterface.
 public interface IInterface{
     /**
      * Retrieve the Binder object associated with this interface.
@@ -216,54 +217,130 @@ Binder类代表的其实就是 Binder 本地对象。BinderProxy 类是 Binder �
 这个类继承了 Binder, 说明它是一个 Binder 本地对象，它实现了 IInterface 接口，表明它具有远程 Server 承诺给 Client 的能力；
 Stub是一个抽象类，具体的 IInterface 的相关实现需要我们手动完成，这里使用了策略模式。
 
-
 ### 3.5 过程讲解
 
 一次跨进程通信必然会涉及到两个进程，在这个例子中 RemoteService 作为服务端进程，提供服务；ClientActivity 作为客户端进程，使用 RemoteService 提供的服务。如下图：
 
-<img width="400" alt="AIDL" src="https://user-images.githubusercontent.com/17560388/182274407-8d1816fd-96e9-410e-bc93-09b9bbf9288b.png">
+系统帮我们生成  之后，我们只需要继承 ICompute.Stub 这个抽象类，实现它的方法，然后在 Service 的 onBind方法里面返回就实现了AIDL。这个Stub类非常重要，具体看看它做了什么。
 
-那么服务端进程具备什么样的能力？能为客户端提供什么样的服务呢？还记得我们前面介绍过的 IInterface 吗，它代表的就是服务端进程具体什么样的能力。因此我们需要定义一个 BookManager 接口，BookManager 继承自 IIterface，表明服务端具备什么样的能力。
+Stub类继承自Binder，意味着这个Stub其实自己是一个Binder本地对象，然后实现了ICompute接口，ICompute本身是一个IInterface，因此他携带某种客户端需要的能力（这里是方法add)。此类有一个内部类Proxy，也就是Binder代理对象；
 
-只定义服务端具备什么要的能力是不够的，既然是跨进程调用，那么接下来我们得实现一个跨进程调用对象 Stub。Stub 继承 Binder, 说明它是一个 Binder 本地对象；实现 IInterface 接口，表明具有 Server 承诺给 Client 的能力；Stub 是一个抽象类，具体的 IInterface 的相关实现需要调用方自己实现。
-```java
-public abstract class Stub extends Binder implements BookManager {
+然后看看asInterface方法，我们在bind一个Service之后，在onServiceConnecttion的回调里面，就是通过这个方法拿到一个远程的service的，这个方法做了什么呢？
 
-    ...
-    public static BookManager asInterface(IBinder binder) {
-        if (binder == null)
-            return null;
-        IInterface iin = binder.queryLocalInterface(DESCRIPTOR);
-        if (iin != null && iin instanceof BookManager)
-            return (BookManager) iin;
-        return new Proxy(binder);
+
+/**
+ * Cast an IBinder object into an com.example.test.app.ICompute interface,
+ * generating a proxy if needed.
+ */
+public static com.example.test.app.ICompute asInterface(android.os.IBinder obj) {
+    if ((obj == null)) {
+        return null;
     }
-    ...
-    @Override
-    protected boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
-        switch (code) {
-
-            case INTERFACE_TRANSACTION:
-                reply.writeString(DESCRIPTOR);
-                return true;
-
-            case TRANSAVTION_addBook:
-                data.enforceInterface(DESCRIPTOR);
-                Book arg0 = null;
-                if (data.readInt() != 0) {
-                    arg0 = Book.CREATOR.createFromParcel(data);
-                }
-                this.addBook(arg0);
-                reply.writeNoException();
-                return true;
-
-        }
-        return super.onTransact(code, data, reply, flags);
+    android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
+    if (((iin != null) && (iin instanceof com.example.test.app.ICompute))) {
+        return ((com.example.test.app.ICompute) iin);
     }
-
-    ...
+    return new com.example.test.app.ICompute.Stub.Proxy(obj);
 }
-```
+首先看函数的参数IBinder类型的obj，这个对象是驱动给我们的，如果是Binder本地对象，那么它就是Binder类型，如果是Binder代理对象，那就是BinderProxy类型；然后，正如上面自动生成的文档所说，它会试着查找Binder本地对象，如果找到，说明Client和Server都在同一个进程，这个参数直接就是本地对象，直接强制类型转换然后返回，如果找不到，说明是远程对象（处于另外一个进程）那么就需要创建一个Binde代理对象，让这个Binder代理实现对于远程对象的访问。一般来说，如果是与一个远程Service对象进行通信，那么这里返回的一定是一个Binder代理对象，这个IBinder参数的实际上是BinderProxy;
+
+再看看我们对于aidl的add 方法的实现；在Stub类里面，add是一个抽象方法，我们需要继承这个类并实现它；如果Client和Server在同一个进程，那么直接就是调用这个方法；那么，如果是远程调用，这中间发生了什么呢？Client是如何调用到Server的方法的？
+
+我们知道，对于远程方法的调用，是通过Binder代理完成的，在这个例子里面就是Proxy类；Proxy对于add方法的实现如下：
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+Override
+public int add(int a, int b) throws android.os.RemoteException {
+    android.os.Parcel _data = android.os.Parcel.obtain();
+    android.os.Parcel _reply = android.os.Parcel.obtain();
+    int _result;
+    try {
+        _data.writeInterfaceToken(DESCRIPTOR);
+        _data.writeInt(a);
+        _data.writeInt(b);
+        mRemote.transact(Stub.TRANSACTION_add, _data, _reply, 0);
+        _reply.readException();
+        _result = _reply.readInt();
+    } finally {
+        _reply.recycle();
+        _data.recycle();
+    }
+    return _result;
+}
+它首先用Parcel把数据序列化了，然后调用了transact方法；这个transact到底做了什么呢？这个Proxy类在asInterface方法里面被创建，前面提到过，如果是Binder代理那么说明驱动返回的IBinder实际是BinderProxy, 因此我们的Proxy类里面的mRemote实际类型应该是BinderProxy；我们看看BinderProxy的transact方法：(Binder.java的内部类)
+
+1
+2
+public native boolean transact(int code, Parcel data, Parcel reply,
+            int flags) throws RemoteException;
+这是一个本地方法；它的实现在native层，具体来说在frameworks/base/core/jni/android_util_Binder.cpp文件，里面进行了一系列的函数调用，调用链实在太长这里就不给出了；要知道的是它最终调用到了talkWithDriver函数；看这个函数的名字就知道，通信过程要交给驱动完成了；这个函数最后通过ioctl系统调用，Client进程陷入内核态，Client调用add方法的线程挂起等待返回；驱动完成一系列的操作之后唤醒Server进程，调用了Server进程本地对象的onTransact函数（实际上由Server端线程池完成）。我们再看Binder本地对象的onTransact方法（这里就是Stub类里面的此方法）：
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+@Override
+public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags) throws android.os.RemoteException {
+    switch (code) {
+        case INTERFACE_TRANSACTION: {
+            reply.writeString(DESCRIPTOR);
+            return true;
+        }
+        case TRANSACTION_add: {
+            data.enforceInterface(DESCRIPTOR);
+            int _arg0;
+            _arg0 = data.readInt();
+            int _arg1;
+            _arg1 = data.readInt();
+            int _result = this.add(_arg0, _arg1);
+            reply.writeNoException();
+            reply.writeInt(_result);
+            return true;
+        }
+    }
+    return super.onTransact(code, data, reply, flags);
+}
+在Server进程里面，onTransact根据调用号（每个AIDL函数都有一个编号，在跨进程的时候，不会传递函数，而是传递编号指明调用哪个函数）调用相关函数；在这个例子里面，调用了Binder本地对象的add方法；这个方法将结果返回给驱动，驱动唤醒挂起的Client进程里面的线程并将结果返回。于是一次跨进程调用就完成了。
+
+至此，你应该对AIDL这种通信方式里面的各个类以及各个角色有了一定的了解；它总是那么一种固定的模式：一个需要跨进程传递的对象一定继承自IBinder，如果是Binder本地对象，那么一定继承Binder实现IInterface，如果是代理对象，那么就实现了IInterface并持有了IBinder引用；
+
+Proxy与Stub不一样，虽然他们都既是Binder又是IInterface，不同的是Stub采用的是继承（is 关系），Proxy采用的是组合（has 关系）。他们均实现了所有的IInterface函数，不同的是，Stub又使用策略模式调用的是虚函数（待子类实现），而Proxy则使用组合模式。为什么Stub采用继承而Proxy采用组合？事实上，Stub本身is一个IBinder（Binder），它本身就是一个能跨越进程边界传输的对象，所以它得继承IBinder实现transact这个函数从而得到跨越进程的能力（这个能力由驱动赋予）。Proxy类使用组合，是因为他不关心自己是什么，它也不需要跨越进程传输，它只需要拥有这个能力即可，要拥有这个能力，只需要保留一个对IBinder的引用。如果把这个过程做一个类比，在封建社会，Stub好比皇帝，可以号令天下，他生而具有这个权利（不要说宣扬封建迷信。。）如果一个人也想号令天下，可以，“挟天子以令诸侯”。为什么不自己去当皇帝，其一，一般情况没必要，当了皇帝其实限制也蛮多的是不是？我现在既能掌管天下，又能不受约束（Java单继承）；其二，名不正言不顺啊，我本来特么就不是（Binder），你非要我是说不过去，搞不好还会造反。最后呢，如果想当皇帝也可以，那就是asBinder了。在Stub类里面，asBinder返回this，在Proxy里面返回的是持有的组合类IBinder的引用。
+
+再去翻阅系统的ActivityManagerServer的源码，就知道哪一个类是什么角色了：IActivityManager是一个IInterface，它代表远程Service具有什么能力，ActivityManagerNative指的是Binder本地对象（类似AIDL工具生成的Stub类），这个类是抽象类，它的实现是ActivityManagerService；因此对于AMS的最终操作都会进入ActivityManagerService这个真正实现；同时如果仔细观察，ActivityManagerNative.java里面有一个非公开类ActivityManagerProxy, 它代表的就是Binder代理对象；是不是跟AIDL模型一模一样呢？那么ActivityManager是什么？他不过是一个管理类而已，可以看到真正的操作都是转发给ActivityManagerNative进而交给他的实现ActivityManagerService 完成的。
 Stub 类中我们重点介绍下 asInterface 和 onTransact。
 
 先说说 asInterface，当 Client 端在创建和服务端的连接，调用 bindService 时需要创建一个 ServiceConnection 对象作为入参。在 ServiceConnection 的回调方法 onServiceConnected 中 会通过这个 asInterface(IBinder binder) 拿到 BookManager 对象，这个 IBinder 类型的入参 binder 是驱动传给我们的，正如你在代码中看到的一样，方法中会去调用 binder.queryLocalInterface() 去查找 Binder 本地对象，如果找到了就说明 Client 和 Server 在同一进程，那么这个 binder 本身就是 Binder 本地对象，可以直接使用。否则说明是 binder 是个远程对象，也就是 BinderProxy。因此需要我们创建一个代理对象 Proxy，通过这个代理对象来是实现远程访问。
