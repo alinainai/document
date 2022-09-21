@@ -1,40 +1,26 @@
 ## 一、AIDL 简单介绍
 
-上篇文章我们学习了 Binder 的相关知识，通常我们做 IPC 开发时，用的最多的就是 AIDL。当然，AIDL 也是基于 Binder 实现的。
+上篇文章我们学习了 Binder 的相关知识，通常我们做 IPC 开发时，用的最多的就是 AIDL，AIDL 也是基于 Binder 实现的。
 
-AIDL 的全称是 Android 接口自定义语言，和其他接口语言 (IDL) 类似。利用它定义客户端与服务均认可的编程接口，以便二者使用进程间通信 (IPC) 进行相互通信。简单点说 AIDL 就是 Android 提供的一种方便定义 IPC 的技术。
+AIDL 的全称是 Android 接口自定义语言，和其他接口语言 (IDL) 类似。利用它定义客户端与服务均认可的编程接口，以便二者间进行进程间通信。
 
 SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分析中结合例子讲解一下 .java 文件中的方法。
 
 ## 二、主要代码
 
-我们新建一个 Android项目，然后 new 一个 .aidl 文件。我们参考 《Android 开发艺术探索》的例子，在我们的 demo 中也实现一套。
-
-先看一下demo的主要文件，已经做了相关的标注。我们 aidl 是在一个项目中实现的，当然你也可以写一个 client 项目单独去实现客户端的代码，代码都是一样的，调用的时候注意要让 Service 所在的项目启动。
-
-<img width="468" alt="demo 文件" src="https://user-images.githubusercontent.com/17560388/190108369-ec427526-e7a1-465b-8112-3fe0940cef8c.png">
-
-Aidl 包中文件的代码
+我们新建一个 Android 项目作为我们的 demo，然后 new 一个 .aidl 文件。我们参考 《Android 开发艺术探索》，实现一个 IUserAidlInterface.aidl 接口如下：
 ```java
-//IUserAidlInterface.aidl
-package com.egas.demo;
-
-import com.egas.demo.bean.User; //注意这里要引入 data 类
+import com.egas.demo.bean.User; //注意: 这里是要引入 data 类，我们要在 aidl 中实现一个和 data 类对用的 aidl 文件
 
 interface IUserAidlInterface {
      List<User> getUsers();
      boolean addUser(in User user);
 }
-
-//User.aidl: 这里要注意一下，要和 Java 中的 User 类包名要保持一致
-package com.egas.demo.bean;
-
-parcelable User;
 ```
-Java 包中的相关代码
-
+我们用到的实体类和对应的aidl，如下
 ```java
-// 我们引入了 id("kotlin-parcelize") 插件，通过注解直接实现 Parcelable 相关的代码，在第二篇文章中有讲解
+package com.egas.demo.bean
+// 我们引入了 id("kotlin-parcelize") 插件，通过注解直接实现 Parcelable 相关的代码，在该系列的第二篇文章中有讲解
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
@@ -43,171 +29,184 @@ data class User(val uId:Int,var name:String,var des:String) : Parcelable {
 }
 ```
 
-我们 `rebuild` 一下，在 `app/build/generated/aidl_source_output_dir` 会生成 `IUserAidlInterface.java` 代码，我们先简单看下 `IUserAidlInterface.java` 的结构:
+```java
+//User.aidl: 这里要注意一下，要和 Java 中的 User 类包名要保持一致
+package com.egas.demo.bean;
+
+parcelable User;
+```
+
+本 demo 的 Aidl 是在一个项目中实现的，当然你也可以写一个 client 项目单独去实现客户端的代码，代码都是一样的，调用的时候注意要让 Service 所在的项目启动。
+
+<img width="468" alt="demo 文件" src="https://user-images.githubusercontent.com/17560388/190108369-ec427526-e7a1-465b-8112-3fe0940cef8c.png">
+
+我们 `rebuild` 一下，在 `app/build/generated/aidl_source_output_dir` 会生成 `IUserAidlInterface.java` 代码:
 
 <img width="461" alt="image" src="https://user-images.githubusercontent.com/17560388/190111480-13f3a8c7-4968-426c-a6d0-1a760bb964c9.png">
 
-具体代码如下：
+具体代码：
 
 ```java
 package com.egas.demo;
-//引入data类
-public interface IUserAidlInterface extends android.os.IInterface
-{
-  /** Default implementation for IUserAidlInterface. */
-  public static class Default implements com.egas.demo.IUserAidlInterface ...// 默认实现，返回了 null
 
-  /** Local-side IPC implementation stub class. */
-  public static abstract class Stub extends android.os.Binder implements com.egas.demo.IUserAidlInterface
-  {
-    private static final java.lang.String DESCRIPTOR = "com.egas.demo.IUserAidlInterface";
-    /** Construct the stub at attach it to the interface. */
-    public Stub()
-    {
-      this.attachInterface(this, DESCRIPTOR);
-    }
+public interface IUserAidlInterface extends android.os.IInterface {
+ 
     /**
-     * Cast an IBinder object into an com.egas.demo.IUserAidlInterface interface,generating a proxy if needed.
+     * Local-side IPC implementation stub class.
      */
-    public static com.egas.demo.IUserAidlInterface asInterface(android.os.IBinder obj)
-    {
-      if ((obj==null)) {
-        return null;
-      }
-      android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
-      if (((iin!=null)&&(iin instanceof com.egas.demo.IUserAidlInterface))) {
-        return ((com.egas.demo.IUserAidlInterface)iin);
-      }
-      return new com.egas.demo.IUserAidlInterface.Stub.Proxy(obj);
+    public static abstract class Stub extends android.os.Binder implements com.egas.demo.IUserAidlInterface {
+        private static final java.lang.String DESCRIPTOR = "com.egas.demo.IUserAidlInterface";
+
+        /**
+         * Construct the stub at attach it to the interface.
+         */
+        public Stub() {
+            this.attachInterface(this, DESCRIPTOR);
+        }
+
+        /**
+         * Cast an IBinder object into an com.egas.demo.IUserAidlInterface interface,
+         * generating a proxy if needed.
+         */
+        public static com.egas.demo.IUserAidlInterface asInterface(android.os.IBinder obj) {
+            if ((obj == null)) {
+                return null;
+            }
+            android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
+            if (((iin != null) && (iin instanceof com.egas.demo.IUserAidlInterface))) {
+                return ((com.egas.demo.IUserAidlInterface) iin);
+            }
+            return new com.egas.demo.IUserAidlInterface.Stub.Proxy(obj);
+        }
+
+        @Override
+        public android.os.IBinder asBinder() {
+            return this;
+        }
+
+        @Override
+        public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags) throws android.os.RemoteException {
+            java.lang.String descriptor = DESCRIPTOR;
+            switch (code) {
+                case INTERFACE_TRANSACTION: {
+                    reply.writeString(descriptor);
+                    return true;
+                }
+                case TRANSACTION_getUsers: {
+                    data.enforceInterface(descriptor);
+                    java.util.List<com.egas.demo.bean.User> _result = this.getUsers();
+                    reply.writeNoException();
+                    reply.writeTypedList(_result);
+                    return true;
+                }
+                case TRANSACTION_addUser: {
+                    data.enforceInterface(descriptor);
+                    com.egas.demo.bean.User _arg0;
+                    if ((0 != data.readInt())) {
+                        _arg0 = com.egas.demo.bean.User.CREATOR.createFromParcel(data);
+                    } else {
+                        _arg0 = null;
+                    }
+                    boolean _result = this.addUser(_arg0);
+                    reply.writeNoException();
+                    reply.writeInt(((_result) ? (1) : (0)));
+                    return true;
+                }
+                default: {
+                    return super.onTransact(code, data, reply, flags);
+                }
+            }
+        }
+
+        private static class Proxy implements com.egas.demo.IUserAidlInterface {
+            private android.os.IBinder mRemote;
+
+            Proxy(android.os.IBinder remote) {
+                mRemote = remote;
+            }
+
+            @Override
+            public android.os.IBinder asBinder() {
+                return mRemote;
+            }
+
+            public java.lang.String getInterfaceDescriptor() {
+                return DESCRIPTOR;
+            }
+
+            @Override
+            public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException {
+                android.os.Parcel _data = android.os.Parcel.obtain();
+                android.os.Parcel _reply = android.os.Parcel.obtain();
+                java.util.List<com.egas.demo.bean.User> _result;
+                try {
+                    _data.writeInterfaceToken(DESCRIPTOR);
+                    boolean _status = mRemote.transact(Stub.TRANSACTION_getUsers, _data, _reply, 0);
+                    if (!_status && getDefaultImpl() != null) {
+                        return getDefaultImpl().getUsers();
+                    }
+                    _reply.readException();
+                    _result = _reply.createTypedArrayList(com.egas.demo.bean.User.CREATOR);
+                } finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+                return _result;
+            }
+
+            @Override
+            public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteException {
+                android.os.Parcel _data = android.os.Parcel.obtain();
+                android.os.Parcel _reply = android.os.Parcel.obtain();
+                boolean _result;
+                try {
+                    _data.writeInterfaceToken(DESCRIPTOR);
+                    if ((user != null)) {
+                        _data.writeInt(1);
+                        user.writeToParcel(_data, 0);
+                    } else {
+                        _data.writeInt(0);
+                    }
+                    boolean _status = mRemote.transact(Stub.TRANSACTION_addUser, _data, _reply, 0);
+                    if (!_status && getDefaultImpl() != null) {
+                        return getDefaultImpl().addUser(user);
+                    }
+                    _reply.readException();
+                    _result = (0 != _reply.readInt());
+                } finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+                return _result;
+            }
+
+            public static com.egas.demo.IUserAidlInterface sDefaultImpl;
+        }
+
+        static final int TRANSACTION_getUsers = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
+        static final int TRANSACTION_addUser = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+
+        public static boolean setDefaultImpl(com.egas.demo.IUserAidlInterface impl) {
+            // Only one user of this interface can use this function
+            // at a time. This is a heuristic to detect if two different
+            // users in the same process use this function.
+            if (Stub.Proxy.sDefaultImpl != null) {
+                throw new IllegalStateException("setDefaultImpl() called twice");
+            }
+            if (impl != null) {
+                Stub.Proxy.sDefaultImpl = impl;
+                return true;
+            }
+            return false;
+        }
+
+        public static com.egas.demo.IUserAidlInterface getDefaultImpl() {
+            return Stub.Proxy.sDefaultImpl;
+        }
     }
-    @Override public android.os.IBinder asBinder()
-    {
-      return this;
-    }
-    @Override public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags) throws android.os.RemoteException
-    {
-      java.lang.String descriptor = DESCRIPTOR;
-      switch (code)
-      {
-        case INTERFACE_TRANSACTION:
-        {
-          reply.writeString(descriptor);
-          return true;
-        }
-        case TRANSACTION_getUsers:
-        {
-          data.enforceInterface(descriptor);
-          java.util.List<com.egas.demo.bean.User> _result = this.getUsers();
-          reply.writeNoException();
-          reply.writeTypedList(_result);
-          return true;
-        }
-        case TRANSACTION_addUser:
-        {
-          data.enforceInterface(descriptor);
-          com.egas.demo.bean.User _arg0;
-          if ((0!=data.readInt())) {
-            _arg0 = com.egas.demo.bean.User.CREATOR.createFromParcel(data);
-          }
-          else {
-            _arg0 = null;
-          }
-          boolean _result = this.addUser(_arg0);
-          reply.writeNoException();
-          reply.writeInt(((_result)?(1):(0)));
-          return true;
-        }
-        default:
-        {
-          return super.onTransact(code, data, reply, flags);
-        }
-      }
-    }
-    private static class Proxy implements com.egas.demo.IUserAidlInterface
-    {
-      private android.os.IBinder mRemote;
-      Proxy(android.os.IBinder remote)
-      {
-        mRemote = remote;
-      }
-      @Override public android.os.IBinder asBinder()
-      {
-        return mRemote;
-      }
-      public java.lang.String getInterfaceDescriptor()
-      {
-        return DESCRIPTOR;
-      }
-      @Override public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException
-      {
-        android.os.Parcel _data = android.os.Parcel.obtain();
-        android.os.Parcel _reply = android.os.Parcel.obtain();
-        java.util.List<com.egas.demo.bean.User> _result;
-        try {
-          _data.writeInterfaceToken(DESCRIPTOR);
-          boolean _status = mRemote.transact(Stub.TRANSACTION_getUsers, _data, _reply, 0);
-          if (!_status && getDefaultImpl() != null) {
-            return getDefaultImpl().getUsers();
-          }
-          _reply.readException();
-          _result = _reply.createTypedArrayList(com.egas.demo.bean.User.CREATOR);
-        }
-        finally {
-          _reply.recycle();
-          _data.recycle();
-        }
-        return _result;
-      }
-      @Override public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteException
-      {
-        android.os.Parcel _data = android.os.Parcel.obtain();
-        android.os.Parcel _reply = android.os.Parcel.obtain();
-        boolean _result;
-        try {
-          _data.writeInterfaceToken(DESCRIPTOR);
-          if ((user!=null)) {
-            _data.writeInt(1);
-            user.writeToParcel(_data, 0);
-          }
-          else {
-            _data.writeInt(0);
-          }
-          boolean _status = mRemote.transact(Stub.TRANSACTION_addUser, _data, _reply, 0);
-          if (!_status && getDefaultImpl() != null) {
-            return getDefaultImpl().addUser(user);
-          }
-          _reply.readException();
-          _result = (0!=_reply.readInt());
-        }
-        finally {
-          _reply.recycle();
-          _data.recycle();
-        }
-        return _result;
-      }
-      public static com.egas.demo.IUserAidlInterface sDefaultImpl;
-    }
-    static final int TRANSACTION_getUsers = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
-    static final int TRANSACTION_addUser = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
-    public static boolean setDefaultImpl(com.egas.demo.IUserAidlInterface impl) {
-      // Only one user of this interface can use this function
-      // at a time. This is a heuristic to detect if two different
-      // users in the same process use this function.
-      if (Stub.Proxy.sDefaultImpl != null) {
-        throw new IllegalStateException("setDefaultImpl() called twice");
-      }
-      if (impl != null) {
-        Stub.Proxy.sDefaultImpl = impl;
-        return true;
-      }
-      return false;
-    }
-    public static com.egas.demo.IUserAidlInterface getDefaultImpl() {
-      return Stub.Proxy.sDefaultImpl;
-    }
-  }
-  public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException;
-  public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteException;
+
+    public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException;
+    public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteException;
 }
 ```
 
@@ -215,7 +214,7 @@ public interface IUserAidlInterface extends android.os.IInterface
 
 由于 Aidl 要配合 Service 使用，其他的代码直接参考 Demo 。
 
-## 三、Java类职责描述
+## 三、类职责描述
 
 `IUserAidlInterface.java` 涉及到相关类如下：
 
