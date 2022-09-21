@@ -11,7 +11,7 @@ Gradle 的构建过程，也是 Gradle 构建的生命周期，主要有下面�
 Gradle 执行脚本文件的时候会生成对应的实例，主要有如下三种对象：
 
 - 1、`Gradle 对象`：在项目初始化时构建，全局单例存在，只有这一个对象
-- 2、`Settings 对象`：Seetings.gradle 会转变成一个 Seetings 对象
+- 2、`Settings 对象`：Seetings.gradle 会转变成一个 Setings 对象
 - 3、`Project 对象`：每一个 build.gradle 都会转换成一个 Project 对象
 
 Gradle 在各个阶段都提供了生命周期回调，监听器要在生命周期回调之前添加，否则会导致有些回调收不到
@@ -169,13 +169,10 @@ doFirst() doLast() 和普通代码段的区别:
 
 ```groovy
 task taskName { 
-    //初始化代码，初始化话的时候会执行
-    // config code 
-    
-    doFirst { //初始化的时候不会执行
+    config code // 初始化代码，初始化话的时候会执行
+    doFirst { // 初始化的时候不会执行
     }
-    
-    doLast { //初始化的时候不会执行
+    doLast { // 初始化的时候不会执行
     }
 }
 ```
@@ -192,13 +189,13 @@ task taskName {
 
 ### 3.2 自定义 Task
 
-继承 Delete Task，删除根目录下的 build 文件
+1、继承 Delete Task，删除根目录下的 build 文件
 ```groovy
 task deleteTask(type: Delete) {
     delete rootProject.buildDir
 }
 ```
-依赖 copy
+2、依赖 copy
 ```groovy
 task copyImage(type: Copy) {
     from 'C:\\Users\\yiba_zyj\\Desktop\\gradle\\copy'
@@ -208,7 +205,7 @@ task copyImage(type: Copy) {
     rename("image2.jpg","123.jpg")
 }
 ```
-使⽤ task taskA(dependsOn: b) 的形式来指定依赖
+3、使⽤ task taskA(dependsOn: b) 的形式来指定依赖
 ```groovy
 task task1 {
     doLast { println "执行task1----"}
@@ -219,8 +216,7 @@ task task2 {
 //task2 依赖 task1, 执行task2之前会先执行task1
 task2.dependsOn task1
 ```
-
-执行 shell
+4、执行 shell
 
 1. Use Gradle [Exec](https://docs.gradle.org/current/dsl/org.gradle.api.tasks.Exec.html) task type
 ```groovy
