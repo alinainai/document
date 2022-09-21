@@ -185,50 +185,46 @@ public interface IUserAidlInterface extends android.os.IInterface {
 }
 ```
 
-在 `IUserAidlInterface.java` 设计到了很多和 Binder 相关的类，如，IBinder、IInterface、Binder、Stub等，再下一节中我们先看一下这些类的作用和相关的方法。
-
-由于 Aidl 要配合 Service 使用，其他的代码直接参考 Demo 。
+上面的代码中出现了很多和 Binder 相关的类，如，IBinder、IInterface、Binder、Stub等。下一节中我们先看一下这些类的作用和相关的方法。
 
 ## 三、类职责描述
 
 `IUserAidlInterface.java` 涉及到相关类如下：
 
-1、IBinder 接口
+### 3.1 IBinder 接口
 
 它代表了一种跨进程传输的能力；只要实现了这个接口，就能将这个对象进行跨进程传递；这是驱动底层支持的；在跨进程数据流经驱动的时候，驱动会识别IBinder类型的数据，从而自动完成不同进程Binder本地对象以及Binder代理对象的转换。
 
-2、IInterface 接口
+### 3.2 IInterface 接口
 
-IBinder负责数据传输，那么client与server端的调用契约（这里不用接口避免混淆）呢？这里的 IInterface 代表的就是远程 server 对象具有什么能力。具体来说，就是aidl里面的接口。
+```java
+public interface IInterface{
+    /**
+     * Retrieve the Binder object associated with this interface.
+     * You must use this instead of a plain cast, so that proxy objects can return the correct result.
+     */
+    public IBinder asBinder();
+}
+```
+### 3.3 Java层的Binder类
 
-3、Java层的Binder类
-
-代表的其实就是 Binder 本地对象。BinderProxy 类是 Binder 类的一个内部类，它代表远程进程的 Binder 对象的本地代理；
+Binder类代表的其实就是 Binder 本地对象。BinderProxy 类是 Binder 类的一个内部类，它代表远程进程的 Binder 对象的本地代理；
 这两个类都继承自IBinder, 因而都具有跨进程传输的能力；实际上，在跨越进程的时候，Binder驱动会自动完成这两个对象的转换。
 
-4、Stub 类
+### 3.4 Stub 类
 在使用AIDL的时候，编译工具会给我们生成一个Stub的静态内部类；
 这个类继承了 Binder, 说明它是一个 Binder 本地对象，它实现了 IInterface 接口，表明它具有远程 Server 承诺给 Client 的能力；
 Stub是一个抽象类，具体的 IInterface 的相关实现需要我们手动完成，这里使用了策略模式。
 
 
+### 3.5 过程讲解
 
-
-### 5.2 实现过程讲解
 一次跨进程通信必然会涉及到两个进程，在这个例子中 RemoteService 作为服务端进程，提供服务；ClientActivity 作为客户端进程，使用 RemoteService 提供的服务。如下图：
 
 <img width="400" alt="AIDL" src="https://user-images.githubusercontent.com/17560388/182274407-8d1816fd-96e9-410e-bc93-09b9bbf9288b.png">
 
 那么服务端进程具备什么样的能力？能为客户端提供什么样的服务呢？还记得我们前面介绍过的 IInterface 吗，它代表的就是服务端进程具体什么样的能力。因此我们需要定义一个 BookManager 接口，BookManager 继承自 IIterface，表明服务端具备什么样的能力。
-```java
-/**
- * 这个类用来定义服务端 RemoteService 具备什么样的能力
- */
-public interface BookManager extends IInterface {
 
-    void addBook(Book book) throws RemoteException;
-}
-```
 只定义服务端具备什么要的能力是不够的，既然是跨进程调用，那么接下来我们得实现一个跨进程调用对象 Stub。Stub 继承 Binder, 说明它是一个 Binder 本地对象；实现 IInterface 接口，表明具有 Server 承诺给 Client 的能力；Stub 是一个抽象类，具体的 IInterface 的相关实现需要调用方自己实现。
 ```java
 public abstract class Stub extends Binder implements BookManager {
