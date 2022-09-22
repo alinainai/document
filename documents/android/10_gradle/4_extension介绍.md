@@ -404,6 +404,9 @@ winxin-debug.apk
 google-release.apk
 winxin-release.apk
 ``` 
+    
+前四节代码已上传到 gitbub : [AndroidDemo:feature/feature_gradle_v2](https://github.com/alinainai/AndroidDemo/tree/feature/feature_gradle_v2)
+    
 ## 5、插件中使用Extension
 在本系列的第三篇文档中，我们简单的实现了一个 gradle 插件。在上面的章节中我们学习了 Extension 的使用，在下面的例子中我们在自定义的插件中实现一个嵌套的 Extension。
     
