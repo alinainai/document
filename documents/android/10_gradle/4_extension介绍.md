@@ -408,9 +408,11 @@ winxin-release.apk
 前四节代码已上传到 github : [AndroidDemo:feature/feature_gradle_v2](https://github.com/alinainai/AndroidDemo/tree/feature/feature_gradle_v2)
     
 ## 5、插件中使用Extension
-在本系列的第三篇文档中，我们简单的实现了一个 gradle 插件。在上面的章节中我们学习了 Extension 的使用，在下面的例子中我们在自定义的插件中实现一个嵌套的 Extension。
+
+在本系列的第三篇文档，我们简单的实现了一个 gradle 插件。在上面的章节中我们学习了 Extension 的使用。下面让我们在自定义的插件中实现一个嵌套的 Extension。
     
-直接贴下我们实现的代码，首先在 CustomPlugin.kt 中注册我们的 extensions
+在 CustomPlugin.kt 中注册我们的 extensions
+    
 ```kotlin
 class CustomPlugin : Plugin<Project> {
     companion object {
@@ -427,7 +429,9 @@ class CustomPlugin : Plugin<Project> {
         }
     }
 }
-// Outer 类代码如下
+```
+Outer 代码如下，注意 kotlin 默认的 class 是带 final 实现的，我们要声明的 Extentsion 需要继承定义的类，所以添加一个 open 参数
+```kotlin
 open class Outer {
     var name: String? = ""
     var inner = Inner()
@@ -448,7 +452,7 @@ outer{
     }
 }
 ```    
-重新发布插件，然后 Rebuild 项目，会有如下日志
+重新发布插件，然后 Rebuild 项目，日志如下
 ```shell   
 > Configure project :app
 Hello CustomPlugin
