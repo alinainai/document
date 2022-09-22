@@ -13,7 +13,6 @@ SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分�
 ```java
 import com.egas.demo.bean.User; //注意: 这里是要引入 data 类，我们要在 aidl 中实现一个和 data 类对用的 aidl 文件
 interface IUserAidlInterface {
-     List<User> getUsers();
      boolean addUser(in User user);
 }
 ```
@@ -23,12 +22,8 @@ interface IUserAidlInterface {
 ```java
 package com.egas.demo.bean
 // gradle 系列的第二篇文章中有讲解 @Parcelize 的使用
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-
 @Parcelize
-data class User(val uId:Int,var name:String,var des:String) : Parcelable {
-}
+data class User(var name: String? = "") : Parcelable
 ```
 
 ```java
@@ -319,9 +314,6 @@ public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel re
 再去翻阅系统的 `ActivityManagerServer` 的源码，就知道哪一个类是什么角色了：`IActivityManager`是一个`IInterface`，它代表远程Service具有什么能力，`ActivityManagerNative` 指的是 `Binder`本地对象（类似AIDL工具生成的Stub类），这个类是抽象类，它的实现是 `ActivityManagerService`；
 
 因此对于 `AMS` 的最终操作都会进入 `ActivityManagerService` 这个真正实现；同时如果仔细观察，`ActivityManagerNative.java` 里面有一个非公开类 `ActivityManagerProxy` , 它代表的就是 `Binder代理对象` ；是不是跟 `AIDL模型` 一模一样呢？那么 `ActivityManager` 是什么？他不过是一个管理类而已，可以看到真正的操作都是转发给 `ActivityManagerNative` 进而交给他的实现 `ActivityManagerService`  完成的。
-
-
-
 
 ## 参考
 
