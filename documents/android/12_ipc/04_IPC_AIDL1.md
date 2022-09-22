@@ -4,7 +4,7 @@
 
 AIDL 的全称是 Android 接口自定义语言，和其他接口语言 (IDL) 类似。利用它定义客户端与服务均认可的编程接口，以便二者间进行进程间通信。
 
-SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分析中结合例子讲解一下 .java 文件中的方法。
+SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分析中结合例子分析一下整个Aidl流程。
 
 ## 二、主要代码
 
@@ -12,7 +12,6 @@ SDK Tools 会将 .aidl 文件编译为 .java 文件，我们将在下面的分�
 
 ```java
 import com.egas.demo.bean.User; //注意: 这里是要引入 data 类，我们要在 aidl 中实现一个和 data 类对用的 aidl 文件
-
 interface IUserAidlInterface {
      List<User> getUsers();
      boolean addUser(in User user);
@@ -23,7 +22,7 @@ interface IUserAidlInterface {
 
 ```java
 package com.egas.demo.bean
-// 我们引入了 id("kotlin-parcelize") 插件，通过注解直接实现 Parcelable 相关的代码，在该系列的第二篇文章中有讲解
+// gradle 系列的第二篇文章中有讲解 @Parcelize 的使用
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
@@ -45,24 +44,25 @@ parcelable User;
 
 我们 `rebuild` 一下，在 `app/build/generated/aidl_source_output_dir` 会生成 `IUserAidlInterface.java` 代码:
 
-<img width="461" alt="image" src="https://user-images.githubusercontent.com/17560388/190111480-13f3a8c7-4968-426c-a6d0-1a760bb964c9.png">
+<img width="445" alt="image" src="https://user-images.githubusercontent.com/17560388/191678634-abb4d7b9-5abd-4395-9fbd-2ad28a09b674.png">
 
 具体代码，去掉了一些无用代码：
 
 ```java
-package com.egas.demo;
-
 public interface IUserAidlInterface extends android.os.IInterface {
- 
+
     public static abstract class Stub extends android.os.Binder implements com.egas.demo.IUserAidlInterface {
         private static final java.lang.String DESCRIPTOR = "com.egas.demo.IUserAidlInterface";
 
+        /**
+         * Construct the stub at attach it to the interface.
+         */
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);
         }
 
         /**
-         * Cast an IBinder object into an com.egas.demo.IUserAidlInterface interface,generating a proxy if needed.
+         * Cast an IBinder object into an com.egas.demo.IUserAidlInterface interface, generating a proxy if needed.
          */
         public static com.egas.demo.IUserAidlInterface asInterface(android.os.IBinder obj) {
             if ((obj == null)) {
@@ -86,13 +86,6 @@ public interface IUserAidlInterface extends android.os.IInterface {
             switch (code) {
                 case INTERFACE_TRANSACTION: {
                     reply.writeString(descriptor);
-                    return true;
-                }
-                case TRANSACTION_getUsers: {
-                    data.enforceInterface(descriptor);
-                    java.util.List<com.egas.demo.bean.User> _result = this.getUsers();
-                    reply.writeNoException();
-                    reply.writeTypedList(_result);
                     return true;
                 }
                 case TRANSACTION_addUser: {
@@ -131,26 +124,6 @@ public interface IUserAidlInterface extends android.os.IInterface {
             }
 
             @Override
-            public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException {
-                android.os.Parcel _data = android.os.Parcel.obtain();
-                android.os.Parcel _reply = android.os.Parcel.obtain();
-                java.util.List<com.egas.demo.bean.User> _result;
-                try {
-                    _data.writeInterfaceToken(DESCRIPTOR);
-                    boolean _status = mRemote.transact(Stub.TRANSACTION_getUsers, _data, _reply, 0);
-                    if (!_status && getDefaultImpl() != null) {
-                        return getDefaultImpl().getUsers();
-                    }
-                    _reply.readException();
-                    _result = _reply.createTypedArrayList(com.egas.demo.bean.User.CREATOR);
-                } finally {
-                    _reply.recycle();
-                    _data.recycle();
-                }
-                return _result;
-            }
-
-            @Override
             public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteException {
                 android.os.Parcel _data = android.os.Parcel.obtain();
                 android.os.Parcel _reply = android.os.Parcel.obtain();
@@ -175,15 +148,10 @@ public interface IUserAidlInterface extends android.os.IInterface {
                 }
                 return _result;
             }
-
             public static com.egas.demo.IUserAidlInterface sDefaultImpl;
         }
-
-        static final int TRANSACTION_getUsers = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
-        static final int TRANSACTION_addUser = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+        static final int TRANSACTION_addUser = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
     }
-
-    public java.util.List<com.egas.demo.bean.User> getUsers() throws android.os.RemoteException;
     public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteException;
 }
 ```
@@ -196,7 +164,7 @@ public interface IUserAidlInterface extends android.os.IInterface {
 
 ### 3.1 IBinder 接口
 
-它代表了一种跨进程传输的能力；只要实现了这个接口，就能将这个对象进行跨进程传递；这是驱动底层支持的；在跨进程数据流经驱动的时候，驱动会识别IBinder类型的数据，从而自动完成不同进程Binder本地对象以及Binder代理对象的转换。
+它代表了一种跨进程传输的能力；只要实现了这个接口，就能将这个对象进行跨进程传递；这是驱动底层支持的；在跨进程数据流经驱动的时候，驱动会识别 IBinder 类型的数据，从而自动完成不同进程 Binder 本地对象以及Binder 代理对象的转换。
 
 ### 3.2 IInterface 接口
 
@@ -222,20 +190,19 @@ Binder类代表的其实就是 Binder 本地对象。BinderProxy 类是 Binder �
 这个类继承了 Binder, 说明它是一个 Binder 本地对象，它实现了 IInterface 接口，表明它具有远程 Server 承诺给 Client 的能力；
 Stub是一个抽象类，具体的 IInterface 的相关实现需要我们手动完成，这里使用了策略模式。
 
-### 3.5 过程讲解
+### 四、过程讲解
 
-一次跨进程通信必然会涉及到两个进程，在这个例子中 UserAidlService 作为服务端进程，提供服务；MainActivity 作为客户端进程，使用 UserAidlService 提供的服务。
+一次跨进程通信必然会涉及到两个进程，在 demo 中 `UserAidlService` 作为服务端进程，提供服务；`MainActivity` 作为客户端进程，使用 `UserAidlService` 提供的服务。
 
-系统帮我们生成 aidl 的 java文件之后，我们只需要继承 IUserAidlInterface.Stub 这个抽象类，实现它的方法，然后在 Service 的 `onBind` 方法里面返回就实现了AIDL。这个Stub类非常重要，具体看看它做了什么。
+### 4.1 相关方法
 
-Stub类继承自Binder，意味着这个Stub其实自己是一个Binder本地对象，然后实现了IUserAidlInterface 接口，IUserAidlInterface 本身是一个IInterface，因此他携带某种客户端需要的能力（这里是 getUsers和addUser )。此类有一个内部类Proxy，也就是Binder代理对象；
+系统帮我们生成 aidl 的 java 代码之后，我们只需要继承 `IUserAidlInterface.Stub` 这个抽象类，实现它的方法，然后在 `Service` 的 `onBind` 方法里面返回就实现了`AIDL`。这个Stub类非常重要，具体看看它做了什么。
 
-然后看看 asInterface 方法，我们在 bind 一个 Service 之后，在 onServiceConnecttion 的回调里面，就是通过这个方法拿到一个远程的service的，这个方法做了什么呢？
+`Stub`类继承自`Binder`，意味着这个`Stub`其实自己是一个`Binder本地对象`，然后实现了`IUserAidlInterface` 接口，`IUserAidlInterface` 本身是一个`IInterface`，因此他携带某种客户端需要的能力（这里是 getUsers和addUser )。此类有一个内部类Proxy，也就是Binder代理对象；
+
+然后看看 `asInterface` 方法，我们在 `bind` 一个 `Service` 之后，在 `onServiceConnecttion` 的回调里面，就是通过这个方法拿到一个远程的 `service`的，这个方法做了什么呢？
 
 ```java
-/**
- * Cast an IBinder object into an com.egas.demo.IUserAidlInterface interface,generating a proxy if needed.
- */
 public static com.egas.demo.IUserAidlInterface asInterface(android.os.IBinder obj) {
     if ((obj == null)) {
         return null;
@@ -250,13 +217,13 @@ public static com.egas.demo.IUserAidlInterface asInterface(android.os.IBinder ob
 
 
 
-首先看函数的参数 IBinder 类型 的obj，这个对象是驱动给我们的，如果是Binder本地对象，那么它就是Binder类型；如果是Binder代理对象，那就是BinderProxy类型；
+首先看函数的参数 `IBinder` 类型的 `obj`，这个对象是驱动给我们的，如果是 `Binder` 本地对象，那么它就是`Binder 类型`；如果是 `Binder 代理对象`，那就是 `BinderProxy 类型`；
 
 然后，正如上面自动生成的文档所说，它会试着查找Binder本地对象，如果找到，说明 Client 和 Server 都在同一个进程，这个参数直接就是本地对象，直接强制类型转换然后返回；如果找不到，说明是远程对象（处于另外一个进程）那么就需要创建一个 Binder 代理对象，让这个Binder代理实现对于远程对象的访问。一般来说，如果是与一个远程 Service 对象进行通信，那么这里返回的一定是一个 Binder 代理对象，这个 IBinder 参数的实际上是 BinderProxy ;
 
-再看看我们对于 .aidl 的方法的实现；
+再看看我们对于 `.aidl` 的方法的实现；
 
-如果 Client 和 Server 在同一个进程，那么直接就是调用这个方法；如果是远程调用，通过Binder代理完成。在这个例子里面就是 Proxy 类：
+如果 Client 和 Server 在同一个进程，那么直接就是调用这个方法；如果是远程调用，通过 `Binder代理` 完成。在这个例子里面就是 `Proxy 类`：
 
 
 ```java
@@ -287,7 +254,11 @@ public boolean addUser(com.egas.demo.bean.User user) throws android.os.RemoteExc
 }
 ```
 
-它首先用 Parcel 把数据序列化了，然后调用了 transact 方法；这个transact到底做了什么呢？这个Proxy类在asInterface方法里面被创建，前面提到过，如果是Binder代理那么说明驱动返回的IBinder实际是BinderProxy, 因此我们的Proxy类里面的mRemote实际类型应该是BinderProxy；我们看看BinderProxy的transact方法：(Binder.java的内部类)
+它首先用 `Parcel` 把数据序列化了，然后调用了 `transact` 方法；
+
+这个`transact`到底做了什么呢？这个`Proxy类`在`asInterface`方法里面被创建，前面提到过，如果是`Binder代理`那么说明驱动返回的 `IBinder` 实际是 `BinderProxy` , 因此我们的 `Proxy` 类里面的 `mRemote` 实际类型应该是 `BinderProxy`；
+
+我们看看 `BinderProxy#transact` 方法：(Binder.java的内部类)
 
 ```java
 public native boolean transact(int code, Parcel data, Parcel reply,
@@ -295,9 +266,13 @@ public native boolean transact(int code, Parcel data, Parcel reply,
 ```
 
 
-这是一个本地方法；它的实现在native层，具体来说在 frameworks/base/core/jni/android_util_Binder.cpp 文件，里面进行了一系列的函数调用，调用链实在太长这里就不给出了；
+这是一个本地方法；它的实现在native层，具体来说在 `frameworks/base/core/jni/android_util_Binder.cpp` 文件，里面进行了一系列的函数调用，调用链实在太长这里就不给出了；
 
-要知道的是它最终调用到了talkWithDriver函数；看这个函数的名字就知道，通信过程要交给驱动完成了；这个函数最后通过ioctl系统调用，Client进程陷入内核态，Client调用add方法的线程挂起等待返回；驱动完成一系列的操作之后唤醒Server进程，调用了Server进程本地对象的onTransact函数（实际上由Server端线程池完成）。我们再看Binder本地对象的onTransact方法（这里就是Stub类里面的此方法）：
+要知道的是它最终调用到了`talkWithDriver`函数；看这个函数的名字就知道，通信过程要交给驱动完成了；
+
+这个函数最后通过`ioctl`系统调用，`Client` 进程陷入内核态，`Client` 调用 `add方法` 的线程挂起等待返回；
+
+驱动完成一系列的操作之后唤醒 `Server` 进程，调用了 `Server` 进程本地对象的 `onTransact` 函数（实际上由`Server端`线程池完成）。我们再看`Binder本地对象`的 onTransact 方法（这里就是Stub类里面的此方法）：
 
 ```java
 @Override
@@ -306,13 +281,6 @@ public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel re
     switch (code) {
         case INTERFACE_TRANSACTION: {
             reply.writeString(descriptor);
-            return true;
-        }
-        case TRANSACTION_getUsers: {
-            data.enforceInterface(descriptor);
-            java.util.List<com.egas.demo.bean.User> _result = this.getUsers();
-            reply.writeNoException();
-            reply.writeTypedList(_result);
             return true;
         }
         case TRANSACTION_addUser: {
@@ -334,14 +302,23 @@ public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel re
 }
 ```
 
+在 Server 进程里面，onTransact 根据调用号（每个AIDL函数都有一个编号，在跨进程的时候，不会传递函数，而是传递编号指明调用哪个函数）调用相关函数；在这个例子里面，调用了Binder本地对象的`add`方法；这个方法将结果返回给驱动，驱动唤醒挂起的 `Client` 进程里面的线程并将结果返回。于是一次跨进程调用就完成了。
 
-在 Server 进程里面，onTransact根据调用号（每个AIDL函数都有一个编号，在跨进程的时候，不会传递函数，而是传递编号指明调用哪个函数）调用相关函数；在这个例子里面，调用了Binder本地对象的add方法；这个方法将结果返回给驱动，驱动唤醒挂起的Client进程里面的线程并将结果返回。于是一次跨进程调用就完成了。
+### 4.2 总结
 
-至此，你应该对AIDL这种通信方式里面的各个类以及各个角色有了一定的了解；它总是那么一种固定的模式：一个需要跨进程传递的对象一定继承自IBinder，如果是Binder本地对象，那么一定继承Binder实现IInterface，如果是代理对象，那么就实现了IInterface并持有了IBinder引用；
+至此，你应该对AIDL这种通信方式里面的各个类以及各个角色有了一定的了解；它总是那么一种固定的模式：一个需要跨进程传递的对象一定继承自 `IBinder`，如果是 `Binder` 本地对象，那么一定继承` Binder` 实现IInterface，如果是代理对象，那么就实现了 `IInterface` 并持有了 `IBinder` 引用；
 
-Proxy与Stub不一样，虽然他们都既是Binder又是IInterface，不同的是Stub采用的是继承（is 关系），Proxy采用的是组合（has 关系）。他们均实现了所有的IInterface函数，不同的是，Stub又使用策略模式调用的是虚函数（待子类实现），而Proxy则使用组合模式。为什么Stub采用继承而Proxy采用组合？事实上，Stub本身is一个IBinder（Binder），它本身就是一个能跨越进程边界传输的对象，所以它得继承IBinder实现transact这个函数从而得到跨越进程的能力（这个能力由驱动赋予）。Proxy类使用组合，是因为他不关心自己是什么，它也不需要跨越进程传输，它只需要拥有这个能力即可，要拥有这个能力，只需要保留一个对IBinder的引用。如果把这个过程做一个类比，在封建社会，Stub好比皇帝，可以号令天下，他生而具有这个权利（不要说宣扬封建迷信。。）如果一个人也想号令天下，可以，“挟天子以令诸侯”。为什么不自己去当皇帝，其一，一般情况没必要，当了皇帝其实限制也蛮多的是不是？我现在既能掌管天下，又能不受约束（Java单继承）；其二，名不正言不顺啊，我本来特么就不是（Binder），你非要我是说不过去，搞不好还会造反。最后呢，如果想当皇帝也可以，那就是asBinder了。在Stub类里面，asBinder返回this，在Proxy里面返回的是持有的组合类IBinder的引用。
+`Proxy` 与 `Stub` 不一样，虽然他们都既是 `Binder` 又是 `IInterface`，不同的是 `Stub` 采用的是继承（is 关系），Proxy 采用的是组合（has 关系）。
 
-再去翻阅系统的ActivityManagerServer的源码，就知道哪一个类是什么角色了：IActivityManager是一个IInterface，它代表远程Service具有什么能力，ActivityManagerNative指的是Binder本地对象（类似AIDL工具生成的Stub类），这个类是抽象类，它的实现是ActivityManagerService；因此对于AMS的最终操作都会进入ActivityManagerService这个真正实现；同时如果仔细观察，ActivityManagerNative.java里面有一个非公开类ActivityManagerProxy, 它代表的就是Binder代理对象；是不是跟AIDL模型一模一样呢？那么ActivityManager是什么？他不过是一个管理类而已，可以看到真正的操作都是转发给ActivityManagerNative进而交给他的实现ActivityManagerService 完成的。
+他们均实现了所有的 `IInterface` 函数，不同的是，Stub又使用策略模式调用的是虚函数（待子类实现），而Proxy则使用组合模式。
+
+为什么Stub采用继承而Proxy采用组合？事实上，Stub 本身 is一个 IBinder（Binder），它本身就是一个能跨越进程边界传输的对象，所以它得继承 IBinder 实现 transact 这个函数从而得到跨越进程的能力（这个能力由驱动赋予）。Proxy类使用组合，是因为他不关心自己是什么，它也不需要跨越进程传输，它只需要拥有这个能力即可，要拥有这个能力，只需要保留一个对 IBinder 的引用。如果把这个过程做一个类比，在封建社会，Stub好比皇帝，可以号令天下，他生而具有这个权利（不要说宣扬封建迷信。。）如果一个人也想号令天下，可以，“挟天子以令诸侯”。为什么不自己去当皇帝，其一，一般情况没必要，当了皇帝其实限制也蛮多的是不是？我现在既能掌管天下，又能不受约束（Java单继承）；其二，名不正言不顺啊，我本来特么就不是（Binder），你非要我是说不过去，搞不好还会造反。最后呢，如果想当皇帝也可以，那就是asBinder了。在Stub类里面，asBinder返回this，在Proxy里面返回的是持有的组合类IBinder的引用。
+
+### 4.3 ActivityManagerServer 类
+
+再去翻阅系统的 `ActivityManagerServer` 的源码，就知道哪一个类是什么角色了：`IActivityManager`是一个`IInterface`，它代表远程Service具有什么能力，`ActivityManagerNative` 指的是 `Binder`本地对象（类似AIDL工具生成的Stub类），这个类是抽象类，它的实现是 `ActivityManagerService`；
+
+因此对于 `AMS` 的最终操作都会进入 `ActivityManagerService` 这个真正实现；同时如果仔细观察，`ActivityManagerNative.java` 里面有一个非公开类 `ActivityManagerProxy` , 它代表的就是 `Binder代理对象` ；是不是跟 `AIDL模型` 一模一样呢？那么 `ActivityManager` 是什么？他不过是一个管理类而已，可以看到真正的操作都是转发给 `ActivityManagerNative` 进而交给他的实现 `ActivityManagerService`  完成的。
 
 
 
@@ -350,5 +327,4 @@ Proxy与Stub不一样，虽然他们都既是Binder又是IInterface，不同的�
 
 - [你真的理解AIDL中的in，out，inout么？](https://www.jianshu.com/p/ddbb40c7a251)
 - [Android进程间通信 深入浅出AIDL](https://zhuanlan.zhihu.com/p/338093696)
-- [AIDL实现的音乐播放器](https://github.com/naman14/Timber)
-
+- [AIDL实现的音乐播放器](
