@@ -179,6 +179,5 @@ onServiceConnected, thread = main
 
 - [AndroidDevelopers : RemoteCallbackList](https://developer.android.google.cn/reference/android/os/RemoteCallbackList.html)
 - [AIDL中RemoteCallbackList的使用及权限验证方式](https://www.jianshu.com/p/69e5782dd3c3)
-
 - [Android进程间通信 深入浅出AIDL](https://zhuanlan.zhihu.com/p/338093696)
-- [RemoteCallbackList的例子](
+- [RemoteCallbackList的例子](https://www.programcreek.com/java-api-examples/?api=android.os.RemoteCallbackList)
