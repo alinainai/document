@@ -126,10 +126,10 @@ Server 所以的进程可能随时会被杀掉。客户端需要能感知 binder
 
 有如下4种方式能知道服务端是否已经挂掉：
 
-1. 调用binder的pingBinder()检查,返回false则说明远程服务失效
-2. 调用binder的linkToDeath()注册监听器,当远程服务失效时,就会收到回调
-3. 绑定Service时用到的ServiceConnection有个onServiceDisconnected()回调在服务端断开时也能收到回调
-4. 客户端调用远程方法时,抛出DeadObjectException(RemoteException)
+1. 调用 binder 的 pingBinder() 检查，返回 false 则说明远程服务失效
+2. 调用 binder 的 linkToDeath() 注册监听器，当远程服务失效时，就会收到回调
+3. 绑定 Service 时用到的 ServiceConnection 有个 onServiceDisconnected() 回调在服务端断开时也能收到回调
+4. 客户端调用远程方法时，抛出 DeadObjectException(RemoteException)
 
 写份代码验证一下,在客户端修改为如下:
 
@@ -173,8 +173,7 @@ bindService true
 onServiceConnected, thread = main
 ```
 
-确实是监听到了服务端断开连接的时刻.然后重新连接也是ok的. 这里需要注意的是`binderDied()`方法是运行在子线程的,`onServiceDisconnected()`是运行在主线程的,如果要在这里更新UI,得注意一下.
-
+确实是监听到了服务端断开连接的时刻，然后重新连接也是ok的。这里需要注意的是 `binderDied()` 方法是运行在子线程的,`onServiceDisconnected()`是运行在主线程的。
 ## 参考
 
 - [AndroidDevelopers : RemoteCallbackList](https://developer.android.google.cn/reference/android/os/RemoteCallbackList.html)
