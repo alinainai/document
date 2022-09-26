@@ -1,4 +1,4 @@
-在上一篇文档中我们简单的实现了一个 AIDL 的例子，在本篇中我们来进阶一下，看下 Aidl 的关键字和其他一些技巧
+在上一篇文档中我们简单的实现了一个 AIDL 的例子，在本篇中我们来进阶一下，看下 Aidl 的相关知识点
 
 ## 一、in/out/inout 关键字
 
@@ -118,11 +118,71 @@ override fun addPerson(user: User?): Boolean {
 
 ## 四、添加回调
 
+官方给我们提供了一个存储 Listener 的容器 `RemoteCallbackList<T>`。我们可以在 Server 端中使用 RemoteCallbackList 来处理监听器。
 
+我们在客户端中注册一个监听新增 user 的 Listener，看先我们 addUser 的时候是否能监听到。
+
+由于这个 Listener 需要在进程间传递，所以我们需要把这个 Listener 声明为 Aidl 对象: 
+
+
+```java
+import com.egas.demo.bean.User; //引入data类
+
+interface OnUserAddListener {
+    void onUserAdded(in User user);
+}
+```
+
+在 IUserAidlInterface.aidl 中添加相关方法
+
+```java
+// 3、数据变化监听器注册和反注册
+void addListener(OnUserAddListener listener);
+void removeListener(OnUserAddListener listener);
+```
+
+然后在 Service 代码中处理 Listener 
+
+```java
+//存储注册监听客户端集合
+private val mListeners =  RemoteCallbackList<OnUserAddListener>()
+
+override fun addListener(listener: OnUserAddListener?) {
+    mListeners.register(listener)
+}
+override fun removeListener(listener: OnUserAddListener?) {
+    mListeners.unregister(listener)
+}
+```
+在 Client 中使用 
+```java
+private val listener = object : OnUserAddListener.Stub() {
+    override fun onUserAdded(user: User) {
+        Log.e(TAG, "onUserAdded, thread = ${Thread.currentThread().name} user = $user") //主线程
+    }
+}
+
+private fun addListener() {
+    mRemoteServer?.addListener(listener)
+}
+
+private fun removeListener() {
+    mRemoteServer?.asBinder()?.isBinderAlive?.let {
+        mRemoteServer?.removeListener(listener)
+    }
+}
+```
+
+当我们添加 user 时，日志如下
+
+```shell
+服务端: addUser: user = User(name=张花花)
+客户端: onUserAdded, thread = main user = User(name=被addPersonIn修改)
+```
 
 ## 五、监听服务Death
 
-Server 所以的进程可能随时会被杀掉。客户端需要能感知 binder 是否已经死亡，从而做一些收尾清理工作或者进程重新连接。
+Server 所在的进程可能随时会被杀掉。客户端需要能感知 binder 是否已经死亡，从而做一些收尾清理工作或者进程重新连接。
 
 有如下4种方式能知道服务端是否已经挂掉：
 
