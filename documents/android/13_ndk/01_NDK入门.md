@@ -72,14 +72,14 @@ Java_com_egas_demo_MainActivity_stringFromJNI(
 
 每一个从 Java 调用的 native 方法，在 JNI 函数中都会传递一个当前对象的引用。区分 2 种情况：
 
- - 1、静态 native 方法： 第二个参数为 jclass 类型，指向 native 方法所在类的 Class 对象；
- - 2、实例 native 方法： 第二个参数为 jobject 类型，指向调用 native 方法的对象。
+ - - 1、静态 native 方法： 第二个参数为 jclass 类型，指向 native 方法所在类的 Class 对象；
+ - - 2、实例 native 方法： 第二个参数为 jobject 类型，指向调用 native 方法的对象。
 
 - 5、 JavaVM 和 JNIEnv 的作用
 JavaVM 和 JNIEnv 是定义在 jni.h 头文件中最关键的两个数据结构：
 
- - JavaVM： 代表 Java 虚拟机，每个 Java 进程有且仅有一个全局的 JavaVM 对象，JavaVM 可以跨线程共享；
- - JNIEnv： 代表 Java 运行环境，每个 Java 线程都有各自独立的 JNIEnv 对象，JNIEnv 不可以跨线程共享。
+  - JavaVM： 代表 Java 虚拟机，每个 Java 进程有且仅有一个全局的 JavaVM 对象，JavaVM 可以跨线程共享；
+  - JNIEnv： 代表 Java 运行环境，每个 Java 线程都有各自独立的 JNIEnv 对象，JNIEnv 不可以跨线程共享。
 
 JavaVM 和 JNIEnv 的类型定义在 C 和 C++ 中略有不同，但本质上是相同的，内部由一系列指向虚拟机内部的函数指针组成。 类似于 Java 中的 Interface 概念，不同的虚拟机实现会从它们派生出不同的实现类，而向 JNI 层屏蔽了虚拟机内部实现（例如在 Android ART 虚拟机中，它们的实现分别是 JavaVMExt 和 JNIEnvExt）。
 
