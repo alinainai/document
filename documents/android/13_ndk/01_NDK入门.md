@@ -25,7 +25,7 @@ class MainActivity : BaseActivity() {
 
     companion object {
         init {
-            System.loadLibrary("demo") // 1、在静态方法中加载 demo 类
+            System.loadLibrary("demo") // 1、在静态方法中配置 demo 包
         }
     }
 }
@@ -46,10 +46,10 @@ Java_com_egas_demo_MainActivity_stringFromJNI(
 ```
 我们简单的分析一下该文件相关的关键字：
 
-#### 1、`extern "C"`
+### 1、`extern "C"`
 表示按照类C的编译和连接规约来编译和连接，因为 C 和 C++ 语法有区别，C++ 形式编译的代码 C 可能识别不了，比如 C 中没有重载方法
 
-#### 2、JNIEXPORT
+### 2、JNIEXPORT
 表示一个函数需要暴露给共享库外部使用时
 
 ```c++
@@ -61,7 +61,7 @@ Java_com_egas_demo_MainActivity_stringFromJNI(
 #define JNIEXPORT  __attribute__ ((visibility ("default"))) // 让该方法对于外界可见
 ```
 
-#### 3、JNICALL
+### 3、JNICALL
 表示一个函数是 JNI 函数，
 ```c++
 // Windows 平台 :
@@ -70,7 +70,7 @@ Java_com_egas_demo_MainActivity_stringFromJNI(
 #define JNICALL // Linux 没有进行定义
 ```
 
-#### 4、jobject
+### 4、jobject
 
 JNI 层对于 Java 层应用类型对象的表示。
 
@@ -79,23 +79,25 @@ JNI 层对于 Java 层应用类型对象的表示。
 - 1、静态 native 方法： 第二个参数为 jclass 类型，指向 native 方法所在类的 Class 对象；
 - 2、实例 native 方法： 第二个参数为 jobject 类型，指向调用 native 方法的对象。
 
-#### 5、 JavaVM 和 JNIEnv 的作用
+### 5、 JavaVM 和 JNIEnv 的作用
 
 JavaVM 和 JNIEnv 是定义在 jni.h 头文件中最关键的两个数据结构：
 
-- JavaVM： 代表 Java 虚拟机，每个 Java 进程有且仅有一个全局的 JavaVM 对象，JavaVM 可以跨线程共享；
-- JNIEnv： 代表 Java 运行环境，每个 Java 线程都有各自独立的 JNIEnv 对象，JNIEnv 不可以跨线程共享。
+- JavaVM： 代表 Java 虚拟机，每个 Java 进程有且仅有一个全局的 JavaVM 对象，线程共享；
+- JNIEnv： 代表 Java 运行环境，每个 Java 线程都有各自独立的 JNIEnv 对象，线程私有。
 
-JavaVM 和 JNIEnv 的类型定义在 C 和 C++ 中略有不同，但本质上是相同的，内部由一系列指向虚拟机内部的函数指针组成。 类似于 Java 中的 Interface 概念，不同的虚拟机实现会从它们派生出不同的实现类，而向 JNI 层屏蔽了虚拟机内部实现（例如在 Android ART 虚拟机中，它们的实现分别是 JavaVMExt 和 JNIEnvExt）。
+JavaVM 和 JNIEnv 的类型定义在 C 和 C++ 中略有不同，但本质上是相同的，内部由一系列指向虚拟机内部的函数指针组成。 
+
+类似于 Java 中的 Interface 概念，不同的虚拟机实现会从它们派生出不同的实现类，而向 JNI 层屏蔽了虚拟机内部实现（例如在 Android ART 虚拟机中，它们的实现分别是 JavaVMExt 和 JNIEnvExt）。
 
 ```c++
 struct _JNIEnv;
 struct _JavaVM;
 
-#if defined(__cplusplus) // C++
+#if defined(__cplusplus) // C++ 环境
 typedef _JNIEnv JNIEnv;
 typedef _JavaVM JavaVM;
-#else // C 
+#else // C 环境
 typedef const struct JNINativeInterface* JNIEnv;
 typedef const struct JNIInvokeInterface* JavaVM;
 #endif
@@ -142,7 +144,9 @@ struct JNINativeInterface {
 // 在 C++ 中，要使用 env->
 env->FindClass("java/lang/String");
 ```
-## 二、方法名
+## 二、Java方法和Jni的映射
+
+z
 
 
 ## 参考
