@@ -4,7 +4,7 @@ NDK（Native Developer Kit）提供了一套 Java 和 C/C++ 相互调用的工�
 
 JNI（Java Native Interface）是 JAVA 平台中的一个强大功能。使用 JNI 编程的程序能够调用 C/C++编写的本地代码，同时也可以调用 JAVA 编写的代码。
 
-从一个demo开始：我们新建一个 Native C++ 项目
+从一个demo开始：我们新建一个 Native C++ 项目，Java Staduard
 
 <img width="240" alt="image" src="https://user-images.githubusercontent.com/17560388/192934644-766b2e2a-4b49-4476-918a-d886d78c26ff.png">
 
