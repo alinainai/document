@@ -1,6 +1,8 @@
 ## 一、NDK简单介绍
 
-NDK（Native Developer Kit）原生开发工具集，提供了一套 Java 和 c/c++ 相互调用的技术。
+NDK（Native Developer Kit）提供了一套 Java 和 C/C++ 相互调用的工具集。
+
+JNI（Java Native Interface）是 JAVA 平台中的一个强大功能。使用 JNI 编程的程序能够调用 C/C++编写的本地代码，同时也可以调用 JAVA 编写的代码。
 
 从一个demo开始：我们新建一个 Native C++ 项目
 
@@ -148,3 +150,5 @@ env->FindClass("java/lang/String");
 - [NDK 使用入门](https://developer.android.google.cn/ndk/guides)
 - [NDK开发（二）- JNI](https://www.jianshu.com/p/b0260cf9370f)
 - [NDK 系列（5）：JNI 从入门到实践，爆肝万字详解！](https://www.jianshu.com/p/5f48a9190d9d)
+- [Android：JNI 与 NDK到底是什么？（含实例教学）](https://blog.csdn.net/carson_ho/article/details/73250163)
+- [(译文) JNI编程指南与规范1~4章](https://juejin.cn/post/6930972583848312846)
