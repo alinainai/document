@@ -2,13 +2,11 @@
 
 NDK（Native Developer Kit）原生开发工具集，提供了一套 Java 和 c/c++ 相互调用的技术。
 
-从一个demo开始：
-
-我们新建一个 Native C++ 项目
+从一个demo开始：我们新建一个 Native C++ 项目
 
 <img width="240" alt="image" src="https://user-images.githubusercontent.com/17560388/192934644-766b2e2a-4b49-4476-918a-d886d78c26ff.png">
 
-AS 会自动帮我们生成一个和 Activity 交互的 C++ Jni 文件，Activity 代码如下：我们用的是 kotlin 代码，在关键的地方已经添加注释
+AS 会自动生成一个 Activity 以及和他交互的 Jni 文件，Activity 代码如下（我们用的是 kotlin 代码，在关键的地方已经添加注释）：
 
 ```kotlin
 class MainActivity : BaseActivity() {
@@ -18,7 +16,6 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        // Example of a call to a native method
         binding.sampleText.text = stringFromJNI() // 3、使用 JNI 返回的 String
     }
 
@@ -47,9 +44,11 @@ Java_com_egas_demo_MainActivity_stringFromJNI(
 ```
 我们简单的分析一下该文件相关的关键字：
 
-- 1、`extern "C"`：表示按照类C的编译和连接规约来编译和连接，因为 C 和 C++ 语法有区别，C++ 形式编译的代码 C 可能识别不了，比如 C 中没有重载方法
+#### 1、`extern "C"`
+表示按照类C的编译和连接规约来编译和连接，因为 C 和 C++ 语法有区别，C++ 形式编译的代码 C 可能识别不了，比如 C 中没有重载方法
 
-- 2、JNIEXPORT：表示一个函数需要暴露给共享库外部使用时
+#### 2、JNIEXPORT
+表示一个函数需要暴露给共享库外部使用时
 
 ```c++
 // Windows 平台 :
@@ -57,29 +56,33 @@ Java_com_egas_demo_MainActivity_stringFromJNI(
 #define JNIIMPORT __declspec(dllimport)
 // Linux 平台：
 #define JNIIMPORT
-#define JNIEXPORT  __attribute__ ((visibility ("default"))) // 在 linux 中让该方法对于外界可见
+#define JNIEXPORT  __attribute__ ((visibility ("default"))) // 让该方法对于外界可见
 ```
 
-- 3、JNICALL：表示一个函数是 JNI 函数
+#### 3、JNICALL
+表示一个函数是 JNI 函数，
 ```c++
 // Windows 平台 :
 #define JNICALL __stdcall // __stdcall 是一种函数调用参数的约定 ,表示函数的调用参数是从右往左。
 // Linux 平台：
-#define JNICALL
+#define JNICALL // Linux 没有进行定义
 ```
 
-- 4、jobject：JNI 层对于 Java 层应用类型对象的表示。
+#### 4、jobject
+
+JNI 层对于 Java 层应用类型对象的表示。
 
 每一个从 Java 调用的 native 方法，在 JNI 函数中都会传递一个当前对象的引用。区分 2 种情况：
 
- - - 1、静态 native 方法： 第二个参数为 jclass 类型，指向 native 方法所在类的 Class 对象；
- - - 2、实例 native 方法： 第二个参数为 jobject 类型，指向调用 native 方法的对象。
+- 1、静态 native 方法： 第二个参数为 jclass 类型，指向 native 方法所在类的 Class 对象；
+- 2、实例 native 方法： 第二个参数为 jobject 类型，指向调用 native 方法的对象。
 
-- 5、 JavaVM 和 JNIEnv 的作用
+#### 5、 JavaVM 和 JNIEnv 的作用
+
 JavaVM 和 JNIEnv 是定义在 jni.h 头文件中最关键的两个数据结构：
 
-  - JavaVM： 代表 Java 虚拟机，每个 Java 进程有且仅有一个全局的 JavaVM 对象，JavaVM 可以跨线程共享；
-  - JNIEnv： 代表 Java 运行环境，每个 Java 线程都有各自独立的 JNIEnv 对象，JNIEnv 不可以跨线程共享。
+- JavaVM： 代表 Java 虚拟机，每个 Java 进程有且仅有一个全局的 JavaVM 对象，JavaVM 可以跨线程共享；
+- JNIEnv： 代表 Java 运行环境，每个 Java 线程都有各自独立的 JNIEnv 对象，JNIEnv 不可以跨线程共享。
 
 JavaVM 和 JNIEnv 的类型定义在 C 和 C++ 中略有不同，但本质上是相同的，内部由一系列指向虚拟机内部的函数指针组成。 类似于 Java 中的 Interface 概念，不同的虚拟机实现会从它们派生出不同的实现类，而向 JNI 层屏蔽了虚拟机内部实现（例如在 Android ART 虚拟机中，它们的实现分别是 JavaVMExt 和 JNIEnvExt）。
 
@@ -137,6 +140,8 @@ struct JNINativeInterface {
 // 在 C++ 中，要使用 env->
 env->FindClass("java/lang/String");
 ```
+## 二、方法名
+
 
 ## 参考
 
