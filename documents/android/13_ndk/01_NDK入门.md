@@ -20,7 +20,7 @@ companion object {
 demo.cpp 的代码：
 
 ```c++
-#include <jni.h> // 引入头文件，相当于 java 的导包，jni 相关的方法和宏都在其中。
+#include <jni.h> // 引入头文件，相当于 java 的导包，jni 相关的方法声明和宏都在其中。
 #include <string> // C++ 中的 string
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -140,7 +140,30 @@ Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
 ```
 在 MainActivity 中通过 `stringFromJNI()` 可以直接获取返回结果。例子中的方法没有传入参数，下面我们通过几个带参数的例子来看下Java调用Jni的方式。
 
-### 1、基本数据类型
+### 1、基本类型
+
+基本数据类型会直接转换为 C/C++ 的基础数据类型，例如 int 类型映射为 jint 类型。由于 jint 是 C/C++ 类型，所以可以直接当作普通 C/C++ 变量使用，而不需要依赖 JNIEnv 环境对象；
+
+注意：基础数据类型在映射时是直接映射，而不会发生数据格式转换。例如，Java char 类型在映射为 jchar 后旧是保持 Java 层的样子，数据长度依旧是 2 个字节，而字符编码依旧是 UNT-16 编码。
+
+具体映射关系都定义在 [jni.h](https://github.com/openjdk/jdk/blob/master/src/java.base/share/native/include/jni.h) 头文件中，映射的表格如下：
+
+|Java Language Type|Natice Type |Description|
+| :-----:|:-----:|:-----:|
+|boolean	|jboolean|	unsigned 8 bits|
+|byte	|jbyte	|signed 8 bits|
+|char	|jchar	|unsigned 16 bits|
+|short	|jshort	|signed 16 bits|
+|int	|jint|signed 32 bits|
+|long	|jlong	|signed 64 bits|
+|float	|jfloat	|32 bits|
+|double	|jdouble|64 bits|
+
+### 2、引用类型
+
+引用数据类型： 对象只会转换为一个 C/C++ 指针，例如 Object 类型映射为 jobject 类型。由于指针指向 Java 虚拟机内部的数据结构，所以不可能直接在 C/C++ 代码中操作对象，而是需要依赖 JNIEnv 环境对象。另外，为了避免对象在使用时突然被回收，在本地方法返回前，虚拟机会固定（pin）对象，阻止其 GC。
+
+
 
 
 
