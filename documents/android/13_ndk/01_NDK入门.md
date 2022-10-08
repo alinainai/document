@@ -1,10 +1,10 @@
 ## 一、NDK简单介绍
 
-NDK（Native Developer Kit）提供了一套 Java 和 C/C++ 相互调用的工具集。
+JNI（Java Native Interface）是 JAVA 平台中的一个强大功能。作为 JAVA 虚拟机的部分实现，JNI 是一个双向接口，允许 JAVA 应用程序调用本地代码，反之亦然。
 
-JNI（Java Native Interface）是 JAVA 平台中的一个强大功能。使用 JNI 编程的程序能够调用 C/C++编写的本地代码，同时也可以调用 JAVA 编写的代码。
+NDK（Native Developer Kit）是 Android 系统提供的一套 Java 和 C/C++ 相互调用的工具集。
 
-从一个demo开始：我们新建一个 Native C++ 项目，Java Staduard
+从一个 android demo 开始：我们新建一个 Native C++ 项目，Java Staduard 选择 C++ 11 版本。
 
 <img width="240" alt="image" src="https://user-images.githubusercontent.com/17560388/192934644-766b2e2a-4b49-4476-918a-d886d78c26ff.png">
 
@@ -22,7 +22,7 @@ companion object {
 demo.cpp 的代码：
 
 ```c++
-#include <jni.h> // 引入头文件，相当于 java 的导包
+#include <jni.h> // 引入头文件，相当于 java 的导包，jni 相关的方法和宏都在其中。
 #include <string> // C++ 中的 string
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -134,6 +134,19 @@ struct JNINativeInterface {
 env->FindClass("java/lang/String");
 ```
 ## 二、Java调用Jni
+
+在例子中 Java 的 native 方法最终会与 Jni 中 `Java_类名(下划线分割包名)_方法名` 对应，并且默认带有两个参数，JNIEnv* 和 jobject(实例方法)/jclass(静态方法):
+
+```c++
+Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
+```
+在 MainActivity 中通过 `stringFromJNI()` 可以直接获取返回结果。例子中的方法没有传入参数，下面我们通过几个带参数的例子来看下Java调用Jni的方式。
+
+### 1、基本数据类型
+
+
+
+
 
 
 ## 三、Jni调用Java
