@@ -163,7 +163,11 @@ Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
 
 引用数据类型： 对象只会转换为一个 C/C++ 指针，例如 Object 类型映射为 jobject 类型。由于指针指向 Java 虚拟机内部的数据结构，所以不可能直接在 C/C++ 代码中操作对象，而是需要依赖 JNIEnv 环境对象。另外，为了避免对象在使用时突然被回收，在本地方法返回前，虚拟机会固定（pin）对象，阻止其 GC。
 
+映射关系：
+
 <img width="600" alt="类图" src="https://user-images.githubusercontent.com/17560388/194711830-4e603314-3c4a-4cff-84a5-056acc82b77c.png">
+
+### 3、string的处理
 
 
 
