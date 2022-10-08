@@ -11,22 +11,11 @@ JNI（Java Native Interface）是 JAVA 平台中的一个强大功能。使用 J
 AS 会自动生成一个 Activity 以及和他交互的 Jni 文件，Activity 代码如下（我们用的是 kotlin 代码，在关键的地方已经添加注释）：
 
 ```kotlin
-class MainActivity : BaseActivity() {
-    private lateinit var binding: ActivityMainBinding
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        binding.sampleText.text = stringFromJNI() // 3、使用 JNI 返回的 String
-    }
-
-    private external fun stringFromJNI(): String // 2、在 kotlin 中注意关键字是 external, 在 Java 中是 native 关键字
-
-    companion object {
-        init {
-            System.loadLibrary("demo") // 1、在静态方法中配置 demo 包
-        }
+binding.sampleText.text = stringFromJNI() // 3、使用 JNI 返回的 String
+private external fun stringFromJNI(): String // 2、在 kotlin 中注意关键字是 external, 在 Java 中是 native 关键字
+companion object {
+    init {
+        System.loadLibrary("demo") // 1、在静态方法中配置 demo 包
     }
 }
 ```
@@ -34,7 +23,7 @@ demo.cpp 的代码：
 
 ```c++
 #include <jni.h> // 引入头文件，相当于 java 的导包
-#include <string> // c++ 中的 string
+#include <string> // C++ 中的 string
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_egas_demo_MainActivity_stringFromJNI(
@@ -53,10 +42,10 @@ Java_com_egas_demo_MainActivity_stringFromJNI(
 表示一个函数需要暴露给共享库外部使用时
 
 ```c++
-// Windows 平台 :
+// Windows 平台定义如下 :
 #define JNIEXPORT __declspec(dllexport)
 #define JNIIMPORT __declspec(dllimport)
-// Linux 平台：
+// Linux 平台定义如下：
 #define JNIIMPORT
 #define JNIEXPORT  __attribute__ ((visibility ("default"))) // 让该方法对于外界可见
 ```
@@ -144,10 +133,10 @@ struct JNINativeInterface {
 // 在 C++ 中，要使用 env->
 env->FindClass("java/lang/String");
 ```
-## 二、Java方法和Jni的映射
+## 二、Java调用Jni
 
-z
 
+## 三、Jni调用Java
 
 ## 参考
 
