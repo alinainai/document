@@ -6,8 +6,6 @@ NDK（Native Developer Kit）是 Android 系统提供的一套 Java 和 C/C++ �
 
 从一个 android demo 开始：我们新建一个 Native C++ 项目，Java Staduard 选择 C++ 11 版本。
 
-<img width="240" alt="image" src="https://user-images.githubusercontent.com/17560388/192934644-766b2e2a-4b49-4476-918a-d886d78c26ff.png">
-
 AS 会自动生成一个 Activity 以及和他交互的 Jni 文件，Activity 代码如下（我们用的是 kotlin 代码，在关键的地方已经添加注释）：
 
 ```kotlin
