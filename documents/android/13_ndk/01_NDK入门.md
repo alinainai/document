@@ -167,7 +167,17 @@ Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
 
 <img width="600" alt="类图" src="https://user-images.githubusercontent.com/17560388/194711830-4e603314-3c4a-4cff-84a5-056acc82b77c.png">
 
-### 3、string的处理
+我们先看一下 jni 对 String 类型的处理
+
+### 3、String 类型
+
+jni 专门定义了一个 jstring 来接收 Java 传递过来的 String 类型。由于字符编码的类型不同我们不能在C/C++的环境中直接使用 jstring 字符串。
+
+JNIEnv 中提供了几个方法专门处理 jstring 类型：
+const char* GetStringUTFChars()
+ReleaseStringUTFChars
+
+
 
 
 
