@@ -193,15 +193,15 @@ env->ReleaseStringUTFChars(owner, javaStr);
 jstring str = env->NewStringUTF(hello.c_str());
 if(str){...}
 ```
-### 数组类型
-基本类型数组：
+### 4、数组
+
+数组类都派生自 jarray 类，数组又分为基本类型数组和引用类型数组。
+
+基本类型数组，如 jintArray、jbooleanArray
 
 
 
-
-
-
-
+引用类型数组
 
 
 
