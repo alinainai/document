@@ -184,7 +184,7 @@ void ReleaseStringUTFChars(jstring str, const char* chars)
 // 生成一个 jstring 对象，使用的时候要记得判空，由于空间不足可能会生成失败
 jstring NewStringUTF(const char *utf)
 ```
-使用代码
+示例代码
 ```c++
 std::string hello = "Hello from C++ ";
 const char *javaStr = env->GetStringUTFChars(owner, JNI_FALSE);
@@ -197,16 +197,69 @@ if(str){...}
 
 数组类都派生自 jarray 类，数组又分为基本类型数组和引用类型数组。
 
-基本类型数组，如 jintArray、jbooleanArray
+可以通过下面方法获取数组的 size:
+```c++
+jsize GetArrayLength(jarray array)
+```
+#### 基本类型数组
+
+如 jintArray、jbooleanArray，和 jstring 的处理方式差不多，JNIEnv 提供了几个处理基本类型数组的方法，我们以 jintArray 为例：
+
+```c++
+// 生成一个 jintArray 
+ jintArray NewIntArray(jsize length)
+```
+```c++
+// 将 jintArray 转成 C/C++ 的数组
+jint* GetIntArrayElements(jintArray array, jboolean* isCopy)
+```
+```c++
+// 释放生成的 C/C++ 的数组
+// mode参数的意义
+// 0:将 C/C++ 数组的数据回写到 Java 数组，并释放 C/C++ 数组
+// JNI_COMMIT:将 C/C++ 数组的数据回写到 Java 数组，并不释放 C/C++ 数组
+// JNI_ABORT:不回写数据，但释放 C/C++ 数组
+void ReleaseIntArrayElements(jintArray array, jint* elems, jint mode)
+```
+示例代码
+```c++
+jintArray jarr = env->NewIntArray(size);
+jint *carr = env->GetIntArrayElements(jarr, JNI_FALSE);
+env->ReleaseIntArrayElements(jarr, carr, 0);
+```
+#### 引用类型数组
+
+不支持将 `Java` 引用类型数组转换为 `C/C++` 数组：与基本类型数组不同，引用类型数组的元素 jobject 是一个指针，不存在转换为 `C/C++` 数组的概念。
+
+```c++
+// 获取数组中 index 的对象引用（指针）
+jobject GetObjectArrayElement(jobjectArray array, jsize index)
+```
+```c++
+// 设置数组中 index 的值
+void SetObjectArrayElement(jobjectArray array, jsize index, jobject value)
+```
+构造一个 jobjectArray 数组
+```c++
+// 首先获取 jclass 类型，设置数组的类型
+jclass jStringClazz = env->FindClass("java/lang/String"); 
+// 构造新数组，nullptr 为每个元素初始的默认值，可以直接设置为 nullptr
+jobjectArray jarr = env->NewObjectArray(size, jStringClazz, nullptr);
+```
+我们以 String[] 为例子写几个实例方法：
+
+```c++
+jclass jStringClazz = env->FindClass("java/lang/String");
+jobjectArray jarr = env->NewObjectArray(size, jStringClazz, nullptr);
+for (int i = 0; i < size; ++i) {
+    std::string str = std::to_string(i);
+    jstring s = env->NewStringUTF(str.c_str());
+    env->SetObjectArrayElement(jarr,i,s);
+}
+```
 
 
-
-引用类型数组
-
-
-
-
-## 三、Jni调用Java
+## 三、Jni调用Java代码
 
 ## 参考
 
