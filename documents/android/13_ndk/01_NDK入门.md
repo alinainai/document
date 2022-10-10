@@ -24,9 +24,7 @@ demo.cpp 的代码：
 #include <string> // C++ 中的 string
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_egas_demo_MainActivity_stringFromJNI(
-        JNIEnv* env,
-        jobject /* this */) {
+Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
     std::string hello = "Hello from C++";
     return env->NewStringUTF(hello.c_str());
 }
@@ -90,22 +88,18 @@ typedef const struct JNIInvokeInterface* JavaVM;
 #endif
 
 struct _JavaVM {
-    // 相当于 C 版本中的 JNIEnv
     const struct JNIInvokeInterface* functions;
-
-    // 转发给 functions 代理
+    
     jint DestroyJavaVM()
-    { return functions->DestroyJavaVM(this); }
+    { return functions->DestroyJavaVM(this); } // 转发给 functions 代理
     ...
 };
 
 struct _JNIEnv {
-    // 相当于 C 版本的 JavaVM
     const struct JNINativeInterface* functions;
-
-    // 转发给 functions 代理
+    
     jint GetVersion()
-    { return functions->GetVersion(this); }
+    { return functions->GetVersion(this); } // 转发给 functions 代理
     ...
 };
 
@@ -171,11 +165,37 @@ Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
 
 ### 3、String 类型
 
-jni 专门定义了一个 jstring 来接收 Java 传递过来的 String 类型。由于字符编码的类型不同我们不能在C/C++的环境中直接使用 jstring 字符串。
+jni 专门定义了一个 jstring 来接收 Java 传递过来的 String 类型。但是，由于字符编码的类型不同我们不能在C/C++的环境中直接使用 jstring 字符串。
 
 JNIEnv 中提供了几个方法专门处理 jstring 类型：
-const char* GetStringUTFChars()
-ReleaseStringUTFChars
+
+```c++
+// 将 jstring 指向的内容转换为一个 UTF-8 的 C/C++ 字符串
+// isCopy，是否复制，有下面两个参数：
+// JNI_TRUE： 使用拷贝模式，JVM 将拷贝一份原始数据来生成 UTF-8 字符串；
+// JNI_FALSE： 使用复用模式，JVM 将复用同一份原始数据来生成 UTF-8 字符串。
+const char* GetStringUTFChars(jstring str, jboolean *isCopy)
+```
+```c++
+// 将 jstring 生成的 C/C++ 字符串释放掉
+void ReleaseStringUTFChars(jstring str, const char* chars)
+```
+```c++
+// 生成一个 jstring 对象，使用的时候要记得判空，由于空间不足可能会生成失败
+jstring NewStringUTF(const char *utf)
+```
+使用代码
+```c++
+std::string hello = "Hello from C++ ";
+const char *javaStr = env->GetStringUTFChars(owner, JNI_FALSE);
+hello.append(javaStr);
+env->ReleaseStringUTFChars(owner, javaStr);
+jstring str = env->NewStringUTF(hello.c_str());
+if(str){...}
+```
+### 数组类型
+基本类型数组：
+
 
 
 
