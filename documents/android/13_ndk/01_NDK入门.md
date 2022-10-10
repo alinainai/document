@@ -260,6 +260,49 @@ for (int i = 0; i < size; ++i) {
 
 ## 三、Jni调用Java代码
 
+Jni 调用 Java 代码可以分为修改字段属性和调用方法
+
+字段描述符：字段描述符其实就是描述字段的类型，JVM 对每种基础数据类型定义了固定的描述符，而引用类型则是以 L 开头的形式：
+
+|Java类型|描述符|举例|
+|:---:|:---:|:---:|
+|boolean|Z||
+|byte|B||
+|char|	C||
+|short|	S||
+|int|	I||
+|long|	J||
+|floag|	F||
+|double|	D||
+|void|	V||
+|object|以 "L"开头";"结尾，中间用"/"分隔的包名和类名。|例如 String 的字段描述符为 Ljava/lang/String;|
+|数组|`[`开头+类型描述符|例如，`int[]`-> `[I`、`String[]`->`[Ljava/lang/String;`|
+|多维数组|多个`[`开头+类型描述符|例如，`int[][]`-> `[[I`|
+
+方法描述符：方法描述符其实就是描述方法的返回值类型和参数表类型，参数类型用一对圆括号括起来，按照参数声明顺序列举参数类型，返回值出现在括号后面。例如方法 void fun(); 的简单名称为 fun，方法描述符为 ()V
+
+### 1、JNI 访问 Java 字段
+本地代码访问 Java 字段的流程分为 2 步：
+
+1、通过 jclass 获取字段 ID，例如：Fid = env->GetFieldId(clz, "name", "Ljava/lang/String;");
+2、通过字段 ID 访问字段，例如：Jstr = env->GetObjectField(thiz, Fid);
+
+Java 字段分为静态字段和实例字段，相关方法如下：
+
+GetFieldId：获取实例方法的字段 ID
+GetStaticFieldId：获取静态方法的字段 ID
+
+Get<Type>Field：获取类型为 Type 的实例字段（例如 GetIntField）
+Set<Type>Field：设置类型为 Type 的实例字段（例如 SetIntField）
+GetStatic<Type>Field：获取类型为 Type 的静态字段（例如 GetStaticIntField）
+SetStatic<Type>Field：设置类型为 Type 的静态字段（例如 SetStaticIntField）
+
+示例程序
+
+
+
+
+
 
 ## 参考
 
