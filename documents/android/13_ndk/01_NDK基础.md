@@ -118,7 +118,7 @@ struct JNINativeInterface {
     ...
 };
 ```
-不管是在 C 语言中还是在 C++ 中，JNIInvokeInterface* 和 JNINativeInterface* 这两个结构体指针才是 JavaVM 和 JNIEnv 的实体。不过 C++ 中加了一层包装，在语法上更简洁，例如：
+不管是在 C 语言中还是在 C++ 中，`JNIInvokeInterface*` 和 `JNINativeInterface*` 这两个结构体指针才是 `JavaVM` 和 `JNIEnv` 的实体。不过 C++ 中加了一层包装，在语法上更简洁。
 ```c++
 // 在 C 语言中，要使用 (*env)->
 (*env)->FindClass(env, "java/lang/String");
@@ -201,7 +201,7 @@ if(str){...}
 ```c++
 jsize GetArrayLength(jarray array)
 ```
-#### 基本类型数组
+#### 4.1 基本类型数组
 
 如 jintArray、jbooleanArray，和 jstring 的处理方式差不多，JNIEnv 提供了几个处理基本类型数组的方法，我们以 jintArray 为例：
 
@@ -227,7 +227,7 @@ jintArray jarr = env->NewIntArray(size);
 jint *carr = env->GetIntArrayElements(jarr, JNI_FALSE);
 env->ReleaseIntArrayElements(jarr, carr, 0);
 ```
-#### 引用类型数组
+#### 4.2 引用类型数组
 
 不支持将 `Java` 引用类型数组转换为 `C/C++` 数组：与基本类型数组不同，引用类型数组的元素 jobject 是一个指针，不存在转换为 `C/C++` 数组的概念。
 
@@ -260,7 +260,7 @@ for (int i = 0; i < size; ++i) {
 
 ## 三、Jni调用Java代码
 
-Jni 调用 Java 代码可以分为修改字段属性和调用方法
+Jni 调用 Java 代码可以分为修改字段属性和调用方法，因为 Jni 调用 Java 方法的相关Api中会用到字段/方法的描述符，我们先来看一下 `字段描述符` 和 `方法描述符`。
 
 字段描述符：字段描述符其实就是描述字段的类型，JVM 对每种基础数据类型定义了固定的描述符，而引用类型则是以 L 开头的形式：
 
@@ -281,7 +281,15 @@ Jni 调用 Java 代码可以分为修改字段属性和调用方法
 
 方法描述符：方法描述符其实就是描述方法的返回值类型和参数表类型，参数类型用一对圆括号括起来，按照参数声明顺序列举参数类型，返回值出现在括号后面。例如方法 void fun(); 的简单名称为 fun，方法描述符为 ()V
 
-### 1、JNI 访问 Java 字段
+### 1、获取 Java 中 class
+
+不管是处理Java中的字段还是调用Java中的方法，都需要通过 class 来获取对应的ID。我们可以通过下面这个API来获取对应的 class 类
+```c++
+// name:一个完全限定的类名，即包含“包名”+“/”+类名。如 java.lang.String -> java/lang/String
+jclass FindClass(JNIEnv *env,const char *name);
+```
+
+### 2、JNI 访问 Java 字段
 本地代码访问 Java 字段的流程分为 2 步：
 
 1. 通过 jclass 获取字段 ID，例如：Fid = env->GetFieldId(clz, "name", "Ljava/lang/String;");
@@ -308,35 +316,67 @@ void SetStatic<Type>Field(jclass clazz, jfieldID fieldID, jType value)
 ```
 示例程序
 ```c++
-JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_modifyField(JNIEnv *env, jobject thiz) {
-    jclass clz = env->GetObjectClass(thiz);// 获取 jclass
-    // 访问静态字段
-    jfieldID sFieldId = env->GetStaticFieldID(clz, "staticField", "Ljava/lang/String;"); // 静态字段 ID
-    if (sFieldId) {
-        // Java 方法的返回值 String 映射为 jstring
-        jstring jStr = static_cast<jstring>(env->GetStaticObjectField(clz, sFieldId));
-        const char *sStr = env->GetStringUTFChars(jStr, JNI_FALSE);
-        env->ReleaseStringUTFChars(jStr, sStr);
-        jstring newStr = env->NewStringUTF("静态字段修改");
-        if (newStr) {
-            env->SetStaticObjectField(clz, sFieldId, newStr);
-        }
+jclass clz = env->GetObjectClass(thiz);// 获取 jclass
+// 访问静态字段
+jfieldID sFieldId = env->GetStaticFieldID(clz, "staticField", "Ljava/lang/String;"); // 静态字段 ID
+if (sFieldId) {
+    // Java 方法的返回值 String 映射为 jstring
+    jstring jStr = static_cast<jstring>(env->GetStaticObjectField(clz, sFieldId));
+    const char *sStr = env->GetStringUTFChars(jStr, JNI_FALSE);
+    env->ReleaseStringUTFChars(jStr, sStr);
+    jstring newStr = env->NewStringUTF("静态字段修改");
+    if (newStr) {
+        env->SetStaticObjectField(clz, sFieldId, newStr);
     }
-    // 访问实例字段
-    jfieldID mFieldId = env->GetFieldID(clz, "strField", "Ljava/lang/String;");
-    if (mFieldId) {
-        jstring jStr = static_cast<jstring>(env->GetObjectField(thiz, mFieldId));
-        const char *sStr = env->GetStringUTFChars(jStr, JNI_FALSE);
-        env->ReleaseStringUTFChars(jStr, sStr);
-        jstring newStr = env->NewStringUTF("实例字段修改");
-        if (newStr) {
-            env->SetObjectField(thiz, mFieldId, newStr);
-        }
+}
+// 访问实例字段
+jfieldID mFieldId = env->GetFieldID(clz, "strField", "Ljava/lang/String;");
+if (mFieldId) {
+    jstring jStr = static_cast<jstring>(env->GetObjectField(thiz, mFieldId));
+    const char *sStr = env->GetStringUTFChars(jStr, JNI_FALSE);
+    env->ReleaseStringUTFChars(jStr, sStr);
+    jstring newStr = env->NewStringUTF("实例字段修改");
+    if (newStr) {
+        env->SetObjectField(thiz, mFieldId, newStr);
     }
 }
 ```
-### 2、JNI 调用 Java 方法
+### 3、JNI 调用 Java 方法
+本地代码访问 Java 方法与访问 Java 字段类似，访问流程分为 2 步：
 
+1. 通过 jclass 获取「方法 ID」，例如：Mid = env->GetMethodID(jclass, "helloJava", "()V");
+2. 通过方法 ID 调用方法，例如：env->CallVoidMethod(thiz, Mid);
+
+```c++
+// 获取实例方法 ID
+jmethodID GetMethodID(jclass clazz, const char* name, const char* sig)
+// 获取静态方法 ID
+jmethodID GetStaticMethodID(jclass clazz, const char* name, const char* sig)
+```
+
+```c++
+Call<Type>Method：调用返回类型为 Type 的实例方法（例如 CallVoidMethod）
+CallStatic<Type>Method：调用返回类型为 Type 的静态方法（例如 CallStaticVoidMethod）
+CallNonvirtual<Type>Method：调用返回类型为 Type 的父类方法（例如 CallNonvirtualVoidMethod）
+```
+示例代码
+```c++
+// 获取 jclass
+jclass clz = env->GetObjectClass(thiz);
+// 调用 Java 静态方法
+jmethodID sMethodId = env->GetStaticMethodID(clz, "sLogHelloJava", "()V");
+if (sMethodId) {
+    env->CallStaticVoidMethod(clz, sMethodId);
+}
+// 调用 Java 实例方法
+jmethodID mMethodId = env->GetMethodID(clz, "logHelloJava", "()V");
+if (mMethodId) {
+    env->CallVoidMethod(thiz, mMethodId);
+}
+```
+3、缓存ID
+
+如果字段和方法调用频繁的话可以采用缓存的方式来提前存储 `jfieldID` 和 `jmethodID`
 
 
 ## 参考
@@ -346,3 +386,4 @@ JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_modifyField(JNIEnv *env, 
 - [NDK 系列（5）：JNI 从入门到实践，爆肝万字详解！](https://www.jianshu.com/p/5f48a9190d9d)
 - [Android：JNI 与 NDK到底是什么？（含实例教学）](https://blog.csdn.net/carson_ho/article/details/73250163)
 - [(译文) JNI编程指南与规范1~4章](https://juejin.cn/post/6930972583848312846)
+- [Android JNI学习(四)——JNI的常用方法的中文API](https://www.jianshu.com/p/67081d9b0a9c)
