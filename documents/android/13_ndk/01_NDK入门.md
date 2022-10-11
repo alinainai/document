@@ -284,23 +284,58 @@ Jni 调用 Java 代码可以分为修改字段属性和调用方法
 ### 1、JNI 访问 Java 字段
 本地代码访问 Java 字段的流程分为 2 步：
 
-1、通过 jclass 获取字段 ID，例如：Fid = env->GetFieldId(clz, "name", "Ljava/lang/String;");
-2、通过字段 ID 访问字段，例如：Jstr = env->GetObjectField(thiz, Fid);
+1. 通过 jclass 获取字段 ID，例如：Fid = env->GetFieldId(clz, "name", "Ljava/lang/String;");
+2. 通过字段 ID 访问字段，例如：Jstr = env->GetObjectField(thiz, Fid);
 
 Java 字段分为静态字段和实例字段，相关方法如下：
 
-GetFieldId：获取实例方法的字段 ID
-GetStaticFieldId：获取静态方法的字段 ID
+```c++
+// 获取实例方法的字段 ID
+jfieldID GetFieldID(jclass clazz, const char* name, const char* sig)
+// 获取静态方法的字段 ID
+jfieldID GetStaticFieldID(jclass clazz, const char* name, const char* sig)
+```
 
-Get<Type>Field：获取类型为 Type 的实例字段（例如 GetIntField）
-Set<Type>Field：设置类型为 Type 的实例字段（例如 SetIntField）
-GetStatic<Type>Field：获取类型为 Type 的静态字段（例如 GetStaticIntField）
-SetStatic<Type>Field：设置类型为 Type 的静态字段（例如 SetStaticIntField）
-
+```c++
+// 获取类型为 Type 的实例字段（例如 GetIntField）
+jType Get<Type>Field(jobject obj, jfieldID fieldID)
+// 设置类型为 Type 的实例字段（例如 SetIntField）
+void Set<Type>Field(jobject obj, jfieldID fieldID, jType value)
+// 获取类型为 Type 的静态字段（例如 GetStaticIntField）
+jType GetStatic<Type>Field(jclass obj, jfieldID fieldID)
+// 设置类型为 Type 的静态字段（例如 SetStaticIntField）
+void SetStatic<Type>Field(jclass clazz, jfieldID fieldID, jType value)
+```
 示例程序
-
-
-
+```c++
+JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_modifyField(JNIEnv *env, jobject thiz) {
+    jclass clz = env->GetObjectClass(thiz);// 获取 jclass
+    // 访问静态字段
+    jfieldID sFieldId = env->GetStaticFieldID(clz, "staticField", "Ljava/lang/String;"); // 静态字段 ID
+    if (sFieldId) {
+        // Java 方法的返回值 String 映射为 jstring
+        jstring jStr = static_cast<jstring>(env->GetStaticObjectField(clz, sFieldId));
+        const char *sStr = env->GetStringUTFChars(jStr, JNI_FALSE);
+        env->ReleaseStringUTFChars(jStr, sStr);
+        jstring newStr = env->NewStringUTF("静态字段修改");
+        if (newStr) {
+            env->SetStaticObjectField(clz, sFieldId, newStr);
+        }
+    }
+    // 访问实例字段
+    jfieldID mFieldId = env->GetFieldID(clz, "strField", "Ljava/lang/String;");
+    if (mFieldId) {
+        jstring jStr = static_cast<jstring>(env->GetObjectField(thiz, mFieldId));
+        const char *sStr = env->GetStringUTFChars(jStr, JNI_FALSE);
+        env->ReleaseStringUTFChars(jStr, sStr);
+        jstring newStr = env->NewStringUTF("实例字段修改");
+        if (newStr) {
+            env->SetObjectField(thiz, mFieldId, newStr);
+        }
+    }
+}
+```
+### 2、JNI 调用 Java 方法
 
 
 
