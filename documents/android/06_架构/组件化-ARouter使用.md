@@ -1,39 +1,34 @@
-## ARouter在组件化中的使用
 
-#### 简介
+## 一、简介
+
 一个用于帮助 Android App 进行组件化改造的框架；
 
 支持模块间的路由（ARouter的主要功能）、通信（使用依赖注入原理实现）、解耦（使用依赖注入原理通过面向接口编程实现）
 
-#### Arouter的github地址
-https://github.com/alibaba/ARouter
+Arouter的github地址: [https://github.com/alibaba/ARouter](https://github.com/alibaba/ARouter)
 
-#### demo地址
-https://github.com/alibaba/ARouter.git
+demo地址:[https://github.com/alibaba/ARouter.git](https://github.com/alibaba/ARouter.git)
 
-git clone 可以下载项目到本地，
+中文文档:[https://github.com/alibaba/ARouter/blob/master/README_CN.md](https://github.com/alibaba/ARouter/blob/master/README_CN.md)
 
-编译之前先把project中settings.gradle的
-
+可以先 clone 到本地，编译之前先把 project 中 settings.gradle 的
+```groovy
 //include ':arouter-idea-plugin' 注释掉。
+```
+## 二、使用
 
-#### 中文文档
-https://github.com/alibaba/ARouter/blob/master/README_CN.md
+依据文档集成最新版本即可，注意打印日志和ARouter功能的开启
 
-#### 集成方式
-
-依据文档集成最新版本即可
-注意打印日志和ARouter功能的开启
 ```java
 ARouter.openDebug();
 ARouter.init(getApplication());
 ```
-#### 最基本路由功能
+最基本路由功能
 ```java
 ARouter.getInstance().build(path).navigation();
 ```
 
-#### 普通跳转：可以传Object以及基本数据类型
+普通跳转：可以传 Object 以及基本数据类型
 
 ```java
 private void goToShareActivityNormal() {
@@ -47,7 +42,7 @@ private void goToShareActivityNormal() {
 }
 ```
 
-#### startActivityForResult跳转
+startActivityForResult 跳转
 
 ```java
  private void goToShareActivityForResult() {
@@ -61,11 +56,9 @@ private void goToShareActivityNormal() {
 }
 ```
 
-跳转这块和原生的 startActivity 基本没有区别，具体可以参考 ARouter 的 demo。
+跳转这块和原生的 startActivity 基本没有区别，具体可以参考 ARouter 的 demo。在跳转之后的页面使用 getIntent 获取基本数据类型，推荐使用 @Autowired 配合 ARouter.getInstance().inject(this) 获取参数。
 
-在跳转之后的页面使用 getIntent获取基本数据类型，推荐使用 @Autowired 配合 ARouter.getInstance().inject(this); 获取参数。
-
-详情参见 demo的 Test1Activity测试类。
+详情参见 demo的 Test1Activit y测试类。
 
 #### Path 跳转和提供实体类的标识符
 
