@@ -180,7 +180,7 @@ map<string,string> = 2; //类似 Java 的 Map<String,String>
 
 ### 3.6 reserved 保留字段
 
-在采取彻底删除或注释掉某个字段的方式来更新消息类型时，将来其他用户再更新该消息类型时可能会重用这个字段编号。后面再加载该 .ptoto 的旧版本时会引发好多问题，例如数据损坏，隐私漏洞等。一个防止该问题发生的办法是将删除字段的编号（或字段名称，字段名称会导致在 JSON 序列化时产生问题）设置为保留项 `reserved`。protocol buffer 编译器在用户使用这些保留字段时会发出警告。
+可以通过 `reserved` 将字段和名称设置为保留项 。protocol buffer 编译器在用户使用这些保留字段时会发出警告。
 
 ```protobuf
 message Foo {
