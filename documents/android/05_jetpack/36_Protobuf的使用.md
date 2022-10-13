@@ -253,3 +253,5 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-lite:3.0.0'
 }
 ```
+## 参考
+- ["一篇就够"系列：Android 中使用 Protobuf](https://mp.weixin.qq.com/s/sgFFoWM0-AAvwFqmfFj6Jg)
