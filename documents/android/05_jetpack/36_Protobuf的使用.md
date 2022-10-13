@@ -194,3 +194,89 @@ message Foo {
 ## 四、使用
 
 首先在AS中集成我们需要的开发环境（先这样吧，用的时候再深入研究）
+
+根 build.gradle 中添加 classpath
+
+```groovy
+classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.19'
+```
+
+在 app 的 build.gradle 添加相关配置
+```groovy
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.protobuf'
+}
+
+android {
+    compileSdk 32
+
+    defaultConfig {
+        applicationId "com.egas.demo"
+        minSdk 23
+        targetSdk 32
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+    buildFeatures {
+        viewBinding true
+    }
+    sourceSets {
+        main {
+            proto {
+                srcDir 'src/main/proto'
+                include '**/*.proto'
+            }
+            java {
+                srcDir 'src/main/java'
+            }
+        }
+    }
+}
+protobuf {
+    protoc {
+        // You still need protoc like in the non-Android case
+        artifact = 'com.google.protobuf:protoc:3.0.0'
+    }
+    plugins {
+        javalite {
+            // The codegen for lite comes as a separate artifact
+            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                // In most cases you don't need the full Java output
+                // if you use the lite output.
+                remove java
+            }
+            task.plugins {
+                javalite { }
+            }
+        }
+    }
+}
+
+dependencies {
+    ...
+    implementation 'com.google.protobuf:protobuf-lite:3.0.0'
+}
+```
