@@ -1,10 +1,10 @@
-### 引用新版本
+## 引用新版本
 ```groovy
 implementation "androidx.appcompat:appcompat:1.3.1"
 implementation "androidx.fragment:fragment:1.3.6"
 implementation "androidx.fragment:fragment-ktx:1.3.6"
 ```
-### 1. 新的初始化方式
+## 一、新的初始化方式
 
 ```java
 public class Fragment implements ComponentCallbacks, View.OnCreateContextMenuListener, LifecycleOwner,
@@ -36,11 +36,11 @@ public class Fragment implements ComponentCallbacks, View.OnCreateContextMenuLis
 class PlaceholderFragment : Fragment(R.layout.fragment_placeholder)
 ```
 
-### 2. 新的 FragmentContainerView 
+## 二、新的 FragmentContainerView 
 
-使用 新组合 FragmentContainerView 添加 Fragment
+使用新控件 `FragmentContainerView` 添加 `Fragment`
 
-### 3. 使用 FragmentFactory 实例化 Fragment
+## 三、使用 FragmentFactory 实例化 Fragment
 
 为了解决无法自由定义有参构造函数的问题，Fragment 提供了 FragmentFactory 来参与实例化 Fragment 的过程
 
@@ -54,10 +54,9 @@ class MyFragmentFactory(private val bgColor: Int) : FragmentFactory() {
         return super.instantiate(classLoader, className)
     }
 }
-
 ```
 
-之后我们在代码中仅需要向 supportFragmentManager 声明需要注入的 Fragment Class 即可，无需显式实例化，实例化过程交由 MyFragmentFactory 来完成
+之后我们在代码中仅需要向 supportFragmentManager 声明需要注入的相关的 xxxFragment.class 即可，无需显式实例化，实例化过程交由 MyFragmentFactory 来完成
 
 ```kotlin
 class FragmentFactoryActivity : BaseActivity() {
@@ -75,16 +74,17 @@ class FragmentFactoryActivity : BaseActivity() {
 }
 ```
 
-FragmentFactory 的好处有：
+使用 FragmentFactory 的好处有：
 
-将本应该直接传递给 Fragment 的构造参数转交给了 FragmentFactory，这样系统在恢复重建时就能统一通过 instantiate 方法来重新实例化 Fragment，而无需关心 Fragment 的构造函数
-只要 FragmentFactory 包含了所有 Fragment 均需要的构造参数，那么同个 FragmentFactory 就可以用于实例化多种不同的 Fragment，从而解决了需要为每个 Fragment 均声明静态工厂方法的问题，Fragment 也省去了向 Bundle 赋值取值的操作，减少了开发者的工作量
+- 将本应该直接传递给 Fragment 的构造参数转交给了 FragmentFactory，这样系统在恢复重建时就能统一通过 instantiate 方法来重新实例化 Fragment，而无需关心 Fragment 的构造函数。
+
+- 只要 FragmentFactory 包含了所有 Fragment 均需要的构造参数，那么同个 FragmentFactory 就可以用于实例化多种不同的 Fragment，从而解决了需要为每个 Fragment 均声明静态工厂方法的问题，Fragment 也省去了向 Bundle 赋值取值的操作，减少了开发者的工作量
 
 FragmentFactory 也存在着局限性：
 
 由于需要考虑 Fragment 恢复重建的场景，因此我们在 super.onCreate 之前就需要先初始化 supportFragmentManager.fragmentFactory，这样 Activity 在恢复重建的时候才能根据已有参数来重新实例化 Fragment，这就要求我们必须在一开始的时候就确定 FragmentFactory 的构造参数，也即 Fragment 的构造参数，而这在日常开发中并非总是能够做到的，因为 Fragment 的构造参数可能是需要动态生成的
 
-### 4.人性化的通讯方式 Fragment Result API
+## 四、人性化的通讯方式 Fragment Result API
 
 使用 FragmentResult 进行数据通信不需要持有任何 Fragment 或者 Activity 的引用，仅需要使用 FragmentManager 就可以实现
 
@@ -99,7 +99,6 @@ private const val requestKeyFirst = "requestKeyFirst"
 private const val requestKeySecond = "requestKeySecond"
 
 class FragmentResultApiAFragment : Fragment(R.layout.fragment_fragment_result_api_a) {
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         btnSend.setOnClickListener {
@@ -117,12 +116,10 @@ class FragmentResultApiAFragment : Fragment(R.layout.fragment_fragment_result_ap
         //对 requestKeySecond 进行监听
         parentFragmentManager.setFragmentResultListener(
             requestKeySecond,
-            this,
-            { requestKey, result ->
+            this,{ requestKey, result ->
                 tvMessage.text = "requestKey: $requestKey \n result: $result"
             })
     }
-
 }
 
 class FragmentResultApiBFragment : Fragment(R.layout.fragment_fragment_result_api_b) {
@@ -143,7 +140,6 @@ class FragmentResultApiBFragment : Fragment(R.layout.fragment_fragment_result_ap
                 tvMessage.text = "requestKey: $requestKey \n result: $result"
             })
     }
-
 }
 
 class FragmentResultApiActivity : BaseActivity() {
@@ -151,8 +147,7 @@ class FragmentResultApiActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         supportFragmentManager.setFragmentResultListener(
             requestKeyToActivity,
-            this,
-            { requestKey, result ->
+            this,{ requestKey, result ->
                 bind.tvMessage.text = "requestKey: $requestKey \n result: $result"
             })
     }
@@ -171,7 +166,7 @@ Fragment Result API 也可以用于在父 Fragment 和子 Fragment 之间传递�
 
 每一个载体（Activity 或者 Fragment）都包含一个和自身同等级的 FragmentManager 用于管理子 Fragment，对应 Activity 的 supportFragmentManager 和 Fragment 的 childFragmentManager；每一个 子 Fragment 也都包含一个来自于载体的 FragmentManager，对应 Fragment 的 parentFragmentManager
 
-### 5. 通过 OnBackPressedDispatcher 拦截 Activity 的 onBackPressed()
+## 5. 通过 OnBackPressedDispatcher 拦截 Activity 的 onBackPressed()
 
 我们可以在 Fragment 中向 Activity 添加一个 OnBackPressedCallback 回调，传递的值 true 即代表该 Fragment 会拦截用户的每一次返回操作并进行回调，我们需要根据业务逻辑在合适的时候将其置为 false，从而放开对onBackPressed的控制权。此外，addCallback 方法的第一个参数是 LifecycleOwner 类型，也即当前的 Fragment 对象，该参数确保了仅在 Fragment 的生命周期至少处于 ON_START 状态时才进行回调，并在 ON_DESTROY 时自动移除监听，从而保证了生命周期的安全性
 
@@ -195,6 +190,6 @@ public class FormEntryFragment extends Fragment {
 }
  ```
 
-### 参考
+## 参考
 
 [一文读懂 Fragment 的方方面面](https://juejin.cn/post/7006970844542926855#heading-10)
