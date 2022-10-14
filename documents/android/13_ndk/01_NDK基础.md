@@ -383,38 +383,40 @@ if (mMethodId) {
 
 ### 4.1 在使用时缓存
 
-在使用时我们采用静态变量对方法 ID 进行缓存，以便在每次调用 accessField 方法时，不需要重新获取
+在使用时我们采用静态变量对方法 ID 进行缓存，以便在每次调用 cacheMethodId 方法时，不需要重新获取
 
+```c++
 JNIEXPORT void JNICALL
-Java_InstanceFieldAccess_accessField(JNIEnv *env, jobject obj) {
-    static jfieldID fid_s = NULL; /* cached field ID for s */
-    jclass cls = (*env)->GetObjectClass(env, obj);
+Java_com_egas_demo_JniDemoClass_cacheMethodId(JNIEnv *env, jobject obj) {
+    static jfieldID fid_s = nullptr;  // 使用时缓存ID
+    jclass cls = env->GetObjectClass(obj);
     jstring jstr;
     const char *str;
 
-    if (fid_s == NULL) {
-        fid_s = (*env)->GetFieldID(env, cls, "s", "Ljava/lang/String;");
-        if (fid_s == NULL) {
+    if (fid_s == nullptr) {
+        LOGE("nullptr = nullptr");
+        fid_s = env->GetFieldID( cls, "strField", "Ljava/lang/String;");
+        if (fid_s == nullptr) {
             return; /* exception already thrown */
         }
     }
 
-    jstr = (*env)->GetObjectField(env, obj, fid_s);
-    str = (*env)->GetStringUTFChars(env, jstr, NULL);
-    if (str == NULL) {
+    jstr = static_cast<jstring>(env->GetObjectField(obj, fid_s));
+    str = env->GetStringUTFChars( jstr, JNI_FALSE);
+    if (str == nullptr) {
         return; /* out of memory */
     }
 
-    (*env)->ReleaseStringUTFChars(env, jstr, str);
-    jstr = (*env)->NewStringUTF(env, "123");
-    if (jstr == NULL) {
+    env->ReleaseStringUTFChars( jstr, str);
+    jstr = env->NewStringUTF( "123");
+    if (jstr == nullptr) {
         return; /* out of memory */
     }
-
-    (*env)->SetObjectField(env, obj, fid_s, jstr);
+    env->SetObjectField(obj, fid_s, jstr);
 }
+```
+该静态变量初始化为 NULL，当 JniDemoClass.cacheMethodId 方法第一次被调用时，它计算该字段 ID 然后将其缓存到该静态变量中以方便后续使用。
 
-加粗显示的静态变量 fid_s 保存了为 InstanceFiledAccess.s 预先计算的方法 ID。该静态变量初始化为 NULL，当 InstanceFieldAccess.accessField 方法第一次被调用时，它计算该字段 ID 然后将其缓存到该静态变量中以方便后续使用。
 你可能注意到上面的代码中存在着明显的竞争条件。多个线程可能同时调用 InstanceFieldAccess.accessField 方法并且同时计算相同的字段 ID。一个线程可能会覆盖另一个线程计算好的静态变量 fid_s。幸运的是，虽然这种竞争条件在多线程中导致重复的工作，但是明显是无害的。同一个类的同一个字段被多个线程计算出来的字段 ID 必然是相同的。
 根据上面的想法，我们同样可以在 MyNewString 例子的开始部分缓存 java.lang.String 构造方法的方法 ID。
 jstring
@@ -453,7 +455,7 @@ MyNewString(JNIEnv *env, jchar *chars, jint len) {
     (*env)->DeleteLocalRef(env, stringClass);
     return result;
 }
-复制代码
+
 当 MyNewString 第一次被调用的时候，我们为 java.lang.String 构造器计算方法 ID。加粗突出显示的静态变量 cid 缓存这个结果。
 4.4.2 在类的静态初始化块中执行缓存
 当我们在使用时缓存字段或方法 ID 的时候，我们必须引入一个坚持来坚持字段或方法 ID 是否已被缓存。当 ID 已经被缓存时，这种方法不仅在“快速路径”上产生轻微的性能影响，而且还可能导致缓存和检查的重复工作。举个例子，如果多个本地方法全部需要访问同一个字段，然后他们就需要计算和检查相应的字段 ID。在许多情况下，在程序能够有机会调用本地方法前，初始化本地方法所需要的字段和方法 ID 会更为方便。虚拟机会在调用该类中的任何方法前，总是执行类的静态初始化器。因此，一个计算并缓存字段和方法 ID 的合适位置是在该字段和方法 ID 的类的静态初始化块中。例如，要缓存 InstanceMethodCall.callback 的方法 ID，我们引入了一个新的本地方法 initIDs，它由 InstanceMethodCall 类的静态初始化器调用：
@@ -494,12 +496,6 @@ Java_InstanceMethodCall_nativeMethod(JNIEnv *env, jobject obj) {
 方法和字段 ID 仅在类卸载前有效，如果你是在运行时缓存字段和方法 ID，则必须确保只要本地代码仍然依赖缓存 ID 的值时，定义类就不能被卸载或者重新加载。（下一章将介绍如何通过使用 JNI 创建对该类的引用来保护类不被卸载。）另一方面，如果缓存是在定义类的静态初始化块中完成的，当类被卸载并稍后重新加载时，缓存的 ID 将会自动重新计算。
    因此在可行的情况下，最好在其定义类的静态初始化块中缓存字段和方法 ID。
 
-
-
-作者：陈皮的柚子
-链接：https://juejin.cn/post/6930972583848312846
-来源：稀土掘金
-著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
 
 
 
