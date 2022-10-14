@@ -14,7 +14,7 @@ Protobuf 全称：Protocol Buffers，是 Google 推出的一种与平台无关�
 
 方式一：下载安装包
 
-Protobuf Github 下载地址：*https://github.com/protocolbuffers/protobuf/releases/tag/v3.19.2*
+Protobuf Github 下载地址：[https://github.com/protocolbuffers/protobuf/releases/tag/v3.19.2](https://github.com/protocolbuffers/protobuf/releases/tag/v3.19.2)
 
 方式二：通过 Homebrew 安装 
 
