@@ -125,6 +125,9 @@ struct JNINativeInterface {
 // 在 C++ 中，要使用 env->
 env->FindClass("java/lang/String");
 ```
+
+本章节demo参见：[https://github.com/alinainai/AndroidDemo/tree/feature/feature_ndk_v1](https://github.com/alinainai/AndroidDemo/tree/feature/feature_ndk_v1)
+
 ## 二、Java调用Jni
 
 在例子中 Java 的 native 方法最终会与 Jni 中 `Java_类名(下划线分割包名)_方法名` 对应，并且默认带有两个参数，JNIEnv* 和 jobject(实例方法)/jclass(静态方法):
@@ -374,9 +377,134 @@ if (mMethodId) {
     env->CallVoidMethod(thiz, mMethodId);
 }
 ```
-3、缓存ID
+### 4、缓存ID
 
-如果字段和方法调用频繁的话可以采用缓存的方式来提前存储 `jfieldID` 和 `jmethodID`
+获取字段和方法 ID 需要基于字段和方法 ID 的名字和描述符进行符号查找。符号查找消耗相对较多，我呢可以使用缓存的方式来存储字段和方法 ID。
+
+### 4.1 在使用时缓存
+
+在使用时我们采用静态变量对方法 ID 进行缓存，以便在每次调用 accessField 方法时，不需要重新获取
+
+JNIEXPORT void JNICALL
+Java_InstanceFieldAccess_accessField(JNIEnv *env, jobject obj) {
+    static jfieldID fid_s = NULL; /* cached field ID for s */
+    jclass cls = (*env)->GetObjectClass(env, obj);
+    jstring jstr;
+    const char *str;
+
+    if (fid_s == NULL) {
+        fid_s = (*env)->GetFieldID(env, cls, "s", "Ljava/lang/String;");
+        if (fid_s == NULL) {
+            return; /* exception already thrown */
+        }
+    }
+
+    jstr = (*env)->GetObjectField(env, obj, fid_s);
+    str = (*env)->GetStringUTFChars(env, jstr, NULL);
+    if (str == NULL) {
+        return; /* out of memory */
+    }
+
+    (*env)->ReleaseStringUTFChars(env, jstr, str);
+    jstr = (*env)->NewStringUTF(env, "123");
+    if (jstr == NULL) {
+        return; /* out of memory */
+    }
+
+    (*env)->SetObjectField(env, obj, fid_s, jstr);
+}
+
+加粗显示的静态变量 fid_s 保存了为 InstanceFiledAccess.s 预先计算的方法 ID。该静态变量初始化为 NULL，当 InstanceFieldAccess.accessField 方法第一次被调用时，它计算该字段 ID 然后将其缓存到该静态变量中以方便后续使用。
+你可能注意到上面的代码中存在着明显的竞争条件。多个线程可能同时调用 InstanceFieldAccess.accessField 方法并且同时计算相同的字段 ID。一个线程可能会覆盖另一个线程计算好的静态变量 fid_s。幸运的是，虽然这种竞争条件在多线程中导致重复的工作，但是明显是无害的。同一个类的同一个字段被多个线程计算出来的字段 ID 必然是相同的。
+根据上面的想法，我们同样可以在 MyNewString 例子的开始部分缓存 java.lang.String 构造方法的方法 ID。
+jstring
+MyNewString(JNIEnv *env, jchar *chars, jint len) {
+    jclass stringClass;
+    jcharArray elemArr;
+    static jmethodID cid = NULL;
+    jstring result;
+
+    stringClass = (*env)->FindClass(env, "java/lang/String");
+    if (stringClass == NULL) {
+        return NULL; /* exception thrown */
+    }
+
+    /* Note that cid is a static variable */
+    if (cid == NULL) {
+        /* Get the method ID for the String constructor */
+        cid = (*env)->GetMethodID(env, stringClass, "<init>", "([C)V");
+        if (cid == NULL) {
+            return NULL; /* exception thrown */
+        }
+    }
+
+    /* Create a char[] that holds the string characters */
+    elemArr = (*env)->NewCharArray(env, len);
+    if (elemArr == NULL) {
+        return NULL; /* exception thrown */
+    }
+    (*env)->SetCharArrayRegion(env, elemArr, 0, len, chars);
+
+    /* Construct a java.lang.String object */
+    result = (*env)->NewObject(env, stringClass, cid, elemArr);
+
+    /* Free local references */
+    (*env)->DeleteLocalRef(env, elemArr);
+    (*env)->DeleteLocalRef(env, stringClass);
+    return result;
+}
+复制代码
+当 MyNewString 第一次被调用的时候，我们为 java.lang.String 构造器计算方法 ID。加粗突出显示的静态变量 cid 缓存这个结果。
+4.4.2 在类的静态初始化块中执行缓存
+当我们在使用时缓存字段或方法 ID 的时候，我们必须引入一个坚持来坚持字段或方法 ID 是否已被缓存。当 ID 已经被缓存时，这种方法不仅在“快速路径”上产生轻微的性能影响，而且还可能导致缓存和检查的重复工作。举个例子，如果多个本地方法全部需要访问同一个字段，然后他们就需要计算和检查相应的字段 ID。在许多情况下，在程序能够有机会调用本地方法前，初始化本地方法所需要的字段和方法 ID 会更为方便。虚拟机会在调用该类中的任何方法前，总是执行类的静态初始化器。因此，一个计算并缓存字段和方法 ID 的合适位置是在该字段和方法 ID 的类的静态初始化块中。例如，要缓存 InstanceMethodCall.callback 的方法 ID，我们引入了一个新的本地方法 initIDs，它由 InstanceMethodCall 类的静态初始化器调用：
+class InstanceMethodCall {
+    <b>private static native void initIDs();</b>
+    private native void nativeMethod();
+    private void callback() {
+        System.out.println("In Java");
+    }
+    public static void main(String args[]) {
+        InstanceMethodCall c = new InstanceMethodCall();
+        c.nativeMethod();
+    }
+    static {
+        System.loadLibrary("InstanceMethodCall");
+        <b>initIDs();</b>
+    }
+}
+复制代码
+跟 4.2 节的原始代码相比，上面的程序包含二外的两行（用粗体突出显示），initIDs 的实现仅仅是简单的为 InstanceMethodCall.callback 计算和缓存方法 ID。
+jmethodID MID_InstanceMethodCall_callback;
+
+JNIEXPORT void JNICALL Java_InstanceMethodCall_initIDs(JNIEnv *env, jclass cls) {
+    MID_InstanceMethodCall_callback = (*env)->GetMethodID(env, cls, "callback", "()V");
+}
+复制代码
+在 InstanceMethodCall 类中，在执行任何任何方法（例如 nativeMethod 或 main）之前虚拟机先运行静态初始化块。当方法 ID 已经缓存到一个全局变量中，InstanceMethodCall.nativeMethod 方法的本地实现就不再需要执行符号查找了。
+JNIEXPORT void JNICALL
+Java_InstanceMethodCall_nativeMethod(JNIEnv *env, jobject obj) {
+    printf("In C\n");
+    (*env)->CallVoidMethod(env, obj, MID_InstanceMethodCall_callback);
+}
+复制代码
+4.4.3 缓存 ID 的两种方法之间的比较
+如果 JNI 程序员无法控制定义了字段和方法的类的源代码，那么在使用时缓存 ID 是合理的解决方案。例如在 MyNewString 例子当中，我们没有办法为了预先计算和缓存 java.lang.String 构造器的方法 ID 而向 java.lang.String 类中插入一个用户定义的 initIDs 本地方法。与在定义类的静态初始化块中执行缓存相比，在使用时进行缓存存在许多缺点：
+
+如之前解释，在使用的时候进行缓存，在快速路径执行过程中需要进行检查，而且可能对同一个字段和方法 ID 进行重复的检查和初始化。
+方法和字段 ID 仅在类卸载前有效，如果你是在运行时缓存字段和方法 ID，则必须确保只要本地代码仍然依赖缓存 ID 的值时，定义类就不能被卸载或者重新加载。（下一章将介绍如何通过使用 JNI 创建对该类的引用来保护类不被卸载。）另一方面，如果缓存是在定义类的静态初始化块中完成的，当类被卸载并稍后重新加载时，缓存的 ID 将会自动重新计算。
+   因此在可行的情况下，最好在其定义类的静态初始化块中缓存字段和方法 ID。
+
+
+
+作者：陈皮的柚子
+链接：https://juejin.cn/post/6930972583848312846
+来源：稀土掘金
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+
+
+以上两节的的内容参见 demo [https://github.com/alinainai/AndroidDemo/tree/feature/feature_ndk_v2](https://github.com/alinainai/AndroidDemo/tree/feature/feature_ndk_v2)
+
 
 
 ## 参考
