@@ -422,46 +422,32 @@ Java_com_egas_demo_JniDemoClass_cacheMethodId(JNIEnv *env, jobject obj) {
 
 
 #### 4.2 在类的静态初始化块中执行缓存
-当我们在使用时缓存字段或方法 ID 的时候，我们必须引入一个坚持来坚持字段或方法 ID 是否已被缓存。当 ID 已经被缓存时，这种方法不仅在“快速路径”上产生轻微的性能影响，而且还可能导致缓存和检查的重复工作。举个例子，如果多个本地方法全部需要访问同一个字段，然后他们就需要计算和检查相应的字段 ID。在许多情况下，在程序能够有机会调用本地方法前，初始化本地方法所需要的字段和方法 ID 会更为方便。虚拟机会在调用该类中的任何方法前，总是执行类的静态初始化器。因此，一个计算并缓存字段和方法 ID 的合适位置是在该字段和方法 ID 的类的静态初始化块中。例如，要缓存 InstanceMethodCall.callback 的方法 ID，我们引入了一个新的本地方法 initIDs，它由 InstanceMethodCall 类的静态初始化器调用：
-class InstanceMethodCall {
-    <b>private static native void initIDs();</b>
-    private native void nativeMethod();
-    private void callback() {
-        System.out.println("In Java");
-    }
-    public static void main(String args[]) {
-        InstanceMethodCall c = new InstanceMethodCall();
-        c.nativeMethod();
-    }
-    static {
-        System.loadLibrary("InstanceMethodCall");
-        <b>initIDs();</b>
-    }
-}
+当我们在使用时缓存字段或方法 ID 的时候，可能导致缓存和检查的重复工作。在许多情况下，在程序能够有机会调用本地方法前，初始化本地方法所需要的字段和方法 ID 会更为方便。虚拟机会在调用该类中的任何方法前，总是执行类的静态初始化器。因此，一个计算并缓存字段和方法 ID 的合适位置是在该字段和方法 ID 的类的静态初始化块中。
 
-跟 4.2 节的原始代码相比，上面的程序包含二外的两行（用粗体突出显示），initIDs 的实现仅仅是简单的为 InstanceMethodCall.callback 计算和缓存方法 ID。
+```java
+static {
+    System.loadLibrary("demo");
+    initCacheMethodId();// 在执行任何任何方法（例如 nativeMethod 或 main）之前虚拟机先运行静态初始化块
+}
+// 类初始化时缓存方法ID
+public static native void initCacheMethodId();
+// 使用缓存的方法ID
+public native void verifyInitCacheMethodId();
+```
+在 c++ 代码中
+```c++
+// 全局变量缓存ID
 jmethodID MID_InstanceMethodCall_callback;
-
-JNIEXPORT void JNICALL Java_InstanceMethodCall_initIDs(JNIEnv *env, jclass cls) {
-    MID_InstanceMethodCall_callback = (*env)->GetMethodID(env, cls, "callback", "()V");
+JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_initCacheMethodId
+        (JNIEnv *env, jclass clz) {
+    MID_InstanceMethodCall_callback = env->GetMethodID(clz, "logHelloJava", "()V");
 }
-复制代码
-在 InstanceMethodCall 类中，在执行任何任何方法（例如 nativeMethod 或 main）之前虚拟机先运行静态初始化块。当方法 ID 已经缓存到一个全局变量中，InstanceMethodCall.nativeMethod 方法的本地实现就不再需要执行符号查找了。
-JNIEXPORT void JNICALL
-Java_InstanceMethodCall_nativeMethod(JNIEnv *env, jobject obj) {
-    printf("In C\n");
-    (*env)->CallVoidMethod(env, obj, MID_InstanceMethodCall_callback);
+// 使用缓存的 MethodID
+JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_verifyInitCacheMethodId
+        (JNIEnv *env, jobject thiz) {
+    env->CallVoidMethod(thiz, MID_InstanceMethodCall_callback);
 }
-复制代码
-4.4.3 缓存 ID 的两种方法之间的比较
-如果 JNI 程序员无法控制定义了字段和方法的类的源代码，那么在使用时缓存 ID 是合理的解决方案。例如在 MyNewString 例子当中，我们没有办法为了预先计算和缓存 java.lang.String 构造器的方法 ID 而向 java.lang.String 类中插入一个用户定义的 initIDs 本地方法。与在定义类的静态初始化块中执行缓存相比，在使用时进行缓存存在许多缺点：
-
-如之前解释，在使用的时候进行缓存，在快速路径执行过程中需要进行检查，而且可能对同一个字段和方法 ID 进行重复的检查和初始化。
-方法和字段 ID 仅在类卸载前有效，如果你是在运行时缓存字段和方法 ID，则必须确保只要本地代码仍然依赖缓存 ID 的值时，定义类就不能被卸载或者重新加载。（下一章将介绍如何通过使用 JNI 创建对该类的引用来保护类不被卸载。）另一方面，如果缓存是在定义类的静态初始化块中完成的，当类被卸载并稍后重新加载时，缓存的 ID 将会自动重新计算。
-   因此在可行的情况下，最好在其定义类的静态初始化块中缓存字段和方法 ID。
-
-
-
+```
 
 以上两节的的内容参见 demo [https://github.com/alinainai/AndroidDemo/tree/feature/feature_ndk_v2](https://github.com/alinainai/AndroidDemo/tree/feature/feature_ndk_v2)
 
