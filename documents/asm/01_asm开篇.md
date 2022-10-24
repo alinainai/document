@@ -10,11 +10,11 @@ ASM所处理对象是字节码数据，并可以对字节码:
 
 官方文档: [https://asm.ow2.io/](https://asm.ow2.io/)
 
-可以通过 `git clone` 下载 [https://gitlab.ow2.org/asm/asm.git](https://gitlab.ow2.org/asm/asm.git)  asm 代码
+可以通过 [https://gitlab.ow2.org/asm/asm.git](https://gitlab.ow2.org/asm/asm.git) 下载 asm 代码
 
-IDEA 相关插件 `ASM Bytecode Outline`
+IDEA 相关插件 `ASM Bytecode Outline` （AS不能使用）
 
-JDK 中的 ASM : Java 8 Lambda
+JDK 中的使用到的 ASM : Java 8 Lambda 技术
 
 ## 2、ASM API
 
