@@ -7,9 +7,9 @@ Matrix是微信终端自研和正在使用的一套APM（Application Performance
 
 Matrix-ApkChecker 作为Matrix系统的一部分，是针对android安装包的分析检测工具，根据一系列设定好的规则检测apk是否存在特定的问题，并输出较为详细的检测结果报告，用于分析排查问题以及版本追踪。Matrix-ApkChecker以一个jar包的形式提供使用，通过命令行执行 `java -jar ApkChecker.jar` 即可运行。
 
-### Matrix-ApkChecker 的使用
+## Matrix-ApkChecker 的使用
 
-#### 1、直接在命令行执行
+### 1、直接在命令行执行
 ```shell
 java -jar ApkChecker.jar
 ```
@@ -114,7 +114,7 @@ ignoreAssets   需要忽略的assets文件，使用","作为多个文件的分�
 toolnm   nm工具的路径
 ```
 
-#### 2、通过配置文件使用
+### 2、通过配置文件使用
 
 除了直接在命令行中带上详细参数外，也可以将参数配置以 json 的格式写到一个配置文件中，然后在命令行中使用
 
@@ -213,6 +213,12 @@ config CONFIG-FILE_PATH
 
 - 注意1：其中“--apk”，“--mappingTxt”，“--output”，“--toolnm”，“--rTxt”需要修改为自己的路径
 - 注意2：配置文件中的任务，可以按照自己的需求修改。
+ 
+我们项目目前采用这种方式，直接复制上面的配置文件即可，然后把 jar 包和配置文件 `config.json` 放到一个文件夹中。执行
+
+```shell
+java -jar matrix-apk-canary-2.0.8.jar --config config.json
+```
 
 ## 二、功能
 
@@ -336,15 +342,14 @@ ManifestAnalyzeTask 用于读取AndroidManifest.xml中的信息，如：packageN
 - DuplicatedFileTask 可以检测出冗余的文件
 实现方法：通过比较文件的MD5是否相等来判断文件内容是否相同。
 
-- UnusedResourceTask 可以检测出apk中未使用的资源，对于getIdentifier获取的资源可以加入白名单
+- UnusedResourceTask 可以检测出apk中未使用的资源，对于getIdentifier获取的资源可以加入白名单  
+
 实现方法： 
-（1）过读取R.txt获取apk中声明的所有资源得到declareResourceSet； 
 
-（2）通过读取smali文件中引用资源的指令（包括通过reference和直接通过资源id引用资源）得出class中引用的资源classRefResourceSet； 
-
-（3）通过ApkTool解析res目录下的xml文件、AndroidManifest.xml 以及 resource.arsc 得出资源之间的引用关系； 
-
-（4）根据上述几步得到的中间数据即可确定出apk中未使用到的资源。
+（1）过读取R.txt获取apk中声明的所有资源得到declareResourceSet；   
+（2）通过读取smali文件中引用资源的指令（包括通过reference和直接通过资源id引用资源）得出class中引用的资源classRefResourceSet；   
+（3）通过ApkTool解析res目录下的xml文件、AndroidManifest.xml 以及 resource.arsc 得出资源之间的引用关系；   
+（4）根据上述几步得到的中间数据即可确定出apk中未使用到的资源。  
 
 - UnusedAssetsTask 可以检测出apk中未使用的assets文件
 实现方法：搜索smali文件中引用字符串常量的指令，判断引用的字符串常量是否某个assets文件的名称
