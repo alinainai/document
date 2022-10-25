@@ -338,10 +338,13 @@ ManifestAnalyzeTask 用于读取AndroidManifest.xml中的信息，如：packageN
 
 - UnusedResourceTask 可以检测出apk中未使用的资源，对于getIdentifier获取的资源可以加入白名单
 实现方法： 
-- （1）过读取R.txt获取apk中声明的所有资源得到declareResourceSet； 
-- （2）通过读取smali文件中引用资源的指令（包括通过reference和直接通过资源id引用资源）得出class中引用的资源classRefResourceSet； 
-- （3）通过ApkTool解析res目录下的xml文件、AndroidManifest.xml 以及 resource.arsc 得出资源之间的引用关系； 
-- （4）根据上述几步得到的中间数据即可确定出apk中未使用到的资源。
+（1）过读取R.txt获取apk中声明的所有资源得到declareResourceSet； 
+
+（2）通过读取smali文件中引用资源的指令（包括通过reference和直接通过资源id引用资源）得出class中引用的资源classRefResourceSet； 
+
+（3）通过ApkTool解析res目录下的xml文件、AndroidManifest.xml 以及 resource.arsc 得出资源之间的引用关系； 
+
+（4）根据上述几步得到的中间数据即可确定出apk中未使用到的资源。
 
 - UnusedAssetsTask 可以检测出apk中未使用的assets文件
 实现方法：搜索smali文件中引用字符串常量的指令，判断引用的字符串常量是否某个assets文件的名称
