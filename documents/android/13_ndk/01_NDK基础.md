@@ -1,8 +1,12 @@
 ## 一、NDK简单介绍
 
+### 1、JNI和NDk
+
 `JNI（Java Native Interface）`是 JAVA 平台中的一个强大功能。作为 JAVA 虚拟机的部分实现，JNI 是一个双向接口，允许 JAVA 应用程序调用本地代码，反之亦然。
 
 `NDK（Native Developer Kit）`是 Android 系统提供的一套 Java 和 C/C++ 相互调用的工具集。
+
+### 2、android demo
 
 从一个 android demo 开始：我们新建一个 `Native C++` 项目，Java Staduard 选择 `C++ 11` 版本。
 
@@ -29,12 +33,14 @@ Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
     return env->NewStringUTF(hello.c_str());
 }
 ```
+
+### 3、关键字分析
 我们简单的分析一下 `demo.cpp` 方法相关的关键字：
 
-### 1、`extern "C"`
+- `extern "C"`
 表示按照类C的编译和连接规约来编译和连接，因为 C 和 C++ 语法有区别，C++ 形式编译的代码 C 可能识别不了，比如 C 中没有重载方法
 
-### 2、JNIEXPORT
+- JNIEXPORT
 表示一个函数需要暴露给共享库外部使用时
 
 ```c++
@@ -46,7 +52,7 @@ Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
 #define JNIEXPORT  __attribute__ ((visibility ("default"))) // 让该方法对于外界可见
 ```
 
-### 3、JNICALL
+- JNICALL
 表示一个函数是 JNI 函数，
 ```c++
 // Windows 平台 :
@@ -55,7 +61,7 @@ Java_com_egas_demo_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
 #define JNICALL // Linux 没有进行定义
 ```
 
-### 4、jobject
+- jobject
 jobject 是 JNI 层对于 Java 层应用类型对象的映射。
 
 从 Java 调用 native 方法，在 JNI 函数中会传递一个当前对象的引用。
@@ -65,7 +71,7 @@ jobject 是 JNI 层对于 Java 层应用类型对象的映射。
 1. 对于静态的 native 方法： 第二个参数为 jclass 类型，指向 native 方法所在类的 Class 对象；
 2. 对月实例 native 方法： 第二个参数为 jobject 类型，指向调用 native 方法的对象。
 
-### 5、 JavaVM 和 JNIEnv 的作用
+- JavaVM 和 JNIEnv 
 
 JavaVM 和 JNIEnv 是定义在 jni.h 头文件中最关键的两个数据结构：
 
