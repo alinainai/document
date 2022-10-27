@@ -1,6 +1,6 @@
 ## 一、引用
 
-在Java中，对象在堆/方法区上分配，由垃圾回收器扫描对象可达性进行回收。而在C/C++中，分配在堆上的对象需要我们手动调用 delete 去释放。JNI 层作为 Java 层和 C/C++ 层之间的桥接层，提供了一套规则来处理这种情况。
+在Java中，对象在堆上分配，由垃圾回收器自动进行回收，在C/C++中，分配在堆上的对象需要手动调用 delete 去释放。JNI 层作为 Java 层和 C/C++ 层之间的桥接层，所以需要提供一套规则来处理这种情况。
 
 在JNI规范中定义了三种引用：局部引用（Local Reference）、全局引用（Global Reference）、弱全局引用（Weak Global Reference）
 
@@ -8,45 +8,57 @@
 
 大部分 JNI 函数会创建局部引用，局部引用只有在创建引用的本地方法返回前有效，也只在创建局部引用的线程中有效。在方法返回后，局部引用会自动释放，也可以通过 DeleteLocalRef 函数手动释放；
 
-局部引用会阻止GC回收所引用的对象，不能在本地函数中跨函数使用，也不能跨线程使用。我们可以通过 NewLocalRef 和各种JNI接口创建（FindClass、NewObject、GetObjectClass和NewCharArray等）局部引用对象。
+局部引用会阻止GC回收所引用的对象，不能在本地函数中跨函数使用，也不能跨线程使用。我们可以通过 NewLocalRef 和各种JNI接口（FindClass、NewObject、GetObjectClass和NewCharArray等）来创建局部引用对象。
 
-当使用大内存的Java对象，或者大量使用 Java 对象时，可以通过 DeleteLocalRef 函数手动释放局部对象
-
-
-
-
+当使用大内存的Java对象，或者大量使用 Java 对象时，可以通过 DeleteLocalRef 函数手动释放局部对象。
 
 ### 2、全局引用： 
 
-全局引用可以跨方法、跨线程使用，直到它被手动释放才会失效。同局部引用一样，也会阻止它所引用的对象被GC回收。与局部引用创建方式不同的是，只能通过NewGlobalRef函数创建，不再使用对象时必须通过 DeleteGlobalRef 函数释放。
+全局引用可以跨方法、跨线程使用，直到它被手动释放才会失效。同局部引用一样，全局引用也会阻止它所引用的对象被GC回收。
 
-3、弱全局引用： 弱引用与全局引用类似，区别在于弱全局引用不会持有强引用，因此不会阻止垃圾回收器回收引用指向的对象。弱全局引用通过 NewGlobalWeakRef 函数创建，不再使用对象时必须通过 DeleteGlobalWeakRef 函数释放。
-示例程序
+全局引用只能通过 NewGlobalRef 函数创建，不再使用对象时必须通过 DeleteGlobalRef 函数释放。
 
-// 局部引用
-jclass localRefClz = env->FindClass("java/lang/String");
-env->DeleteLocalRef(localRefClz);
+### 3、弱全局引用
 
-// 全局引用
-jclass globalRefClz = env->NewGlobalRef(localRefClz);
-env->DeleteGlobalRef(globalRefClz);
+弱引用与全局引用类似，区别在于弱全局引用不会持有强引用，因此不会阻止垃圾回收器回收引用指向的对象。弱全局引用通过 NewGlobalWeakRef 函数创建，不再使用对象时必须通过 DeleteGlobalWeakRef 函数释放。
+```c++
+//创建全局引用
+jstring global_str;
+JNIEXPORT void JNICALL Java_com_egas_demo_JniDemoClass_handlerDemo
+        (JNIEnv *env, jobject thiz,jstring str) {
+    // 局部引用
+    jstring jstr = env->NewStringUTF("cc");
+    auto local_str = (jstring)env->NewLocalRef(jstr);
+    //释放局部引用
+    env->DeleteLocalRef(local_str);
 
-// 弱全局引用
-jclass weakRefClz = env->NewWeakGlobalRef(localRefClz);
-env->DeleteGlobalWeakRef(weakRefClz);
-5.3 JNI 引用的实现原理
+    // 全局引用
+    global_str = (jstring)env->NewGlobalRef(jstr);
+    env->DeleteGlobalRef(global_str);
+
+    // 弱全局引用
+    auto weakRefClz = (jstring)env->NewWeakGlobalRef(jstr);
+    env->DeleteWeakGlobalRef(weakRefClz);  
+}
+```
+### 4、JNI 引用的实现原理
+
 在 JavaVM 和 JNIEnv 中，会分别建立多个表管理引用：
 
 JavaVM 内有 globals 和 weak_globals 两个表管理全局引用和弱全局引用。由于 JavaVM 是进程共享的，因此全局引用可以跨方法和跨线程共享；
 JavaEnv 内有 locals 表管理局部引用，由于 JavaEnv 是线程独占的，因此局部引用不能跨线程。另外虚拟机在进入和退出本地方法通过 Cookie 信息记录哪些局部引用是在哪些本地方法中创建的，因此局部引用是不能跨方法的。
-5.4 比较引用是否指向相同对象
+
+### 5、比较引用是否指向相同对象
+
 可以使用 JNI 函数 IsSameObject 判断两个引用是否指向相同对象（适用于三种引用类型），返回值为 JNI_TRUE 时表示相同，返回值为 JNI_FALSE 表示不同。例如：
 
 示例程序
 
+```c++
 jclass localRef = ...
 jclass globalRef = ...
 bool isSampe = env->IsSamObject(localRef, globalRef）
+```
 另外，当引用与 NULL 比较时含义略有不同：
 
 局部引用和全局引用与 NULL 比较： 用于判断引用是否指向 NULL 对象；
