@@ -1,5 +1,32 @@
-### 1. Volatile 关键字
+## 第二章、基础语法
 
+1、增强的类型推断
+```kotlin
+val string = "kotlin"
+val int = 1214
+val long = 1314L
+val float = 13.14f
+val double = 13.34
+val double2 = 10.1e6
+```
+2、函数的默认返回值
+```kotlin
+// 默认的隐式返回类型为 Unit，它类似于 Java 中的 void，但是 Unit 是一个单例类，void 是一个关键字
+fun set(x:Int){
+}
+```
+3、声明变量的规则
+```kotlin
+val a = 6 // val的含义：引用不可变，可以当成 value(值) 看待，如同 Java 的 final 修饰的变量，推荐使用 val 修饰变量
+var b = 5 // varible（变量）
+```
+4、函数也是一种类型
+```kotlin
+(Int,String) -> Unit
+((Int,String) -> Unit)?
+```
+
+volatile 关键字
 ```kotlin
 @Volatile
 var instance: ThreadPoolManager
