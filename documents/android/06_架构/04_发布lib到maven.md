@@ -31,7 +31,38 @@ GPG签名主要是为了给需要发布到 maven central 的包进行签名，�
 
 我使用的是 macOS 直接通过 homebrew 安装即可 `brew install gpg`，安装完成之后 使用 `gpg -version` 查看版本号
 
-生成私钥：
+通过指令生成公钥和私钥：需要输入部分信息，默认选 RAS and RSA 即可
+```shell
+gpg --full-generate-key
+//默认选 RAS and RSA 即可
+```
+秘钥生成成功之后，使用指令查看
+```shell
+gpg --list-keys
+```
+```log
+/Users/xxx/.gnupg/pubring.kbx
+-----------------------------------
+pub   rsa2048 2022-11-02 [SC]
+      799C2101C9C25898946CC47266DC8AAAD43AB17C // 我们使用指纹的后8位
+uid             [ 绝对 ] xxxxxx (maven center) <xxxxxx@gmail.com>
+sub   rsa2048 2022-11-02 [E]
+```
+发送公钥带服务器
+```shell
+sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --search-keys 66DC8AAAD43AB17C
+```
+查询是否上传成功
+```shell
+sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --search-keys 66DC8AAAD43AB17C
+```
+导出私钥
+```shell
+gpg -o /Users/xxx/workspace/maven_center.gpg --export-secret-keys 66DC8AAAD43AB17C
+```
+## 二、发布库
+
+
 
 ## 参考
 
