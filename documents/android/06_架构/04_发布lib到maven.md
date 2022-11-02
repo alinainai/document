@@ -25,9 +25,13 @@ Sonatype 公司负责维护 Maven Central，所以我们先注册一个 Sonatype
 
 ### 2、创建GPG签名
 
-GPG签名主要是为了给需要发布到maven central的包进行签名，每个发布上去的包都需要进行这个操作，为了接下来我们可以直接使用，我们所以我们先创建一个自己的GPG签名。
+GPG签名主要是为了给需要发布到 maven central 的包进行签名，每个发布上去的包都需要进行这个操作，为了接下来我们可以直接使用，我们所以我们先创建一个自己的GPG签名。
 
 下载地址：[http://www.gnupg.org/download/](http://www.gnupg.org/download/)
+
+我使用的是 macOS 直接通过 homebrew 安装即可 `brew install gpg`，安装完成之后 使用 `gpg -version` 查看版本号
+
+生成私钥：
 
 ## 参考
 
