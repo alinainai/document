@@ -1,4 +1,4 @@
-## 1、ASM 是什么
+## 一、ASM 是什么
 
 ASM 是一个通用的 Java 字节码操作和分析框架，它可以用来修改现有的类或直接以二进制形式动态生成类。
 
@@ -12,30 +12,28 @@ ASM所处理对象是字节码数据，并可以对字节码:
 
 可以通过 [https://gitlab.ow2.org/asm/asm.git](https://gitlab.ow2.org/asm/asm.git) 下载 asm 代码
 
-IDEA 相关插件 `ASM Bytecode Outline` （AS不能使用）
+IDEA 相关插件 `ASM Bytecode Outline` （AS不能使用）,可以将 Java 代码转成 ASM 使用的字节码来帮助开发者。
 
 JDK 中的使用到的 ASM : Java 8 Lambda 技术
 
-## 2、ASM API
+## 二、ASM API
 
 ASM库提供了两个用于生成和转换已编译类的API，
 
 - Core API: 以基于事件的形式来表示类，包括 `asm.jar`、`asm-util.jar`和`asm-commons.jar`；
-- Tree API: 以基于对象的形式来表示类，包括`asm-tree.jar`和`asm-analysis.jar`
+- Tree API: 以基于对象的形式来表示类，包括 `asm-tree.jar` 和` asm-analysis.jar`
 
 基于事件的 API 要快于基于对象的 API，所需要的内存也较少，但在使用基于事件的 API 时，类转换的实现可能要更难一些。基于对象的 API 会把整个类加载到内存中
 
-### 2.1 asm.jar中的核心类
+### 1、asm.jar中的核心类
 
 - `ClassReader`: 对具体的 class 文件进行读取与解析；
 - `ClassVisitor`: ClassReader 解析 class 文件过程中，解析到某个结构就会通知到 ClassVisitor 内部的相应方法；
 - `ClassWriter`: 将修改后的 class 文件通过文件流的方式覆盖掉原来的 class 文件，从而实现 class 修改；
 
-
-
-### 2.2 添加 ASM 依赖
-
-在 asm_lifecycle_plugin 的 build.gradle 中，添加对 ASM 的依赖，如下：
+### 2、添加 ASM 依赖
+我们以一个简单的例子先来使用 ASM 并结合 gradle 插件 来添加 Activity 生命周期的日志
+在 build.gradle 中添加对 ASM 的依赖
 
 
 ## 参考
