@@ -31,13 +31,18 @@ ASM库提供了两个用于生成和转换已编译类的API，
 - `ClassVisitor`: ClassReader 解析 class 文件过程中，解析到某个结构就会通知到 ClassVisitor 内部的相应方法；
 - `ClassWriter`: 将修改后的 class 文件通过文件流的方式覆盖掉原来的 class 文件，从而实现 class 修改；
 
-### 2、添加 ASM 依赖
-我们以一个简单的例子先来使用 ASM 并结合 gradle 插件 来添加 Activity 生命周期的日志
-在 build.gradle 中添加对 ASM 的依赖
+
+
+## 四、ASM 应用
+我们以一个简单的例子先来使用 ASM 并结合 gradle 插件 来添加 Activity 生命周期的日志。
+
+一、配置相关参数
+首先在 build.gradle 中添加对 ASM 的依赖
 
 
 ## 参考
 
+- [Java ASM系列一：Core API](https://lsieun.github.io/java/asm/java-asm-season-01.html)
 - [ASM 6 开发者指南](https://github.com/dengshiwei/asm-module/blob/master/doc/ASM6%20%E5%BC%80%E5%8F%91%E8%80%85%E6%8C%87%E5%8D%97/ASM%206%20%E5%BC%80%E5%8F%91%E8%80%85%E6%8C%87%E5%8D%97.md)
 - [ASM入门篇](https://segmentfault.com/a/1190000040160637)
 - [深入理解Transform](https://juejin.cn/post/6844903829671002126#heading-11)
