@@ -1,5 +1,4 @@
 Java 版本
-
 ```java
 public class Constants {
     public static final int STATE_ONE = 1;
@@ -10,6 +9,18 @@ public class Constants {
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({STATE_ONE, STATE_TWO, STATE_THREE})
     public @interface  MyState {}
+}
+```
+
+修饰变量：
+```java
+@Constants.MyState
+private int state;
+```
+修饰方法入参
+```java
+private void setState(@Constants.MyState int state) {
+    //some code
 }
 ```
 Kotlin 版本
