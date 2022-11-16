@@ -1,19 +1,17 @@
-## 1.背景
+## 一、使用背景
 
-Android 7.0 之前，文件的 Uri 以 file:/// 形式提供给其他app访问。
+Android 7.0 之前，文件的 `Uri` 以 `file:///` 形式提供给其他app访问。Android 7.0 之后，分享文件的 `Uri` 发生了变化。为了安全起见，`file:///` 形式的Uri不能正常访问。
 
-Android 7.0 之后，分享文件的Uri发生了变化。为了安全起见，file:/// 形式的Uri不能正常访问。
+官方提供了 `FileProvider`，`FileProvider` 生成的 `Uri` 会以 `content://` 的形式分享给其他 `app` 使用。
 
-官方提供了 FileProvider，FileProvider 生成的 Uri 会以 content:// 的形式分享给其他app使用。
+`content` 形式的 `Uri` 可以让其他 `app` 临时获得读取(Read)和写入(Write)权限，只要我们在创建 `Intent` 时，使用 `Intent.setFlags()` 添加权限。
 
-content形式的Uri可以让其他app临时获得读取(Read)和写入(Write)权限，只要我们在创建 Intent 时，使用 Intent.setFlags() 添加权限。
-
-只要接收 Uri 的 app 在接收的 Activity 任务栈中处于活动状态，添加的权限就会一直有效，直到 app 被任务栈移除。
+只要接收 `Uri` 的 app 在接收的 `Activity` 任务栈中处于活动状态，添加的权限就会一直有效，直到 app 被任务栈移除。
 
 
-## 2.代码 
+## 二、代码 
 
-2.1 在 manifest 的 application 中添加
+1、在 `manifest` 的 `application` 标签中添加
 
 ```html
 <provider
@@ -27,7 +25,7 @@ content形式的Uri可以让其他app临时获得读取(Read)和写入(Write)权
 </provider>
 ```
 
-2.2 resources 下面新建 xml 文件夹，新建 filepaths 文件。
+2、resource文件下面新建 xml 文件夹，新建 filepaths 文件。
 
 ```html
 <?xml version="1.0" encoding="utf-8"?>
@@ -56,7 +54,7 @@ content形式的Uri可以让其他app临时获得读取(Read)和写入(Write)权
 </paths>
 ```
 
-## 3. 使用
+## 三、使用
 
 3.1 file 目录
 
@@ -105,7 +103,7 @@ intent.putExtra(Intent.EXTRA_STREAM, contentUri);
 inetnt.setClipData.newRawUri("", contentUri)
 ```
 
-## 4. 源码分析
+## 四、源码分析
 
 FileProvider 是继承自 ContentProvider。
 ```java
