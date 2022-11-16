@@ -24,11 +24,20 @@ dx --dex --output=Hello.dex  Hello.class
 
 第一个是看雪神图，出自非虫，
 
-第二个是 `Android` 源码中对 DEX 文件格式的定义，`dalvik/libdex/DexFile.h`，其中详细定义了 DEX 文件中的各个部分。
+![image](https://user-images.githubusercontent.com/17560388/202062059-babdcf4b-82e4-4738-b7bb-e8c5dce712e9.png)
+
+
+第二个是 `Android` 源码中对 DEX 文件格式的定义，[dalvik/libdex/DexFile.h](http://androidxref.com/9.0.0_r3/xref/dalvik/libdex/DexFile.h)，其中详细定义了 DEX 文件中的各个部分。
+
+第三个是 010 Editor，在之前解析 AndroidManifest.xml 文件格式解析 也介绍过，它提供了丰富的文件模板，支持常见文件格式的解析，可以很方便的查看文件结构中的各个部分及其对应的十六进制。一般我在代码解析文件结构的时候都是对照着 010 Editor 来进行分析。下面贴一张 010 Editor 打开之前生成的 Hello.dex 文件的截图：
+
+![image](https://user-images.githubusercontent.com/17560388/202062260-c7d7e76a-c773-4ab6-8f71-1da8485728b2.png)
 
 第三个是 010 Editor，在之前解析 AndroidManifest.xml 文件格式解析 也介绍过，它提供了丰富的文件模板，支持常见文件格式的解析，可以很方便的查看文件结构中的各个部分及其对应的十六进制。一般我在代码解析文件结构的时候都是对照着 010 Editor 来进行分析。下面贴一张 010 Editor 打开之前生成的 Hello.dex 文件的截图：
 
 我们可以一目了然的看到 DEX 的文件结构，着实是一个利器。在详细解析之前，我们先来大概给 DEX 文件分个层，如下图所示：
+
+![image](https://user-images.githubusercontent.com/17560388/202062355-d0a4d10b-2a64-455c-97fc-c770f44a668b.png)
 
 依次解释一下：
 
@@ -283,19 +292,19 @@ struct DexClassDef {
 ```
 class_def 是 DEX 文件结构中最复杂也是最核心的部分，它表示了类的所有信息，对应 DexFile.h 中的 DexClassDef :
 
-classIdx : 指向 type_ids ，表示类信息
-accessFlags : 访问标识符
-superclassIdx : 指向 type_ids ，表示父类信息
-interfacesOff : 指向 DexTypeList 的偏移量，表示接口信息
-sourceFileIdx : 指向 string_ids ，表示源文件名称
-annotationOff : 注解信息
-classDataOff : 指向 DexClassData 的偏移量，表示类的数据部分
-staticValueOff :指向 DexEncodedArray 的偏移量，表示类的静态数据
+`classIdx` : 指向 type_ids ，表示类信息
+`accessFlags` : 访问标识符
+`superclassIdx` : 指向 type_ids ，表示父类信息
+`interfacesOff` : 指向 DexTypeList 的偏移量，表示接口信息
+`sourceFileIdx` : 指向 string_ids ，表示源文件名称
+`annotationOff` : 注解信息
+`classDataOff` : 指向 DexClassData 的偏移量，表示类的数据部分
+`staticValueOff` :指向 DexEncodedArray 的偏移量，表示类的静态数据
 
 #### DefCLassData
 
 重点是 classDataOff 这个字段，它包含了一个类的核心数据，在 Android 源码中定义为 DexClassData ，它不在 DexFile.h 中了，而是在 DexClass.h 中：
-
+```c
 struct DexClassData {
     DexClassDataHeader header;
     DexField*          staticFields;
@@ -303,24 +312,26 @@ struct DexClassData {
     DexMethod*         directMethods;
     DexMethod*         virtualMethods;
 };
-DexClassDataHeader 定义了类中字段和方法的数目，它也定义在 DexClass.h 中：
-
+```
+`DexClassDataHeader` 定义了类中字段和方法的数目，它也定义在 `DexClass.h` 中：
+```c
 struct DexClassDataHeader {
     u4 staticFieldsSize;
     u4 instanceFieldsSize;
     u4 directMethodsSize;
     u4 virtualMethodsSize;
 };
-
-staticFieldsSize : 静态字段个数
-instanceFieldsSize : 实例字段个数
-directMethodsSize : 直接方法个数
-virtualMethodsSize : 虚方法个数
+```
+`staticFieldsSize` : 静态字段个数
+`instanceFieldsSize` : 实例字段个数
+`directMethodsSize` : 直接方法个数
+`virtualMethodsSize` : 虚方法个数
 
 在读取的时候要注意这里的数据是 LEB128 类型。它是一种可变长度类型，每个 LEB128 由 1~5 个字节组成，每个字节只有 7 个有效位。如果第一个字节的最高位为 1，表示需要继续使用第 2 个字节，如果第二个字节最高位为 1，表示需要继续使用第三个字节，依此类推，直到最后一个字节的最高位为 0，至多 5 个字节。除了 LEB128 以外，还有无符号类型 ULEB128。
 
 那么为什么要使用这种数据结构呢？我们都知道 Java 中 int 类型都是 4 字节，32 位的，但是很多时候根本用不到 4 个字节，用这种可变长度的结构，可以节省空间。对于运行在 Android 系统上来说，能多省一点空间肯定是好的。下面给出了 Java 读取 ULEB128 的代码：
 
+```java
 public static int readUnsignedLeb128(byte[] src, int offset) {
     int result = 0;
     int count = 0;
@@ -335,24 +346,29 @@ public static int readUnsignedLeb128(byte[] src, int offset) {
     } while ((cur & 0x80) == 128 && count < 5);
     return result;
 }
-继续回到 DexClassData 中来。header 部分定义了各种字段和方法的个数，后面跟着的分别就是 静态字段 、实例字段 、直接方法 、虚方法 的具体数据了。字段用 DexField 表示，方法用 DexMethod 表示。
+```
+继续回到 `DexClassData` 中来。`header` 部分定义了各种字段和方法的个数，后面跟着的分别就是 `静态字段` 、`实例字段` 、`直接方法` 、`虚方法` 的具体数据了。字段用 `DexField` 表示，方法用 `DexMethod` 表示。
 
 #### DexField
+```c
 struct DexField {
     u4 fieldIdx;    /* index to a field_id_item */
     u4 accessFlags;
 };
+```
+`fieldIdx` : 指向 field_ids ，表示字段信息
+`accessFlags` ：访问标识符
 
-fieldIdx : 指向 field_ids ，表示字段信息
-accessFlags ：访问标识符
-
-DexMethod
+#### DexMethod
+```c
 struct DexMethod {
     u4 methodIdx;    /* index to a method_id_item */
     u4 accessFlags;
     u4 codeOff;      /* file offset to a code_item */
-46};
+};
+```
 method_idx 是指向 method_ids 的索引，表示方法信息。accessFlags 是该方法的访问标识符。codeOff 是结构体 DexCode 的偏移量。如果你坚持看到了这里，是不是发现说到现在还没说到最重要的东西，DEX 包含的代码，或者说指令，对应的就是 Hello.java 中的 main 方法。没错，DexCode 就是用来存储方法的详细信息以及其中的指令的。
+```c
 struct DexCode {
     u2  registersSize;  // 寄存器个数
     u2  insSize;        // 参数的个数
@@ -366,9 +382,9 @@ struct DexCode {
     /* followed by uleb128 handlersSize */
     /* followed by catch_handler_item[handlersSize] */
 };
-
+```
 我们打开 010 Editor，定位到 main() 方法对应的 DexCode，对照进行分析：
-
+```java
 public class Hello {
 
     private static String HELLO_WORLD = "Hello World!";
@@ -377,39 +393,39 @@ public class Hello {
         System.out.println(HELLO_WORLD);
     }
 }
-复制代码main() 方法对应的 DexCode 十六进制表示为 ：
+```
+main() 方法对应的 DexCode 十六进制表示为 ：
+```shell
 03 00 01 00 02 00 00 00 79 02 00 00 08 00 00 00
 62 00 01 00 62 01 00 00 6E 20 03 00 10 00 0E 00
-复制代码使用的寄存器个数是 3 个。参数个数是 1 个，就是 main() 方法中的 String[] args。调用外部方法时使用的寄存器个数为 2 个。指令个数是 8 。
+```
+使用的寄存器个数是 3 个。参数个数是 1 个，就是 main() 方法中的 String[] args。调用外部方法时使用的寄存器个数为 2 个。指令个数是 8 。
+
 终于说到指令了，main() 函数中有 8 条指令，就是上面十六进制中的第二行。尝试来解析一下这段指令。Android 官网就有 Dalvik 指令的相关介绍，链接。
-第一个指令 62 00 01 00，查询文档 62 对应指令为 sget-object vAA, field@BBBB，AA 对应 00 , 表示 v0 寄存器。BBBB 对应 01 00 ，表示 field_ids 中索引为 1 的字段，根据前面的解析结果该字段为 Ljava/lang/System;->out;Ljava/io/PrintStream，整理一下，62 00 01 00 表示的就是：
+
+第一个指令 `62 00 01 00`，查询文档 `62` 对应指令为 `sget-object vAA`, field@BBBB，AA 对应 00 , 表示 v0 寄存器。BBBB 对应 01 00 ，表示 field_ids 中索引为 1 的字段，根据前面的解析结果该字段为 `Ljava/lang/System;->out;Ljava/io/PrintStream`，整理一下，62 00 01 00 表示的就是：
+```shell
 sget-object v0, Ljava/lang/System;->out:Ljava/io/PrintStream;
-复制代码接着是 62 01 00 00。还是 sget-object vAA, field@BBBB, AA 对应 01 ，BBBB 对应 0000, 使用的是 v1 寄存器，field 位 field_ids 中索引为 0 的字段，即 LHello;->HELLO_WORLD;Ljava/lang/String，该句完整指令为：
+```
+接着是 62 01 00 00。还是 sget-object vAA, field@BBBB, AA 对应 01 ，BBBB 对应 0000, 使用的是 v1 寄存器，field 位 field_ids 中索引为 0 的字段，即 LHello;->HELLO_WORLD;Ljava/lang/String，该句完整指令为：
+```shell
 sget-object v1, LHello;->HELLO_WORLD:Ljava/lang/String;
-复制代码接着是 6E 20 03 00, 查看文档 6E 指令为 invoke-virtual {vC, vD, vE, vF, vG}, meth@BBBB。6E 后面一个十六位 2 表示调用方法是两个参数，那么 BBBB 就是 03 00，指向 method_ids 中索引为 3 方法。根据前面的解析结果，该方法就是 Ljava/io/PrintStream;->println(Ljava/lang/String;)V。完整指令为：
+```
+接着是 6E 20 03 00, 查看文档 6E 指令为 invoke-virtual {vC, vD, vE, vF, vG}, meth@BBBB。6E 后面一个十六位 2 表示调用方法是两个参数，那么 BBBB 就是 03 00，指向 method_ids 中索引为 3 方法。根据前面的解析结果，该方法就是 Ljava/io/PrintStream;->println(Ljava/lang/String;)V。完整指令为：
+```shell
 invoke-virtual {v0, v1}, Ljava/io/PrintStream;->println(Ljava/lang/String;)V
-复制代码最后的 0E，查看文档该指令为 return-void，到这 main() 方法就结束了。
+```
+最后的 0E，查看文档该指令为 return-void，到这 main() 方法就结束了。
+
 将上面几句指令放在一起:
+```shell
 62 00 01 00 : sget-object v0, Ljava/lang/System;->out:Ljava/io/PrintStream;
 62 01 00 00 : sget-object v1, LHello;->HELLO_WORLD:Ljava/lang/String;
 6E 20 03 00 : invoke-virtual {v0, v1}, Ljava/io/PrintStream;->println(Ljava/lang/String;)V
 OE OO : return-void
-复制代码这就是 main() 方法的完整指令了。还记得我之前的一篇文章 Smali 语法解析——Hello World，其实这个解析结果和 Hello.java 对应的 smali 代码是一致的：
-.method public static main([Ljava/lang/String;)V
-    .registers 3
-
-    .prologue
-    .line 6
-    sget-object v0, Ljava/lang/System;->out:Ljava/io/PrintStream;
-
-    sget-object v1, LHello;->HELLO_WORLD:Ljava/lang/String;
-
-    invoke-virtual {v0, v1}, Ljava/io/PrintStream;->println(Ljava/lang/String;)V
-
-    .line 7
-    return-void
-.end method
-
+```
+这就是 main() 方法的完整指令了。
 
 ## 参考 
 - [Android逆向笔记 —— DEX 文件格式解析](https://juejin.cn/post/6844903847647772686)
+- [一篇文章带你搞懂DEX文件的结构](https://blog.csdn.net/sinat_18268881/article/details/55832757)
