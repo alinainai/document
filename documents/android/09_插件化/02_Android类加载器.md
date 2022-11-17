@@ -67,3 +67,6 @@ public class DexClassLoader extends BaseDexClassLoader {
 - `dexPath`：包含 `class.dex` 的 `apk、jar` 文件路径 ，多个路径用文件分隔符（默认是“:”）分隔。
 - `optimizedDirectory`：用来缓存优化的 dex 文件的路径，即从 apk 或 jar 文件中提取出来的 dex 文件。该路径不可以为空，且应该是应用私有的，有读写权限的路径。
 
+## 参考
+- [深入理解Android ClassLoader](https://zhuanlan.zhihu.com/p/136083521)
+
