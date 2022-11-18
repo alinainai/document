@@ -33,7 +33,7 @@ fun createEngine(context: Application, dartVmArgs: Array<String>?) {
 
 8.FlutterEngine创建之后需要手动启动，调用FlutterEngine.destory()之后，该Engine就不能再使用了，并且需要清空FlutterEngineCache中的缓存。
 
-```koltin
+```kotlin
 /**
  * 释放flutter引擎
  */
