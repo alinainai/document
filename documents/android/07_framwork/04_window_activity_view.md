@@ -2,7 +2,7 @@
 
 ## 1、从 Activity#setContentView() 开始
 
-我们在写一个新页面的时候，会通过调用 Activity 的 setContentView(layoutId) 给 Activity 设置布局。我们从这个方法作为入口，来看下标题中这三者的关系
+我们在写一个新页面的时候，会通过调用 `Activity#setContentView(layoutId)`方法给 `Activity` 设置布局。
 
 ```java
 // Activity.class
@@ -17,11 +17,8 @@ public Window getWindow() {
     return mWindow;
 }
 ```
-在 `setContentView` 方法中，直接将操作交给 `Window` 来处理。`getWindow` 返回的是 `Activity` 中的全局变量 mWindow，它是一个 `Window` 类型的对象。
-
-在分析 startActivity 的过程中，最终代码会调用到 ActivityThread 中的 `performLaunchActivity` 方法，通过反射创建 Activity 对象，并执行其 `attach` 方法。
-
-`Window` 就是在这个方法中被创建，详细代码如下：
+在 `setContentView` 方法中，将 layoutResID 直接交给 `Window` 来处理。`getWindow` 返回的是 `Activity` 中的全局变量 mWindow，它是一个 `Window` 类型的对象。  
+在 ActivityThread 的 `performLaunchActivity` 方法中，通过反射创建 Activity 对象，并执行其 `attach` 方法。`Window` 就是在这个方法中被创建，详细代码如下：
 
 <img src="https://user-images.githubusercontent.com/17560388/132342189-08a36d6b-698d-4009-8f23-5d9afd7d13da.png" alt="图片替换文本" width="600"  align="bottom" />
 
