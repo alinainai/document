@@ -2,7 +2,7 @@
 
 ## 1、简单使用
 
-`Lifecycle` 是 `Jetpack` 的基础组件之一。用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，且大大减少了业务代码发生`内存泄漏`和 `NPE` 的风险，使和 `生命周期` 相依赖的业务逻辑解耦出来。
+`Lifecycle` 是 `Jetpack` 的基础组件之一。它的作用是用一种统一的方式来监听 `Activity`、`Fragment`、`Service`甚至是 `Process` 的生命周期变化，减少业务代码发生`内存泄漏`和 `NPE` 的风险，还可以让和 `生命周期` 相依赖的业务逻辑解耦出来。
 
 ### 1.1 使用方法
 
