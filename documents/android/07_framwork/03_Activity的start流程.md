@@ -1,17 +1,6 @@
-## 前提知识点
-
 本文基于 Android 9 （SDK 28）代码
 
-### 1.系统的启动流程 
-
-先简单的了解下 Android 系统的启动流程
-
->加载BootLoader --> 初始化内核 --> 启动init进程 --> init进程fork出Zygote进程 --> Zygote进程fork出SystemServer进程
-
-- 系统中的所有进程都是由 Zygote 进程 fork 出来的
-- SystemServer 进程是系统进程，很多系统服务，例如 AMS、PMS、WMS 都是在该进程被创建后启动
-
-### 2.前提知识点
+## 前提知识点
 先大概讲几个知识点和相关类的概念
 
 - AMS(ActivityManagerServices)：是一个服务端进程，负责管理所有的 Activity 的生命周期，AMS 通过 Binder与Activity 通信，而 AMS 与 Zygote 之间是通过 Socket 通信
