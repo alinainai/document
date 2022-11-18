@@ -86,16 +86,17 @@ class Point {
 ### 3、const构造函数必须用于成员变量都是final的类
 如下代码中成员变量x为非final，会报Can't define a const constructor for a class with non-final fields.错误
 
+```dart
 class Point {
   int x;
   final int y;
   const Point(this.x, this.y);
 }
+```
  
-
 ### 4、构建常量实例必须使用定义的常量构造函数
 如下代码，定义一个const对象，但是调用的却是非常量构造函数，会报The constructor being called isn't a const constructor.错误
-
+```dart
 void main() {
   var point = const Point(1, 2); // 报错
   print(point.toString());
@@ -110,11 +111,12 @@ class Point {
     return 'Point(${x}, ${y})';
   }
 }
+```
  
 
 ### 5.如果实例化时不加const修饰符，即使调用的是常量构造函数，实例化的对象也不是常量实例
 如下代码，用常量构造函数构造一个对象，但是未用const修饰，那么该对象就不是const常量，其值可以再改变
-
+```dart
 void main() {
   var point = Point(1, 2); // 调用常量构造函数，但是未定义成常量
   print(point.toString());
@@ -131,3 +133,4 @@ class Point {
     return 'Point(${x}, ${y})';
   }
 }
+```
