@@ -2,7 +2,8 @@
 
 `BaseDexClassLoader` 有两个子类：`PathClassLoader` 和 `DexClassLoader`，就是我们这篇文档要讲的 `Android` 中的类加载器。
  
-<img width="521" alt="image" src="https://user-images.githubusercontent.com/17560388/202835200-6a046d63-b71a-4148-bad9-6aff3c070b3b.png">
+<img width="614" alt="image" src="https://user-images.githubusercontent.com/17560388/202845286-dfed484c-bed5-453d-b71a-bb11632bd421.png">
+
 
 ## 一、PathClassLoader
 
@@ -139,7 +140,7 @@ public class BaseDexClassLoader extends ClassLoader {
 DexPathList 内部有一个 Element 数组，Element 是 DexPathList 的一个内部类，Element 类中有一个 DexFile 的全局变量，DexFile 就是我们的 .dex 文件。  
 
 DexPathList 类的构造中通过 DexPathList#makeDexElements 方法生成 Element 数组， DexPathList#findClass 方法内部遍历 Element 数组，通过 DexFile#loadClassBinaryName 去加载类。
-loadClassBinaryName 是一个 Native 方法，在上篇文档中我们分析过 Dex 文件的结构，该方法通过解析 Dex 文件去加载对应的类。
+loadClassBinaryName 封装了一个 Native 方法，在上篇文档中我们分析过 Dex 文件的结构，该方法通过解析 Dex 文件去加载对应的类。
 
 ```java
 final class DexPathList {
@@ -227,7 +228,19 @@ final class DexPathList {
         ...
     }
 }
+```
 
+## 五、总结
+
+通过上面的分析我们大概了解 Android ClassLoader 的大概流程。
+
+1、PathClassLoader/DexClassLoader 加载的工作都在 BaseDexClassLoader 中进行。  
+2、BaseDexClassLoader 的 findClass 方法继续调用 DexPathList 的 findClass 方法，DexPathList 内部有一个 Element 数组，Element 中有 DexFile 文件。  
+3、DexPathList 的 findClass 内部遍历 Element 数组，通过 DexFile#loadClassBinaryName 去查找类。
+
+```java
+PathClassLoader/DexClassLoader -> BaseDexClassLoader#findClass(name) -> DexPathList#findClass(name) -> DexFile#loadClassBinaryName 
+```
 
 ## 参考
 - [深入理解Android ClassLoader](https://zhuanlan.zhihu.com/p/136083521)
