@@ -91,41 +91,28 @@ SystemClassLoader.class = dalvik.system.PathClassLoader[DexPathList[[directory "
 
 ## 四、BaseDexClassLoader 源码
 
-PathClassLoader 和 DexClassLoader 只是简单做了下构造的处理，所有的加载逻辑都在 BaseDexClassLoader 中。
+PathClassLoader 和 DexClassLoader 只是简单做了下构造的处理，所有的加载逻辑都在 [BaseDexClassLoader](https://android.googlesource.com/platform/libcore/+/master/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java) 中。
+在 BaseDexClassLoader 的构造方法中会生成一个 DexPathList 对象，在 BaseDexClassLoader#findClass 内部继续调用 DexPathList 的 findClass 方法查找类。
 
 ```java
 public class BaseDexClassLoader extends ClassLoader {
 
     @UnsupportedAppUsage
     private final DexPathList pathList;
-
     protected final ClassLoader[] sharedLibraryLoaders;
 
-    protected final ClassLoader[] sharedLibraryLoadersAfter;
-
-    public BaseDexClassLoader(String dexPath,
-            String librarySearchPath, ClassLoader parent, ClassLoader[] sharedLibraryLoaders,
-            ClassLoader[] sharedLibraryLoadersAfter,
-            boolean isTrusted) {
+    public BaseDexClassLoader(String dexPath, String librarySearchPath, ClassLoader parent, ClassLoader[] sharedLibraryLoaders,
+            ClassLoader[] sharedLibraryLoadersAfter, boolean isTrusted) {
         super(parent);
-        // Setup shared libraries before creating the path list. ART relies on the class loader
-        // hierarchy being finalized before loading dex files.
-        this.sharedLibraryLoaders = sharedLibraryLoaders == null
-                ? null
-                : Arrays.copyOf(sharedLibraryLoaders, sharedLibraryLoaders.length);
+        this.sharedLibraryLoaders = sharedLibraryLoaders == null ? null: Arrays.copyOf(sharedLibraryLoaders, sharedLibraryLoaders.length);
+        // 核心代码：生成一个 DexPathList     
         this.pathList = new DexPathList(this, dexPath, librarySearchPath, null, isTrusted);
-        this.sharedLibraryLoadersAfter = sharedLibraryLoadersAfter == null
-                ? null
-                : Arrays.copyOf(sharedLibraryLoadersAfter, sharedLibraryLoadersAfter.length);
-        // Run background verification after having set 'pathList'.
-        this.pathList.maybeRunBackgroundVerification(this);
-        reportClassLoaderChain();
+        ...
     }
-
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
-        // First, check whether the class is present in our shared libraries.
+        // First, check whether the class is present in our shared libraries. 首先检查 sharedLibraryLoaders 中是否能加载 name 对应的类
         if (sharedLibraryLoaders != null) {
             for (ClassLoader loader : sharedLibraryLoaders) {
                 try {
@@ -134,106 +121,113 @@ public class BaseDexClassLoader extends ClassLoader {
                 }
             }
         }
-        // Check whether the class in question is present in the dexPath that
-        // this classloader operates on.
-        List<Throwable> suppressedExceptions = new ArrayList<Throwable>();
+        ...
+        // 核心代码：findClass 方法内部继续调用 DexPathList.findClass 方法
         Class c = pathList.findClass(name, suppressedExceptions);
         if (c != null) {
             return c;
         }
-        // Now, check whether the class is present in the "after" shared libraries.
-        if (sharedLibraryLoadersAfter != null) {
-            for (ClassLoader loader : sharedLibraryLoadersAfter) {
-                try {
-                    return loader.loadClass(name);
-                } catch (ClassNotFoundException ignored) {
-                }
-            }
-        }
-        if (c == null) {
-            ClassNotFoundException cnfe = new ClassNotFoundException(
-                    "Didn't find class \"" + name + "\" on path: " + pathList);
-            for (Throwable t : suppressedExceptions) {
-                cnfe.addSuppressed(t);
-            }
-            throw cnfe;
-        }
-        return c;
-    }
-   
-
-    @Override
-    protected URL findResource(String name) {
-        if (sharedLibraryLoaders != null) {
-            for (ClassLoader loader : sharedLibraryLoaders) {
-                URL url = loader.getResource(name);
-                if (url != null) {
-                    return url;
-                }
-            }
-        }
-        URL url = pathList.findResource(name);
-        if (url != null) {
-            return url;
-        }
-        if (sharedLibraryLoadersAfter != null) {
-            for (ClassLoader loader : sharedLibraryLoadersAfter) {
-                URL url2 = loader.getResource(name);
-                if (url2 != null) {
-                    return url2;
-                }
-            }
-        }
-        return null;
-    }
-    @Override
-    protected Enumeration<URL> findResources(String name) {
-        Enumeration<URL> myResources = pathList.findResources(name);
-        if (sharedLibraryLoaders == null && sharedLibraryLoadersAfter == null) {
-          return myResources;
-        }
-        int sharedLibraryLoadersCount =
-                (sharedLibraryLoaders != null) ? sharedLibraryLoaders.length : 0;
-        int sharedLibraryLoadersAfterCount =
-                (sharedLibraryLoadersAfter != null) ? sharedLibraryLoadersAfter.length : 0;
-        Enumeration<URL>[] tmp =
-                (Enumeration<URL>[]) new Enumeration<?>[sharedLibraryLoadersCount +
-                        sharedLibraryLoadersAfterCount
-                        + 1];
-        // First add sharedLibrary resources.
-        // This will add duplicate resources if a shared library is loaded twice, but that's ok
-        // as we don't guarantee uniqueness.
-        int i = 0;
-        for (; i < sharedLibraryLoadersCount; i++) {
-            try {
-                tmp[i] = sharedLibraryLoaders[i].getResources(name);
-            } catch (IOException e) {
-                // Ignore.
-            }
-        }
-        // Then add resource from this dex path.
-        tmp[i++] = myResources;
-        // Finally add resources from shared libraries that are to be loaded after.
-        for (int j = 0; j < sharedLibraryLoadersAfterCount; i++, j++) {
-            try {
-                tmp[i] = sharedLibraryLoadersAfter[j].getResources(name);
-            } catch (IOException e) {
-                // Ignore.
-            }
-        }
-        return new CompoundEnumeration<>(tmp);
-    }
-    @Override
-    public String findLibrary(String name) {
-        return pathList.findLibrary(name);
+        ...
     }
 
     @Override public String toString() {
         return getClass().getName() + "[" + pathList + "]";
     }
-
 }
 ```
+我们继续看下 [DexPathList](https://android.googlesource.com/platform/libcore-snapshot/+/refs/heads/ics-mr1/dalvik/src/main/java/dalvik/system/DexPathList.java)源码。  
+DexPathList 内部有一个 Element 数组，Element 是 DexPathList 的一个内部类，Element 类中有一个 DexFile 的全局变量，DexFile 就是我们的 .dex 文件。  
+
+DexPathList 类的构造中通过 DexPathList#makeDexElements 方法生成 Element 数组， DexPathList#findClass 方法内部遍历 Element 数组，通过 DexFile#loadClassBinaryName 去加载类。
+loadClassBinaryName 是一个 Native 方法，在上篇文档中我们分析过 Dex 文件的结构，该方法通过解析 Dex 文件去加载对应的类。
+
+```java
+final class DexPathList {
+    private static final String DEX_SUFFIX = ".dex";
+
+    private final ClassLoader definingContext;
+    /** list of dex/resource (class path) elements */
+    private final Element[] dexElements;
+    /** list of native library directory elements */
+    private final File[] nativeLibraryDirectories;
+  
+    public DexPathList(ClassLoader definingContext, String dexPath,
+            String libraryPath, File optimizedDirectory) {
+        ...
+        if (optimizedDirectory != null) {
+            ...
+        }
+        this.definingContext = definingContext;
+        this.dexElements =  makeDexElements(splitDexPath(dexPath), optimizedDirectory);
+        this.nativeLibraryDirectories = splitLibraryPath(libraryPath);
+    }
+  
+    /**
+     * Makes an array of dex/resource path elements, one per element of the given array.
+     */
+    private static Element[] makeDexElements(ArrayList<File> files, File optimizedDirectory) {
+        ArrayList<Element> elements = new ArrayList<Element>();
+        for (File file : files) {
+            ZipFile zip = null;
+            DexFile dex = null;
+            String name = file.getName();
+            if (name.endsWith(DEX_SUFFIX)) { // 是否是 .dex 文件
+                try {
+                    dex = loadDexFile(file, optimizedDirectory); //生成一个 DexFile
+                } catch (IOException ex) {
+                    System.logE("Unable to load dex file: " + file, ex);
+                }
+            } else if (name.endsWith(APK_SUFFIX) || name.endsWith(JAR_SUFFIX)  || name.endsWith(ZIP_SUFFIX)) { // apk/jar/zip 格式的文件
+                try {
+                    zip = new ZipFile(file);
+                } catch (IOException ex) {
+                    System.logE("Unable to open zip file: " + file, ex);
+                }
+                try {
+                    dex = loadDexFile(file, optimizedDirectory);
+                } catch (IOException ignored) {
+                }
+            } else {
+                System.logW("Unknown file type for: " + file);
+            }
+            if ((zip != null) || (dex != null)) {
+                elements.add(new Element(file, zip, dex));
+            }
+        }
+        return elements.toArray(new Element[elements.size()]);
+    }
+
+    private static DexFile loadDexFile(File file, File optimizedDirectory)
+            throws IOException {
+        if (optimizedDirectory == null) { // 
+            return new DexFile(file);
+        } else {
+            String optimizedPath = optimizedPathFor(file, optimizedDirectory);
+            return DexFile.loadDex(file.getPath(), optimizedPath, 0);
+        }
+    }
+
+    public Class findClass(String name) {
+        for (Element element : dexElements) {
+            DexFile dex = element.dexFile;
+            if (dex != null) {
+                Class clazz = dex.loadClassBinaryName(name, definingContext); // loadClassBinaryName 是一个 native 方法
+                if (clazz != null) {
+                    return clazz;
+                }
+            }
+        }
+        return null;
+    }
+  
+    /*package*/ static class Element {
+        public final File file;
+        public final ZipFile zipFile;
+        public final DexFile dexFile;
+        ...
+    }
+}
+
 
 ## 参考
 - [深入理解Android ClassLoader](https://zhuanlan.zhihu.com/p/136083521)
