@@ -426,6 +426,14 @@ OE OO : return-void
 ```
 这就是 `main()` 方法的完整指令了。
 
+## 三、其他文件结
+
+dex: Dalvik 的可执行文件，Class 文件经过优化后得到的  
+odex: optimized dex，经过优化后的 dex，后缀名还是 `.dex` 文件  
+oat: optimized android file type，ART 虚拟机在 APK 安装后直接将 dex 转换为机器码。（AOT编译方式，Ahead of Time）  
+
+
+
 ## 参考 
 - [Android逆向笔记 —— DEX 文件格式解析](https://juejin.cn/post/6844903847647772686)
 - [一篇文章带你搞懂DEX文件的结构](https://blog.csdn.net/sinat_18268881/article/details/55832757)
