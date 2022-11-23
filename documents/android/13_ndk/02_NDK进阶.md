@@ -85,8 +85,7 @@ ExceptionClear： 清除当前环境的异常。
 ```
 
 ```c++
-jni.h
-
+#jni.h
 struct JNINativeInterface {
     // 抛出异常
     jint        (*ThrowNew)(JNIEnv *, jclass, const char *);
@@ -108,7 +107,7 @@ Java_com_egas_demo_JniDemoClass_exceptingDemo
     jfieldID mFieldId = env->GetFieldID(clz, "strField1", "Ljava/lang/String;"); // 由于没有 strField1 这个属性，此处会向 Java 抛出一个 NoSuchFieldError 异常 
     if(env->ExceptionOccurred()){ // 1、通过 ExceptionOccurred 方法判断是否发生异常
         env->ExceptionDescribe(); // 2、打印异常信息
-        env->ExceptionClear(); // 3、清楚异常
+        env->ExceptionClear(); // 3、清除异常
         jclass newExcCls;
         newExcCls = env->FindClass("java/lang/RuntimeException");
         if (newExcCls == nullptr) {
@@ -232,19 +231,18 @@ int main(void) {
 }
 ```
 
-## 四、动态注册
+## 四、动态注册Jni方法
 
-在我们第一篇NDK的文章中我们使用的是静态方式注册 jni 方法，方法名和类名绑定，不太好修改。
-
-我们可通过动态注册的方法来规避这种缺点。
+第一篇 NDK 的文章中我们使用的 Jni 方法都是静态注册的，方法名和类名绑定，还有一种动态注册的方式。
 
 ### 1、原理
+
 在 Java 层调用 System.loadLibrary() 时，虚拟机会调用 jni 库中的JNI_OnLoad() 方法
 ```c++
 jint JNI_OnLoad(JavaVM* vm, void* reserved);
 ```
 
-返回值表示动态库需要的jni版本，如，JNI_VERSION_1_1, JNI_VERSION_1_2, JNI_VERSION_1_4, JNI_VERSION_1_6，如果动态库没有提供 JNI_OnLoad()函数会默认使用 JNI_VERSION_1_1 版本。
+返回值表示动态库需要的 jni 版本，如，JNI_VERSION_1_1, JNI_VERSION_1_2, JNI_VERSION_1_4, JNI_VERSION_1_6，如果动态库没有提供 JNI_OnLoad()函数会默认使用 JNI_VERSION_1_1 版本。
 
 JNI_OnLoad() 用来做一些初始化操作，我们可以在该方法中调用 JNIEnv 的 RegisterNatives() 来动态注册方法
 
@@ -263,9 +261,8 @@ typedef struct {
     void*       fnPtr; // 是一个函数指针，指向jni层的一个函数，也就是 java 层和 native 层建立联系的函数
 } JNINativeMethod;
 ```
-下面我们通过一个例子看下具体的用法
 
-### 2、代码
+### 2、代码实现
 
 ```c++
 // 需要注册的 Java 层类名
@@ -317,7 +314,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
     return result;
 }
 ```
-代码很简单，
 
 ## 参考
 
