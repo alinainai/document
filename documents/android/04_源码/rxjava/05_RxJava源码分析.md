@@ -1,7 +1,7 @@
 
 本文RxJava源码版本为2.1.13，RxAndroid版本为2.0.2。
 
-## 1. 基本订阅流程
+## 一、基本订阅流程
 
 在正文开始前首先我们要明确下面一点:
 
@@ -14,29 +14,23 @@ Observable.subscribe(Observer)
 下面我们以`Observable.create`操作符为例来分析一下源码
 
 ```kotlin
-//1、调用 Observable#create(ObservableOnSubscribe) 方法创建一个 Observable 对象 
+// 1、调用 Observable#create(ObservableOnSubscribe) 方法创建一个 Observable 对象 
 Observable.create(ObservableOnSubscribe<String> { emitter ->
         emitter.onNext("1")
         emitter.onNext("2")
         emitter.onComplete()
     }
-}).map{//2、把String 转换成 Int
+}).map{// 2、把String 转换成 Int
     it.toInt()
-}.subscribe(object : Observer<Int> {//3、建立订阅关系
+  // 3、建立订阅关系
+}.subscribe(object : Observer<Int> { 
     override fun onSubscribe(d: Disposable) {
-        System.out.print("onSubscribe\n")
     }
-
     override fun onNext(t: Int) {
-        System.out.print("onNext $t\n")
     }
-    
     override fun onComplete() {
-        System.out.print("onComplete\n")
     }
-
     override fun onError(e: Throwable) {
-        System.out.print("onError\n")
     }
 })
 ```
@@ -48,21 +42,15 @@ Observable.create(ObservableOnSubscribe<String> { emitter ->
 - 3.调用 `subscribe()` 和观察者建立订阅关系
 
 跟踪源码之前我们先简单的介绍几个主要的类
-
-- `ObservableSource` : 一个接口，定了`subscribe(Observer)`方法，调用该方法会建立`Observable`和`Observer`的订阅关系 
-
-- `Observable` : 被观察者，发送被`Observer`观察的数据流。`Observable`实现了`ObservableSource`接口，并重载`subscribe(Observer)`方法，在`subscribe(Observer)`方法内部会调换用自身的`subscribeActual`方法。该方法是一个抽象方法，由`Observable`的子类实现。
-
+- `ObservableSource` : 一个接口，定义了`subscribe(Observer)`方法，该方法用来建立 `Observable` 和 `Observer` 的订阅关系 
+- `Observable` : 被观察者，用来发送数据流。该类实现了`ObservableSource`接口，在`subscribe(Observer)`方法内部会调换用 `Observable#subscribeActual`方法。该方法是一个抽象方法，由`Observable`的子类实现。
 - `Observer` : 数据的观察者，定义了`onSubscribe(Dispose)`、 `onNext(T t)`、`onComplete()`、`onError(Excception)`方法。
-
 - `ObservableOnSubscribe` : 接口类型，它内部只有一个 `void subscribe(@NonNull ObservableEmitter<T> emitter)` 方法。`subscribe`方法会传入一个`ObservableEmitter`对象
-
-- `Emitter` : 定义了发射数据的方法`onNext(T t)`、`onComplete()`、`onError(Excception)`，只在`create`等操作符中才会出现。
-
+- `Emitter` : 定义了发射数据的方法`onNext(T t)`、`onComplete()`、`onError(Excception)`，只在 `create` 等操作符中才会出现。
 - `ObservableEmitter` : `Emitter` 的子类，也是一个接口。相比于`Emitter`拓展了`Disposable`的能力
 
 
-### 1.1 先看下 1）处 Observable.create(ObservableOnSubscribe) 的方法：
+### 1.1 先看下 Observable#create(ObservableOnSubscribe) 方法：
 
 `create` 是 `Observable` 的静态方法。该方法传入一个`ObservableOnSubscribe`参数，然后返回一个`Observable`对象。代码如下
 
@@ -72,7 +60,7 @@ Observable.create(ObservableOnSubscribe<String> { emitter ->
 public static <T> Observable<T> create(ObservableOnSubscribe<T> source) {
     // 检查入参source是否为null
     ObjectHelper.requireNonNull(source, "source is null");
-    // 1️⃣ 尝试使用RxJavaPlugins.onObservableAssembly这个方法进行转换
+    // 1️⃣ 尝试使用 RxJavaPlugins.onObservableAssembly 这个方法进行转换
     return RxJavaPlugins.onAssembly(new ObservableCreate<T>(source));
 }
 ```
@@ -168,7 +156,7 @@ public final class ObservableCreate<T> extends Observable<T> {
 ObservableCreate<String>(source).map(function).subscribe(resultObserver)
 ```
 
-### 1.3 下面看一下map操作符
+### 1.3 map 操作符
 
 ```java
 @CheckReturnValue
@@ -178,30 +166,26 @@ public final <R> Observable<R> map(Function<? super T, ? extends R> mapper) {
     return RxJavaPlugins.onAssembly(new ObservableMap<T, R>(this, mapper));
 }
 ```
-这段代码与create操作符类似，这里直接返回了一个ObservableMap。
-
-所以，开头的例子中最后的链式调用部分再次展开为：
-
+这段代码与create操作符类似，这里直接返回了一个ObservableMap。所以，开头的例子中最后的链式调用部分再次展开为：
 ```java
 ObservableMap<String, Int>(
     ObservableCreate<String>(source),
     function
 ).subscribe(resultObserver)
 ```
-在上面，我们已经创建好了两个`Observable`，一个原始的创建数据的`ObservableCreate`以及一个用于转换的`ObservableMap`。
+在上面，我们已经创建好了两个 `Observable` ，一个原始的创建数据的 `ObservableCreate` 以及一个用于转换的 `ObservableMap` 。
 
-### 1.4 示例程序的`subscribe`操作
+### 1.4 Observable#subscribe 方法
 
-接下来，我们回到示例程序的`subscribe`操作中，我们知道`subscribe`是`ObservableSource`接口的方法，该方法在抽象类`Observable`中进行了重写，在重写方法中交给了抽象方法`subscribeActual`来实现，我们看看这部分代码：`Observable#subscribe(Observer)`
+`subscribe` 是 `ObservableSource` 接口的方法，该方法在`Observable`中进行了重写，在 subscribe 方法内部继续调用 `Observable#subscribeActual`，代码如下：`Observable#subscribe(Observer)`
 
 ```java
 @SchedulerSupport(SchedulerSupport.NONE)
 @Override
 public final void subscribe(Observer<? super T> observer) {
-    // 检查入参observer是否为空
-    ObjectHelper.requireNonNull(observer, "observer is null");
+    ObjectHelper.requireNonNull(observer, "observer is null"); // 检查入参 observer 是否为空
     try {
-        //默认情况下返回入参参数observer
+        // 默认情况下返回入参参数observer
         observer = RxJavaPlugins.onSubscribe(this, observer);
         // 检查转换后的observer是否为空
         ObjectHelper.requireNonNull(observer, "Plugin returned null Observer");
@@ -210,19 +194,12 @@ public final void subscribe(Observer<? super T> observer) {
     } catch (NullPointerException e) { // NOPMD
         throw e;
     } catch (Throwable e) {
-        Exceptions.throwIfFatal(e);
-        // can't call onError because no way to know if a Disposable has been set or not
-        // can't call onSubscribe because the call might have set a Subscription already
-        RxJavaPlugins.onError(e);
-
-        NullPointerException npe = new NullPointerException("Actually not, but can't throw other exceptions due to RS");
-        npe.initCause(e);
-        throw npe;
+        //...
     }
 }
 ```
 
-由于先执行的是最近的`Observable`也就是`ObservableMap`，我们先看看其`subscribeActual`方法：
+由于先执行l的是最近的 `Observable` 也就是`ObservableMap`，我们先看下 `ObservableMap#subscribeActual` 方法：
 
 ```java
 public final class ObservableMap<T, U> extends AbstractObservableWithUpstream<T, U> {
@@ -257,7 +234,7 @@ public final class ObservableMap<T, U> extends AbstractObservableWithUpstream<T,
 
 <img width="700" alt="以create为例，相关类的UML图" src="https://user-images.githubusercontent.com/17560388/177450216-091c09fe-2b56-4cb5-b039-abab98fdc02e.png">
 
-## 2. 线程切换
+## 二、线程切换
 
 本节以下面的示例为例，和上边的例子相比，增加了`subscribeOn`和`observeOn`操作符
 
@@ -296,9 +273,9 @@ E/TAG: onNext(): main
 E/TAG: onComplete(): main
 ```
 注意: 
-- `onSubscribe`发生在当前线程，与`subscribeO`n和`observeOn`无关；
-- `subscribeOn`决定了最上游数据产生的线程；
-- `observeOn`决定了下游的订阅发生的线程。
+- `onSubscribe` 发生在当前线程，与 `subscribeOn` 和 `observeOn` 无关；
+- `subscribeOn` 决定了最上游数据产生的线程；
+- `observeOn` 决定了下游的订阅发生的线程。
 
 ### 2.1 observeOn
 
@@ -337,7 +314,7 @@ protected void subscribeActual(Observer<? super T> observer) {
     } else {
         Scheduler.Worker w = scheduler.createWorker();
         // 将Scheduler创建的Worker传入了ObserveOnObserver
-        // 这里直接调用了上游的subscribe方法，因此observeOn操作也不会影响上游线程执行环境
+        // 这里直接调用了上游的 subscribe 方法，因此 observeOn 操作也不会影响上游线程执行环境
         source.subscribe(new ObserveOnObserver<T>(observer, w, delayError, bufferSize));
     }
 }
@@ -394,9 +371,9 @@ void schedule() {
 
 ### 2.1.1 RxAndroid
 
-RxAndroid 库总共就4个文件，其中两个文件比较重要：HandlerScheduler以及封装了该类的`AndroidSchedulers`。
+RxAndroid 库总共就4个文件，其中两个文件比较重要：HandlerScheduler 以及封装了该类的`AndroidSchedulers`。
 
-AndroidSchedulers提供了两个公有静态方法来切换线程：
+AndroidSchedulers 提供了两个公有静态方法来切换线程：
 
 - mainThread()指定主线程;
 - from(Looper looper)指定别的线程。
@@ -435,11 +412,11 @@ public final class AndroidSchedulers {
     }
 }
 ```
-再说说另外一个关键文件`HandlerScheduler`，该类的作用就是将`Runnable`使用指定的`Handler`来执行。
+再说说另外一个关键文件 `HandlerScheduler`，该类的作用就是将 `Runnable` 使用指定的 `Handler` 来执行。
 
 该类的两个公共方法：
 - `scheduleDirect`方法直接执行`Runnable`；
-- 或者通过`createWorker()`创建一个`HandlerWorker`对象，稍后通过该对象的`schedule`方法执行`Runnable`。
+- 或者通过`createWorker()`创建一个 `HandlerWorker` 对象，稍后通过该对象的 `schedule` 方法执行`Runnable`。
 
 
 现在回到`ObserveOnObserver.schedule`方法中，这里调用了`worker.schedule(this)`方法。这里已经通过`HandlerScheduler`回到主线程了。
