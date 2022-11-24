@@ -18,7 +18,7 @@ public class Solution14 {
     public ListNode FindKthToTail(ListNode head,int k) {
 
         if(head==null||k<=0){
-            return null;
+            return head;
         }
         ListNode p=head,q;
 

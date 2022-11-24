@@ -4,7 +4,14 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="141dacaf-1a74-4a21-9754-766525f0469a" name="Default Changelist" comment="" />
+    <list default="true" id="141dacaf-1a74-4a21-9754-766525f0469a" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/算法/01_二维数组中的查找.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/算法/动态规划.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/算法/回溯法解题步骤.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/配置和指令/03_Android在mac上投屏.md" beforeDir="false" afterPath="$PROJECT_DIR$/documents/配置和指令/03_Android在mac上投屏.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/jianzhioffer/Solution14.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/jianzhioffer/Solution14.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -12,6 +19,7 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
   <component name="ProjectId" id="21Axjz2D1Br13mbwCfLTRf6szLS" />
   <component name="ProjectViewState">
@@ -20,6 +28,8 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="RunOnceActivity.cidr.known.project.marker" value="true" />
+    <property name="cidr.known.project.marker" value="true" />
     <property name="dart.analysis.tool.window.visible" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="show.migrate.to.gradle.popup" value="false" />

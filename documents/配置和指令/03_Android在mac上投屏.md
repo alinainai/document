@@ -4,7 +4,7 @@
 
 ## 二、安装流程
 
-我们使用的是 MacOS系统，可以直接在 'scrcpy' 官网上查看 MacOS 的安装方式。
+我们使用的是 MacOS 系统，可以直接在 'scrcpy' 官网上查看 MacOS 的安装方式。
 
 官方地址：[Genymobile/scrcpy#macos](https://github.com/Genymobile/scrcpy#macos)（可能需要翻墙）
 
