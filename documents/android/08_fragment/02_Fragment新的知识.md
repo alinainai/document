@@ -84,7 +84,7 @@ FragmentFactory 也存在着局限性：
 
 由于需要考虑 Fragment 恢复重建的场景，因此我们在 super.onCreate 之前就需要先初始化 supportFragmentManager.fragmentFactory，这样 Activity 在恢复重建的时候才能根据已有参数来重新实例化 Fragment，这就要求我们必须在一开始的时候就确定 FragmentFactory 的构造参数，也即 Fragment 的构造参数，而这在日常开发中并非总是能够做到的，因为 Fragment 的构造参数可能是需要动态生成的
 
-## 四、人性化的通讯方式 Fragment Result API
+## 四、新的通讯方式
 
 使用 FragmentResult 进行数据通信不需要持有任何 Fragment 或者 Activity 的引用，仅需要使用 FragmentManager 就可以实现
 
