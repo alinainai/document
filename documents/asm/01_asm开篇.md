@@ -31,6 +31,8 @@ ASM库提供了两个用于生成和转换已编译类的API，
 - `ClassVisitor`: ClassReader 解析 class 文件过程中，解析到某个结构就会通知到 ClassVisitor 内部的相应方法；
 - `ClassWriter`: 将修改后的 class 文件通过文件流的方式覆盖掉原来的 class 文件，从而实现 class 修改；
 
+### 2、原理
+
 
 
 ## 四、ASM 应用
