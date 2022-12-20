@@ -4,13 +4,12 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="141dacaf-1a74-4a21-9754-766525f0469a" name="Default Changelist" comment="">
+    <list default="true" id="141dacaf-1a74-4a21-9754-766525f0469a" name="Default Changelist" comment="feat: 整理算法文件夹">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/documents/算法/01_二维数组中的查找.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/documents/算法/动态规划.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/documents/算法/回溯法解题步骤.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/documents/配置和指令/03_Android在mac上投屏.md" beforeDir="false" afterPath="$PROJECT_DIR$/documents/配置和指令/03_Android在mac上投屏.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/jianzhioffer/Solution14.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/jianzhioffer/Solution14.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/android/07_framwork/02_1_Apk编译阶段.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/android/07_framwork/02_2_Apk安装阶段.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/documents/android/08_fragment/03_Fragment的生命周期.md" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,6 +42,18 @@
       <option name="presentableId" value="Default" />
       <updated>1637397831616</updated>
     </task>
+    <task id="LOCAL-00001" summary="feat: 整理算法文件夹">
+      <created>1669281496711</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1669281496711</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="feat: 整理算法文件夹" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: 整理算法文件夹" />
   </component>
 </project>
