@@ -32,13 +32,16 @@ public class Fragment implements ComponentCallbacks, View.OnCreateContextMenuLis
 }
 ```
 
+使用方式：
+
 ```kotlin
-class PlaceholderFragment : Fragment(R.layout.fragment_placeholder)
+class MyFragment : Fragment(R.layout.fragment_placeholder)
 ```
 
 ## 二、新的 FragmentContainerView 
 
 使用新控件 `FragmentContainerView` 添加 `Fragment`
+
 
 ## 三、使用 FragmentFactory 实例化 Fragment
 
