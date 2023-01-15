@@ -1,4 +1,4 @@
-## 1. 在 Manifest 设置启动模式
+## 一、Manifest 设置启动模式
 
 ### 1.1 standard 默认的启动模式
 
@@ -38,24 +38,41 @@
 
 应用场景：`来电界面、Launcher页面`
 
-## 2. 通过 flag 配置启动模式 
+## 二、intent flag 设置启动模式 
 
-1.通过 `flag` 方式设置启动模式优先级要高于 `Manifest` 中配置。
-
-2.无法通过设置 `flag` 设置 `singleInstance` 模式。
-
+1.通过 `flag` 方式设置启动模式优先级要高于 `Manifest` 中配置。  
+2.无法通过设置 `flag` 设置 `singleInstance` 模式。  
 3.FLAG_ACTIVITY_NEW_TASK : 
 
 - 如果 `taskAffinity` 一样则与标准模式一样新启动一个 `Activity`；
 - 如果不一样则新建一个 `task` 放该 `Activity`。
 
-4.FLAG_ACTIVITY_SINGLE_TOP : 与 SingleTop 效果一致。
+4.FLAG_ACTIVITY_SINGLE_TOP : 与 SingleTop 效果一致。  
+5.FLAG_ACTIVITY_CLEAR_TOP : 销毁目标 Activity 和它之上的所有 Activity，重新创建目标 Activity。配合 FLAG_ACTIVITY_SINGLE_TOP 使用时可以实现 SingleTask 的效果。
 
-5.FLAG_ACTIVITY_CLEAR_TOP : 销毁目标 Activity 和它之上的所有 Activity，重新创建目标 Activity，配合 FLAG_ACTIVITY_SINGLE_TOP 使用时可以实现 SingleTask 的效果。
+例子：
 
-## 3. 设置 taskAffinity
+A、B、C、D 四个 Activity，启动模式均为默认，依次启动，然后在 D 中启动 B。
 
-启动模式为 singleTask 或 singleInstance 才能生效。
+1、使用 FLAG_ACTIVITY_CLEAR_TOP 启动 
+```java
+Intent intent = new Intent(this,B.class);
+intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+d.startActivity(intent);
+```
+效果: C、D 清除出栈；B被 finish 掉，重新启动，重走生命周期，不会走 onNewIntent() 方法
+
+2、使用 Intent.FLAG_ACTIVITY_CLEAR_TOP 和 Intent.FLAG_ACTIVITY_SINGLE_TOP 启动 
+```java
+Intent intent = new Intent(this,B.class);
+intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+d.startActivity(intent);
+```
+效果：C、D清除出栈，B调用 onNewIntent() 方法
+
+## 三、设置 taskAffinity
+
+taskAffinity只有在启动模式为 singleTask 或 singleInstance 才能生效。
 
 ```html
 android:taskAffinity="task.name" //值为字符串，必须包含 "."
