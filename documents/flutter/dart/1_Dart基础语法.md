@@ -1,14 +1,12 @@
 Dart 在静态语法方面和 Java 非常相似，如类型定义、函数声明、泛型等，而在动态特性方面又和 JavaScript 很像，如函数式特性、异步支持等。
-除了融合 Java 和 JavaScript 语言之所长之外，Dart 也具有一些其他很有表现力的语法，如可选命名参数、..（级联运算符）和?.（条件成员访问运算符）以及??（判空赋值运算符）。
+除了融合 Java 和 JavaScript 语言之所长之外，Dart 也具有一些其他很有表现力的语法，如`可选命名参数`、`..（级联运算符）`和`?.（条件成员访问运算符`）以及`??（判空赋值运算符）`。
 
 ## 一、基础变量
 
 ### 1、num类型
 
 `int`：整数值，长度不超过64位。  
-
 `double`: 64位双精度。  
-
 `int` 和 `double` 都是 `num` 的子类。
 
 ```dart
@@ -26,17 +24,15 @@ double z = 1;// z = 1.0。注意 Dart 2.1 之前，在浮点数上下文中使�
 `String` 字符串包含了 `UTF-16` 编码的字符序列。创建方式：
 
 ```dart
-var s1 = '单引号\''; // 单引号声明中如果有 "'" 需要使用转义字符 "\"  
+var s1 = '单引号\''; // 注意单引号前面的转义字符
 var s2 = "双引号"; // 双引号声明中不需要使用转义与单引号冲突的字符串
 ```
 
-Dart 也支持字符串插值 `${表达式}`
+Dart 支持字符串插值 `${表达式}`
 
 ```dart
 var s = '字符串插值';
-
-assert('Dart 有$s，使用起来非常方便。' == 'Dart 有字符串插值，使用起来非常方便。');
-assert('使用${s.substring(3,5)}表达式也非常方便' == '使用插值表达式也非常方便。');
+var s = '${s.substring(3,5)}';
 ```
 
 可以使用 `+` 运算符或并列放置多个字符串来连接字符串
@@ -45,10 +41,8 @@ assert('使用${s.substring(3,5)}表达式也非常方便' == '使用插值表�
 var s1 = '可以拼接'
     '字符串'
     "即便它们不在同一行。";
-assert(s1 == '可以拼接字符串即便它们不在同一行。');
-
+    
 var s2 = '使用加号 + 运算符' + '也可以达到相同的效果。';
-assert(s2 == '使用加号 + 运算符也可以达到相同的效果。');
 ```
 
 使用三个单引号或者三个双引号也能创建多行字符串：
@@ -102,17 +96,20 @@ List、set、map是dart中的集合类型，和Java、Kotlin相似
 ```dart
 // List (也被称为 Array)
 var list = [1,2,3];
+list.add(4);
+list.removeAt(0);
+print("list= ${list}");
+
 var list1 = List<String>();
 list1.add("1");
 list1.add("2");
-list.add(4);
-list.removeAt(0);
 print("list1= ${list1}");
-print("list= ${list}");
+
 // Set
 var halogens = {'fluorine', 'chlorine', 'bromine', 'iodine', 'astatine'};
 halogens.add("'fluorine'");
 print("set1= $halogens");
+
 var set = Set<String>();
 set.add("set1");
 set.add("set2");
@@ -189,91 +186,23 @@ fun?.call() // fun 不为空时则会被调用
 
 ## 三、const修饰构造函数
 
-### 1、const修饰构造函数时，该构造函数为常量构造函数
+1、const修饰构造函数时，该构造函数为常量构造函数，常量构造函数有下面几点需求：
 
-- 1.被修饰的类的成员变量必须都是 `final` 类型
+- 1.const构造函数必须用于成员变量都是final的类
 - 2.实例化对象时如果不加 `const` 修饰，那么实例化的对象不是常量实例
-- 3.如果要定义一个 `const`修饰的对象，调用的构造函数必须是常量构造函数
-
-正确的常量构造函数定义
-
-根据以上的总结，定义一个 `Point` 类，包含一个常量构造函数，注意其成员变量都是 `final` 类型，且构造函数用 `const` 修饰
+- 3.构建常量实例必须使用定义的常量构造函数
 
 ```dart
 class Point {
   final int x;
   final int y;
   const Point(this.x, this.y);
-}
-```
-
-### 2、常量构造函数需以 const 关键字修饰
-如下代码定义一个 `const` 对象，但是调用的构造方法不是 `const` 修饰的，则会报 `The constructor being called isn't a const constructor`错误
-```dart
-void main() {
-  const point = Point(1, 2); // 报错
-}
-
-class Point {
-  final int x;
-  final int y;
-  Point(this.x, this.y);
-}
-```
-### 3、const构造函数必须用于成员变量都是final的类
-如下代码中成员变量x为非final，会报Can't define a const constructor for a class with non-final fields.错误
-
-```dart
-class Point {
-  int x;
-  final int y;
-  const Point(this.x, this.y);
-}
-```
-
-### 4、构建常量实例必须使用定义的常量构造函数
-如下代码，定义一个 `const`对象，但是调用的却是非常量构造函数，会报`The constructor being called isn't a const constructor`错误
-```dart
-void main() {
-  var point = const Point(1, 2); // 报错
-  print(point.toString());
-}
- 
-class Point {
-  int x;
-  int y;
-  Point(this.x, this.y); // 非const构造函数
-  String toString() {
-    return 'Point(${x}, ${y})';
-  }
-}
-```
-
-
-### 5、如果实例化时不加const修饰符，即使调用的是常量构造函数，实例化的对象也不是常量实例
-如下代码，用常量构造函数构造一个对象，但是未用const修饰，那么该对象就不是const常量，其值可以再改变
-```dart
-void main() {
-  var point = Point(1, 2); // 调用常量构造函数，但是未定义成常量
-  print(point.toString());
-  point = Point(10, 20); // 可以重新赋值，说明定义的变量为非常量
-  print(point.toString());
-}
- 
-class Point {
-  final int x;
-  final int y;
-  const Point(this.x, this.y);
-  
-  String toString() {
-    return 'Point(${x}, ${y})';
-  }
 }
 ```
 
 ## 四、函数
 
-Dart 作为一个高级语言，函数也是Dart语言的基本公民，函数即可以赋值给变量或者当做参数传递给其他函数。这也是函数式编程的典型特征。
+Dart 作为一个高级语言，函数也是 Dart 的基本公民，函数即可以赋值给变量或者当做参数传递给其他函数。
 
 ### 1、函数声明
 
