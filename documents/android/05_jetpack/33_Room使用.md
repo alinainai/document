@@ -1,5 +1,5 @@
-## 一、简单介绍
-## Migration 操作
+
+## 一、Migration 操作
 ### 1、修改数据库版本号
 ```kotlin
 @Database(entities = {User.class}, version = 2)
@@ -26,7 +26,7 @@ database = Room.databaseBuilder(context.getApplicationContext(),
 ```
 说明：SQLite的ALTER TABLE命令非常局限，只支持重命名表以及添加新的字段。
 
-####4、官方文档
+### 4、官方文档
 https://developer.android.com/training/data-storage/room/migrating-db-versions.html
 
-## 参考
+## 二、简单使用
