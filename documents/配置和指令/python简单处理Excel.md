@@ -1,5 +1,7 @@
 大意的意思是处理 4 个表格中的和 url 对应的数据，并整理到同一个表格。
 
+注意 Excel 的文件格式，xlrd 和 xlwt 只能处理 xls 格式。 
+
 ```python
 import xlrd
 import xlwt
@@ -72,8 +74,6 @@ def readContentFromXls():
             worksheet.write(i,4, str(api_conten_max_dic[str1]))
 
     workbook.save("./learn.xls")
-        
-
 
 def main():
     # 从 xls 中读取值并存储到 map 中
@@ -81,4 +81,16 @@ def main():
     
 if __name__== "__main__" :
     main()
+```
+
+ex: xlwt 不能再原文件写入，可以通过 xlutils 复制一份原文件，再修改其他值也可以。
+
+```python
+import xlrd
+from xlutils.copy import copy
+readbook  = xlrd.open_workbook('sample.xls')
+copybook = copy(readbook)
+writesheet = copybook.get_sheet(0)
+writesheet.write(1,1,'love')
+copybook.save('sample5.xls')
 ```
