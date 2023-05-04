@@ -9,7 +9,7 @@ adb shell dumpsys activity | grep com.xxx.xxx.xx
 ```
 3、查看处于栈顶的activity
 ```shell
-adb shell dumpsys activity | grep mFocusedActivity
+adb shell dumpsys activity activities | grep mResumedActivity
 ```
 4、打印log日志
 ```shell
