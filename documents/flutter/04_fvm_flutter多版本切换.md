@@ -43,6 +43,8 @@ fvm install 1.22.6
 fvm install 3.6.0
 ```
 ### 5、设置 flutter 版本
+查看 flutter release 版本 https://flutter.cn/docs/development/tools/sdk/releases
+
 ```shell
 fvm use 1.22.6
 fvm current # 查看当前版本
@@ -52,5 +54,10 @@ flutter --version #查看flutter版本，借助该指令更新 DART SDK
 打开 `Preferences` → `Languages & Frameworks` → `Flutter` 
 设置 Flutter SDK path选择路径(/opt/fvm/current)
 
+### 7、其他 fvm 指令
 
+fvm releases list
+
+### 8、配置项目相关内容
+https://fvm.app/docs/getting_started/configuration/
 
