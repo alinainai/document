@@ -1,4 +1,4 @@
-## 1、ProGuard 简介
+## 一、ProGuard 简介
 
 Proguard 是一个 Java 类文件压缩器、优化器、混淆器、预校验器。
 
@@ -10,7 +10,7 @@ Proguard 是一个 Java 类文件压缩器、优化器、混淆器、预校验�
 
 <img width="800" alt="类图" src="https://user-images.githubusercontent.com/17560388/174275957-c1cd15f6-b5f5-45c7-a13f-b126232ba876.png">
 
-## 2、ProGuard 原理
+# 二、ProGuard 原理
 
 ProGuard怎么知道这个代码没有被用到呢？
 
@@ -18,18 +18,18 @@ ProGuard怎么知道这个代码没有被用到呢？
 
 那么这个入口点怎么来呢？就是从ProGuard的配置文件来，只要这个配置了，那么就不会被移除。
  
-## 3、如何编写一个ProGuard文件
+# 三、如何编写一个ProGuard文件
 
 有个三步走的过程：
 - 基本混淆
 - 针对APP的量身定制
 - 针对第三方jar包的解决方案
 
-### 3.1 基本混淆
+## 3.1 基本混淆
 
 混淆文件的基本配置信息，任何APP都要使用，可以作为模板使用，具体如下。
 
-1.基本指令
+### 1.基本指令
 
 ```shell
 # 代码混淆压缩比，在0和7之间，默认为5，一般不需要改
@@ -72,7 +72,7 @@ ProGuard怎么知道这个代码没有被用到呢？
 -dontusemixedcaseclassnames，这个是给Microsoft Windows用户的，因为ProGuard假定使用的操作系统是能区分两个只是大小写不同的文件名，但是Microsoft Windows不是这样的操作系统，所以必须为ProGuard指定-dontusemixedcaseclassnames选项
 ```
 
-2.需要保留的东西
+### 2.需要保留的东西
 
 ```groove
 # 保留所有的本地native方法不被混淆
@@ -143,9 +143,9 @@ public static ** valueOf(java.lang.String);
 }
 ```
 
-### 3.2 针对APP的量身定制
+## 3.2 针对APP的量身定制
 
-1.保留实体类和成员被混淆
+### 1.保留实体类和成员被混淆
 
 对于实体，保留它们的set和get方法，对于boolean型get方法，有人喜欢命名isXXX的方式，所以不要遗漏。如下：
 ```groove
@@ -158,7 +158,7 @@ public static ** valueOf(java.lang.String);
 ```
 一种好的做法是把所有实体都放在一个包下进行管理，这样只写一次混淆就够了，避免以后在别的包中新增的实体而忘记保留，代码在混淆后因为找不到相应的实体类而崩溃。
 
-2.内嵌类
+### 2.内嵌类
 
 内嵌类经常会被混淆，结果在调用的时候为空就崩溃了，最好的解决方法就是把这个内嵌类拿出来，单独成为一个类。如果一定要内置，那么这个类就必须在混淆的时候保留，比如如下：
 
@@ -169,7 +169,7 @@ public static ** valueOf(java.lang.String);
 ```
  
 
-3.对WebView的处理
+### 3.对WebView的处理
 
 ```groove
 # 对WebView的处理
@@ -183,7 +183,7 @@ public static ** valueOf(java.lang.String);
 ```
  
 
-4.对JavaScript的处理
+### 4.对JavaScript的处理
 
 ```groove
 # 保留JS方法不被混淆
@@ -194,7 +194,7 @@ public static ** valueOf(java.lang.String);
 其中JSInterface是MainActivity的子类
 
 
-5.处理反射
+### 5.处理反射
 
 在程序中使用SomeClass.class.method这样的静态方法，在ProGuard中是在压缩过程中被保留的，那么对于Class.forName("SomeClass")呢，SomeClass不会被压缩过程中移除，它会检查程序中使用的Class.forName方法，对参数SomeClass法外开恩，不会被移除。但是在混淆过程中，无论是Class.forName("SomeClass")，还是SomeClass.class，都不能蒙混过关，SomeClass这个类名称会被混淆，因此，我们要在ProGuard.cfg文件中保留这个类名称。
 
@@ -220,7 +220,7 @@ AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someFie
 
 但凡在Layout目录下的XML布局文件配置的自定义View，都不能进行混淆。为此要遍历Layout下的所有的XML布局文件，找到那些自定义View，然后确认其是否在ProGuard文件中保留。有一种思路是，在我们使用自定义View时，前面都必须加上我们的包名，比如com.a.b.customeview，我们可以遍历所有Layout下的XML布局文件，查找所有匹配com.a.b的标签即可。
  
-## 4、针对第三方jar包的解决方案
+# 四、针对第三方jar包的解决方案
 
 我们在Android项目中不可避免要使用很多第三方提供的SDK，一般而言，这些SDK是经过ProGuard混淆的，而我们所需要做的就是避免这些SDK的类和方法在我们APP被混淆。
 
@@ -249,7 +249,7 @@ AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someFie
 
 值得注意的是，不是每个第三方SDK都需要-dontwarn 指令，这取决于混淆时第三方SDK是否出现警告，需要的时候再加上。
 
-## 5、其他注意事项
+# 五、其他注意事项
 
 
 1.打包时忽略警告
@@ -272,6 +272,25 @@ public class Bean{
     public  String stringProperty;
 }
 ```
+# 六、proguard-rules 和 consumer-rules
 
+proguard-rules.pro: 给Library模块自己使用的混淆规则；
+consumer-rules.pro: 会合并到app的混淆规则中，是给包括app在内的其他模块调用时使用的混淆规则；
+```groovy
+    defaultConfig {
+        minSdk 23
+        targetSdk 32
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        //文件则是会合并到app的混淆规则中，是给包括app在内的其他模块调用时使用的混淆规
+        consumerProguardFiles "consumer-rules.pro"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            //proguard-rules.pro 文件是给Library模块自己使用的混淆规则
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+```
 
 
