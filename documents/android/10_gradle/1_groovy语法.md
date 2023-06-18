@@ -6,13 +6,13 @@
 
 >Gradle is an open-source build automation tool focused on flexibility and performance. Gradle build scripts are written using a Groovy or Kotlin DSL.
 
-翻译过来就是：Gradle 是一个开源的自动化构建工具，专注于灵活性和性能。Gradle 构建脚本是使用 Groovy 或 Kotlin DSL 编写的。
+翻译过来就是：Gradle 是一个开源的自动化构建工具，专注于灵活性和性能。Gradle 构建脚本可以使用 Groovy 或 Kotlin DSL 编写。
 
-我们先学习一下 Groovy 的语法，方便咱们看一些老项目的的 gradle 配置。当然还是推荐大家使用 Kotlin 去编写相关的 gradle 文件。
+我们先学习一下 Groovy 的语法，方便咱们看一些老项目的的 gradle 配置。当然 Google 推荐使用 Kotlin 编写 gradle 文件。
 
 ### 1.2 Groovy 是什么
 
-Groovy 是基于 JVM 的脚本语言，它是基于Java扩展的动态语言。动态语言可以在运行时再去确认对象的类型，静态语言在编译时就需要确定好对象的类型。我们通过 Groovy 编写 Gradle 脚本。
+Groovy 是基于 JVM 的脚本语言，它是基于Java扩展的动态语言。动态语言可以在运行时再去确认对象的类型，静态语言在编译时就需要确定好对象的类型。
 Groovy 同样生成 .class 文件并在 JVM 上运行。
 
 ## 2、Groovy 语法
@@ -26,12 +26,12 @@ Groovy 同样生成 .class 文件并在 JVM 上运行。
 - 5.`==` 就相当于 Java 的 `equals`，使用 `.is()` 比较两个对象是否是同一个
 - 6.使用 assert 来设置断言，当断言的条件为 false 时，程序将会抛出异常
 
-**7.字符串**
-- 单引号：不可扩展字符串
-- 双引号：支持在引号内通过 $ 关键字直接引用变量值；
-- 三引号：支持换行。
+- 7.字符串
+-- 单引号：不可扩展字符串
+-- 双引号：支持在引号内通过 $ 关键字直接引用变量值；
+-- 三引号：支持换行。
 
-8.支持 `**` 次方运算符
+- 8.支持 `**` 次方运算符
 ```groovy
 assert  2 ** 4 == 16
 ```
