@@ -1,5 +1,15 @@
 ### 1、安装 homebrew
 网址：https://brew.sh/
+设置当前用户最好权限
+```shell
+sudo whoami
+```
+设置 /opt 路径 有管理员权限
+```shell
+sudo chmod -R 777 /opt
+# -R 是指级联应用到目录里的所有子目录和文件
+# 777 是所有用户都拥有最高权限
+```
 ### 2、使用 homebrew 安装 fvm
 ```shell
 brew tap befovy/taps
