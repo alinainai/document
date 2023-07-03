@@ -66,9 +66,16 @@ flutter --version #查看flutter版本，借助该指令更新 DART SDK
 设置 Flutter SDK path选择路径(/opt/fvm/current)
 
 ### 7、其他 fvm 指令
-
-fvm releases list
-
+```shell
+  current     Show current Flutter SDK info
+  flutter     Proxies Flutter Commands
+  help        Help about any command
+  import      Import installed flutter into fvm
+  install     Installs Flutter SDK Version
+  list        Lists installed Flutter SDK Version
+  remove      Removes Flutter SDK Version
+  use         Which Flutter SDK Version you would like to use
+```
 ### 8、配置项目相关内容
 https://fvm.app/docs/getting_started/configuration/
 
