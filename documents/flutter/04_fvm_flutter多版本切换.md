@@ -1,5 +1,6 @@
 ### 1、安装 homebrew
 网址：https://brew.sh/
+
 设置当前用户最好权限
 ```shell
 sudo whoami
