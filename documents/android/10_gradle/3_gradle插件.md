@@ -13,9 +13,9 @@
 
 有三种方式构建插件：`单独项目`、`脚本` 和 `buildSrc` 。
 
-这里，我们使用`单独项目`的方式去构建插件，然后发布到本地 `maven_repo` 仓库，并在 app 中依赖它。我们的 demo 基于 `gradle 7.3.3` 开发。
+### 2.1 在单独项目中创建插件
 
-### 2.1 新建插件 module
+以`单独项目`的方式去构建插件，然后发布到本地 `maven_repo` 仓库，并在 app 中依赖它。我们的 demo 基于 `gradle 7.3.3` 开发。
 
 首先在 Android 项目中新建一个 `Java or Kotlin Library` module，名字任意，如 `gradleplugin` ，并配置该 `module` 的 `build.gradle` 。
 
