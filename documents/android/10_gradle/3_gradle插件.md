@@ -1,23 +1,23 @@
-## 1、Gradle 插件简介 
+## 一、Gradle插件简介 
 
 `Gradle插件`帮助我们`封装可重用的构建逻辑，方便在不同的项目中使用`。
 
-可以使用多种语言来编写一个`Gradle插件`，如 Groovy、Java、Kotlin。通常，使用 `Java/Kotlin（静态类型语言`）实现的插件比使用 `Groovy(动态类型语言)` 实施的插件性能更好。
+我们可以使用不同的语言来编写`Gradle插件`，比如 Groovy、Java、Kotlin。
+通常，使用 `Java/Kotlin（静态类型语言`）实现的插件比使用 `Groovy(动态类型语言)` 实施的插件性能更好。
 
-`android`官方提供了很多可用的 gradle 插件，比如:
-
+`android`官方提供了很多可用的 gradle 插件，如:
 - apply plugin: 'com.android.application'
 - apply plugin: 'com.android.library'
 
-## 2、实现 Gradle 插件
+## 二、实现一个Gradle插件
 
-有三种方式构建插件：使用单独的项目、`脚本` 和 `buildSrc` 。
+有三种方式构建插件：`单独项目`、`脚本` 和 `buildSrc` 。
 
 这里，我们使用`单独项目`的方式去构建插件，然后发布到本地 `maven_repo` 仓库，并在 app 中依赖它。我们的 demo 基于 `gradle 7.3.3` 开发。
 
 ### 2.1 新建插件 module
 
-首先在 Android 项目中新建一个 `Java or Kotlin Library` module，名字任意，如 `gradleplugin` ，并配置该 module 的 build.gradle 。
+首先在 Android 项目中新建一个 `Java or Kotlin Library` module，名字任意，如 `gradleplugin` ，并配置该 `module` 的 `build.gradle` 。
 
 ```groovy
 plugins {
@@ -100,7 +100,7 @@ class CustomPlugin : Plugin<Project> {
 
 如果 `gradle task` 列表中没有 task 任务，可以先执行一下 `File -> Sync Project with Gradle Files`
 
-## 3、使用插件
+## 三、使用插件
 
 在项目的 setting.gradle 中添加本地 maven 仓库的依赖
 
