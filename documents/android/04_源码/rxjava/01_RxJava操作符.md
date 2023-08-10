@@ -11,7 +11,7 @@ implementation "io.reactivex.rxjava2:rxjava:2.2.8"
 implementation 'io.reactivex.rxjava2:rxkotlin:2.0.0'
 ```
 
-注意这里为了方便使用到了[RxKotlin](https://github.com/ReactiveX/RxKotlin)，一个非常不错的RxJava Kotlin扩展库，也是reactivex出品。
+为了方便写例子，还引入了 [RxKotlin](https://github.com/ReactiveX/RxKotlin) 库，一个非常不错的 RxJava 的 Kotlin 扩展库，也是 reactivex 出品。
 
 
 ## 1、生产者
@@ -32,7 +32,7 @@ Flowable.create(FlowableOnSubscribe<String> { emitter ->
 
 `Observable`: 不支持背压 (被观察者)，也是咱们开发中最常用的一个
 
-两者官方的使用建议：
+官方的使用建议：
 
 使用Observable 
 
