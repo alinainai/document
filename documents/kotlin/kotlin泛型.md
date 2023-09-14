@@ -1,23 +1,21 @@
-Kotlin 的泛型和 Java 相当接近:它们使用同样的方式声明泛型函数和泛型类。 和 Java一样，泛型类型的类型实参只在编译期存在。
+`Kotlin`的泛型和`Java`相当接近，它们使用同样的方式声明泛型函数和泛型类。和`Java`一样，泛型类型的类型实参只在编译期存在，所以不能用 `is` 运算符来判断泛型实参的类型和，因为类型实参在运行时将被擦除。
 
-不能把带类型实参的类型和 is 运算符一起使用，因为类型实参在运行时将被擦除。
-
-#### 1. 上界 
+## 1、上界 
 ```kotlin
 <T : Number> //等同于 java 中的 <T extends Number>
 ```
-#### 2. 如何确保 T 非空
-
+## 2、如何确保泛型非空
+默认写法的泛型是支持可空类型的，如下：代码中的 `T` 默认父类为 `Any?`
 ```kotlin
 List<T>  //T:Any?
 ```
-上面代码中的 `T` 默认父类为 `Any?`，如果想让 `T` 默认非空，需要作如下处理：
+如果想让 `T` 默认非空，作如下处理：
 ```kotlin
 List<T : Any> // T:Any 
 ```
-#### 3.reified T (实化泛型)
+## 3、reified关键字 (实化泛型)
 
-`reified T` 实化泛型 只对 `内联函数` 有效，reified 修饰的泛型，类型参数不会在运行时被擦除，所以可以用 `is` 判断类型，并且可以获得 `java.lang.Class` 实例。
+`reified` 修饰的泛型，类型参数不会在运行时被擦除，所以可以用 `is` 判断类型，并且可以获得 `java.lang.Class` 实例。`reified T` 实化泛型 只对 `内联函数` 有效。
 
 ```kotlin
 inline fun <reified T> Iterable<*>.filterIsInstance(): List<T> {
@@ -30,7 +28,7 @@ inline fun <reified T> Iterable<*>.filterIsInstance(): List<T> {
     return destination
 }
 ```
-使用实化类型参数来代替传递作为 java.lang.Class 的 activity 类:
+使用实化类型参数来代替传递作为 `java.lang.Class` 的 `activity` 类:
 ```kotlin
 inline fun <reified T : Activity> Context.startActivity(){
     val intent= Intent(this, T::class.java) 
@@ -39,7 +37,7 @@ inline fun <reified T : Activity> Context.startActivity(){
 startActivity<DetailActivity>
 ```
 
-#### 4. 协变:保留子类型化关系
+## 4、协变（保留子类型化关系）
 
 什么是协变: 如果 `A` 是 `B` 的子类型，那么 `Producer<A>` 就是 `Producer<B>` 的子类型
   
@@ -52,27 +50,27 @@ interface Producer<out T>{
 }
 ```
 
-例子: Kotlin 中的 只读接口 `List` 声明成了协变的 ，这意味着 `List<String>` 是 `List<Any>` 的子类型。
+例子: Kotlin 中的只读接口`List`声明成了协变的 ，这意味着`List<String>`是`List<Any>`的子类型。
 
 **Tips: 类型参数 `T` 上的关键宇 `out` 有两层含义**
   
 - 子类型化会被保留( `Producer<Cat>` 是 `Producer<Anirnal>` 的子类型)
-- T只能用在out位置
+- `T`只能用在`out`位置
 
-`in` 位置和 `out` 位置
+`in`位置和`out`位置
 
 - 如果函数是把 `T` 当成返回类型，我们说它在 `out` 位置。该函数生产类型为 `T` 的值 。
 - 如果 `T` 用 作函数参数的类型，它就在 `in` 位置。该函数消费类型为 `T` 的值。
   
 <img width="214" alt="in位置和out位置" src="https://user-images.githubusercontent.com/17560388/154209747-bc62c7da-1041-4530-90a6-3b7c76053f19.png">
 
-**位置规则只覆盖了类外部可见的(`public`、 `protected` 和 `internal`) API。** 私有方法的参数既不在 `in` 位置也不在 `out` 位置。
+**位置规则只覆盖了类外部可见的(`public`、 `protected` 和 `internal`) API。私有方法的参数既不在 `in` 位置也不在 `out` 位置。**
     
-一个非空类型是它的可空版本的`子类型`，但它们都对应着同一个`类` 。
+还要注意一点：一个非空类型是它的可空版本的`子类型`，但它们都对应着同一个`类` 。
    
-#### 5. 逆变:反转子类型化关系
+## 5、逆变（反转子类型化关系）
   
-什么是逆变: 如果 `B` 是 `A` 的子类型，那么 `Consumer<A>` 就是 `Consumer<B>` 的 子类型。类型参数 `A` 和 `B` 交换了位置 ，所以我们说子类型化被反转了 。
+什么是逆变: 如果`B`是`A`的子类型，那么 `Consumer<A>` 就是 `Consumer<B>` 的 子类型。和协变相比，类型参数 `A` 和 `B` 交换了位置 ，所以我们说子类型化被反转了 。
     
 可以声明一个类在某个类型参数上是逆变的，如果该参数只是用在 `in` 位置。
   
@@ -87,7 +85,7 @@ interface Function1<in P, out R> {
 ```
 Kotlin 的表示法 `(P) -> R` 是表达 `Function<P, R>` 的另一种更具 `可读性` 的形式。可以发现用 `in` 关键字 标记的 `p` (参数类型)只用在 `in` 位置，而用 `out` 关键字标记的 `R` (返回类型〉只用在 `out` 位置。
   
-#### 6. 使用点变型:在类型出现的地方指定变型
+## 6、使用点变型:在类型出现的地方指定变型
 
 在类声明的时候就能够指定变型修饰符是很方便的，因为这些修饰符会应用到所有类被使用的地方。这被称作`声明点变型`。
 
@@ -98,12 +96,12 @@ Kotlin的`使用点变型`直接对应`Java的限界通配符`。Kotiin中的 `M
     
 函数接口声明成了在第一个类型参数上逆变而在第二个类型参数上协变，使 `(Animal)->Int` 成为 `(Cat)->Number` 的子类型 。
 
-#### 7. 星号投影
+## 7、星号投影
 
 ```kotlin
  List<*> //等同于 Java 的 List<?> 
 ```
-当确切的类型实参是未知的或者不重要的时候 ，可以使用 `星号投影语法`。
+当确切的类型实参是未知的或者不重要的时候 ，可以使用`星号投影语法`，`List<*>` 等同于 `Java` 的 `List<?>`。
 
 
   
