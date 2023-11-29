@@ -218,6 +218,11 @@ $ git log -5 --pretty --oneline
 $ git shortlog -sn
 ```
 ```shell
+# 简单commit 的 hash 和 提交信息
+ git log --pretty=format:"%h %s"
+```
+
+```shell
 # 显示指定文件是什么人在什么时间修改过
 $ git blame [file]
 ```
