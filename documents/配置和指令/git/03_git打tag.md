@@ -59,6 +59,16 @@ git push origin --tags
 ```
 在git仓库中查看tag分支是否提交
 
+## 删除tag
+
+删除本地tag 
+```shell
+ git tag -d <tag name>
+```
+删除远端tag 
+```shell
+git push --delete origin <tag name>
+```
 
 ## 合并代码到master
 在当前分支拉取master代码，并查看是否有冲突
